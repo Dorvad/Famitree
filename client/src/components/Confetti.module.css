@@ -1,0 +1,28 @@
+.field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.bar,
+.dot {
+  position: absolute;
+  top: -20px;
+  animation-name: confetti;
+  animation-timing-function: ease-in;
+  animation-fill-mode: both;
+}
+
+.bar {
+  width: 10px;
+  height: 17px;
+  border-radius: 3px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}

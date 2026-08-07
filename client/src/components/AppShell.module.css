@@ -1,0 +1,201 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+}
+
+.header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+  position: relative;
+  z-index: 20;
+  background: var(--bg);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: none;
+}
+
+.brand:hover {
+  color: inherit;
+}
+
+.mark {
+  display: flex;
+  gap: 3px;
+}
+
+.mark span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.mark span:nth-child(1) {
+  background: var(--accent);
+}
+.mark span:nth-child(2) {
+  background: var(--amber);
+}
+.mark span:nth-child(3) {
+  background: var(--teal);
+}
+.mark span:nth-child(4) {
+  background: var(--violet);
+}
+
+.wordmark {
+  font: 400 19px var(--font-display);
+  color: var(--ink);
+}
+
+/* Desktop tab bar. On narrow screens navigation lives in the sheet instead,
+   which is where the design put it. */
+.tabs {
+  display: none;
+  gap: 4px;
+  margin-inline: auto;
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.tab {
+  padding: 8px 20px;
+  border-radius: var(--r-pill);
+  font: 600 13.5px var(--font-body);
+  color: var(--muted);
+  white-space: nowrap;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tabActive,
+.tabActive:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+
+.identity {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px 5px 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  font: 600 13px var(--font-body);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.identity:hover {
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.joinLink {
+  padding: 9px 20px;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--bg);
+  font: 600 13px var(--font-body);
+  white-space: nowrap;
+  transition: transform 0.18s ease;
+}
+
+.joinLink:hover {
+  color: var(--bg);
+  transform: translateY(-2px);
+}
+
+/* The 2×2 dot grid that opens the sheet. */
+.menuButton {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 16px;
+  background: var(--surface);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  place-content: center;
+  padding: 11px;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s var(--ease-pop);
+}
+
+.menuButton:hover {
+  transform: scale(1.06) rotate(-4deg);
+}
+
+.menuButton span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.menuButton span:nth-child(1) {
+  background: var(--accent);
+}
+.menuButton span:nth-child(2) {
+  background: var(--amber);
+}
+.menuButton span:nth-child(3) {
+  background: var(--teal);
+}
+.menuButton span:nth-child(4) {
+  background: var(--violet);
+}
+
+.main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Screens that scroll (home, archive, person) opt into this; the tree and
+   timeline manage their own viewport and must not scroll. */
+.scrollArea {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+@media (min-width: 860px) {
+  .tabs {
+    display: flex;
+  }
+
+  .identity {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 1024px) {
+  .header {
+    padding-inline: 28px;
+  }
+}

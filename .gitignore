@@ -1,0 +1,22 @@
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# Runtime data — never commit the family archive or uploaded originals
+server/data/
+!server/data/.gitkeep
+
+.env
+.env.local
+.env.*.local
+
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+.vite/
+coverage/
+.idea/
+.vscode/*
+!.vscode/extensions.json

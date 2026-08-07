@@ -1,0 +1,87 @@
+/*
+ * Design tokens lifted from the שורשים prototype.
+ *
+ * The prototype carried every value inline; collecting them here means a colour
+ * or radius is changed in one place. Names describe the role, not the hue, so
+ * the palette can shift without a rename cascade.
+ */
+
+:root {
+  /* ---------------------------------------------------------- surfaces */
+  --page-wash: radial-gradient(120% 90% at 28% 12%, #ffe6cf 0%, #f7dfce 42%, #efd7c9 100%);
+  --bg: #fff7ee;
+  --surface: #fff;
+  --surface-hover: #ffeede;
+  --surface-sunken: #fffbf7;
+
+  /* ------------------------------------------------------------- text */
+  --ink: #2b2320;
+  --body: #5c4d42;
+  --body-soft: #6b5a4e;
+  --muted: #8a7568;
+  --subtle: #a08a78;
+  --faint: #b09a88;
+  --placeholder: #c9b29c;
+  --on-accent: #fff;
+
+  /* ------------------------------------------------------------ lines */
+  --border: #f2e4d2;
+  --border-dashed: #e3cdb6;
+  --connector: #e6d2ba;
+
+  /* ----------------------------------------------------------- accent */
+  /* Coral is the primary action colour throughout. */
+  --accent: #ff5a5f;
+  --accent-strong: #e04347;
+  --accent-wash: #ffe3e4;
+  --accent-shadow: rgba(255, 90, 95, 0.3);
+
+  --amber: #ffb020;
+  --amber-strong: #c28a1e;
+  --amber-wash: #fff0d4;
+
+  --teal: #00c2a8;
+  --teal-strong: #00a18b;
+  --teal-wash: #d7f6ef;
+
+  --violet: #7c5cff;
+  --violet-strong: #6a55c2;
+  --violet-wash: #e6e0ff;
+
+  --clay: #c26a3a;
+  --clay-wash: #ffe7d6;
+
+  --rose: #d6336c;
+  --rose-wash: #ffe0ec;
+
+  /* ---------------------------------------------------------- shadows */
+  --shadow-xs: 0 3px 10px rgba(178, 120, 70, 0.12);
+  --shadow-sm: 0 4px 14px rgba(178, 120, 70, 0.14);
+  --shadow-md: 0 8px 22px rgba(178, 120, 70, 0.16);
+  --shadow-lg: 0 14px 34px rgba(178, 120, 70, 0.18);
+  --shadow-xl: 0 26px 60px rgba(120, 80, 40, 0.3);
+  --shadow-sheet: 0 -22px 54px rgba(43, 35, 32, 0.28);
+  --scrim: rgba(43, 35, 32, 0.45);
+
+  /* ------------------------------------------------------------ radii */
+  --r-pill: 999px;
+  --r-sheet: 32px;
+  --r-card: 26px;
+  --r-lg: 22px;
+  --r-md: 18px;
+  --r-sm: 14px;
+
+  /* ------------------------------------------------------------ fonts */
+  --font-display: "Suez One", Georgia, "Times New Roman", serif;
+  --font-body: "Heebo", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* ------------------------------------------------------------ easing */
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-screen: cubic-bezier(0.2, 0.9, 0.3, 1.15);
+  --ease-sheet: cubic-bezier(0.34, 1.4, 0.5, 1);
+
+  /* ------------------------------------------------------------ layout */
+  --header-h: 68px;
+  --content-max: 1180px;
+  --prose-max: 560px;
+}

@@ -1,0 +1,152 @@
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg);
+  user-select: none;
+  touch-action: none;
+  animation: screenIn 0.5s var(--ease-screen) both;
+}
+
+.canvas {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  direction: ltr;
+  transform-origin: 0 0;
+}
+
+.axis {
+  position: absolute;
+  inset-inline: 40px;
+  top: 300px;
+  height: 14px;
+  border-radius: var(--r-pill);
+  background: var(--axis, var(--connector));
+}
+
+.decade {
+  position: absolute;
+  top: 336px;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border-radius: var(--r-pill);
+  padding: 3px 12px;
+  box-shadow: 0 3px 10px rgb(178 120 70 / 14%);
+  font: 600 12px var(--font-body);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dot {
+  position: absolute;
+  top: 301px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 3px solid var(--surface);
+  transform: translateX(-50%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
+}
+
+.event {
+  position: absolute;
+  direction: rtl;
+  transform: translateX(-50%);
+  width: 164px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  padding: 12px 15px;
+  box-shadow: 0 8px 20px rgb(120 80 40 / 13%);
+  text-align: start;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.event:hover {
+  transform: translateX(-50%) translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  color: inherit;
+}
+
+.eventYear {
+  display: inline-block;
+  font: 400 15px var(--font-display);
+  color: var(--on-accent);
+  background: var(--tone, var(--accent));
+  border-radius: var(--r-pill);
+  padding: 2px 12px;
+}
+
+.eventTitle {
+  font: 400 12.5px/1.55 var(--font-body);
+  color: var(--body);
+  margin-top: 6px;
+  text-wrap: pretty;
+}
+
+.fadeStart,
+.fadeEnd {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 70px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.fadeStart {
+  left: 0;
+  background: linear-gradient(90deg, var(--bg), transparent);
+}
+
+.fadeEnd {
+  right: 0;
+  background: linear-gradient(270deg, var(--bg), transparent);
+}
+
+.title {
+  position: absolute;
+  top: 18px;
+  inset-inline-start: 22px;
+  font: 400 24px var(--font-display);
+  color: var(--ink);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.hint {
+  position: absolute;
+  top: 26px;
+  inset-inline-end: 22px;
+  font: 400 12px var(--font-body);
+  color: var(--faint);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.jump {
+  position: absolute;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  inset-inline-start: 50%;
+  transform: translateX(50%);
+  display: flex;
+  gap: 8px;
+  z-index: 5;
+}
+
+.jumpButton {
+  padding: 9px 20px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--body);
+  font: 600 12.5px var(--font-body);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+}
+
+.jumpButton:hover {
+  color: var(--ink);
+  transform: translateY(-2px);
+}

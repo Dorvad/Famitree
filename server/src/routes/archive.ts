@@ -1,0 +1,89 @@
+import { Router } from 'express';
+import { z } from 'zod';
+
+import { ARCHIVE_KINDS } from '../../../shared/types.ts';
+
+import { ApiError } from '../middleware/errors.ts';
+import { pathParam } from '../lib/http.ts';
+import { requireAuth, requireReadAccess } from '../middleware/session.ts';
+import {
+  archiveArchiveItem,
+  createArchiveItem,
+  createTimelineEvent,
+  getArchiveItem,
+  listArchiveItems,
+  listTimelineEvents,
+} from '../repos/archive.ts';
+import { getMedia } from '../repos/media.ts';
+import { getPerson } from '../repos/people.ts';
+
+export const archiveRouter = Router();
+
+const kindEnum = z.enum(ARCHIVE_KINDS);
+
+const listQuery = z.object({
+  kind: kindEnum.optional(),
+  personId: z.string().trim().min(1).max(64).optional(),
+});
+
+const createBody = z.object({
+  kind: kindEnum,
+  title: z.string().trim().min(1, 'צריך כותרת').max(160, 'הכותרת ארוכה מדי'),
+  yearLabel: z.string().trim().max(40).optional(),
+  subject: z.string().trim().max(120).optional(),
+  story: z.string().trim().max(4000).optional(),
+  personId: z.string().trim().min(1).max(64).nullable().optional(),
+  mediaId: z.string().trim().min(1).max(64).nullable().optional(),
+});
+
+archiveRouter.get('/archive', requireReadAccess, (req, res) => {
+  const query = listQuery.parse(req.query);
+  res.json(listArchiveItems(query));
+});
+
+archiveRouter.post('/archive', requireAuth, (req, res) => {
+  const input = createBody.parse(req.body);
+
+  // Reject dangling references up front rather than storing a link that will
+  // silently render as a missing tile later.
+  if (input.personId) {
+    const person = getPerson(input.personId);
+    if (!person || person.archivedAt) throw ApiError.badRequest('בן המשפחה שנבחר לא קיים.');
+  }
+  if (input.mediaId && !getMedia(input.mediaId)) {
+    throw ApiError.badRequest('הקובץ שצורף לא נמצא. נסו להעלות אותו שוב.');
+  }
+
+  res.status(201).json(createArchiveItem(input, req.user!.id));
+});
+
+archiveRouter.post('/archive/:id/archive', requireAuth, (req, res) => {
+  const item = getArchiveItem(pathParam(req, 'id'));
+  if (!item || item.archivedAt) throw ApiError.notFound('לא מצאנו את הפריט הזה.');
+  if (req.user!.role !== 'steward' && item.createdBy !== req.user!.id) {
+    throw ApiError.forbidden('אפשר להסיר רק אוצרות שאתם הוספתם.');
+  }
+  archiveArchiveItem(item.id);
+  res.status(204).end();
+});
+
+/* ---------------------------------------------------------------- timeline */
+
+const eventBody = z.object({
+  year: z.number().int().min(1500).max(new Date().getFullYear() + 1),
+  title: z.string().trim().min(1, 'צריך תיאור').max(160),
+  personId: z.string().trim().min(1).max(64).nullable().optional(),
+});
+
+archiveRouter.get('/timeline', requireReadAccess, (_req, res) => {
+  res.json(listTimelineEvents());
+});
+
+archiveRouter.post('/timeline', requireAuth, (req, res) => {
+  const input = eventBody.parse(req.body);
+  if (input.personId) {
+    const person = getPerson(input.personId);
+    if (!person || person.archivedAt) throw ApiError.badRequest('בן המשפחה שנבחר לא קיים.');
+  }
+  res.status(201).json(createTimelineEvent(input));
+});

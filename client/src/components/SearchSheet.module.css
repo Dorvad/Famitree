@@ -1,0 +1,194 @@
+.searchRow {
+  position: relative;
+  margin-top: 4px;
+}
+
+.input {
+  width: 100%;
+  padding: 15px 48px 15px 18px;
+  border-radius: var(--r-md);
+  border: 3px solid var(--border);
+  background: var(--surface);
+  font: 400 16px var(--font-body);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.18s ease;
+}
+
+.input:focus {
+  border-color: var(--accent);
+}
+
+.input::placeholder {
+  color: var(--placeholder);
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 17px;
+  transform: translateY(-50%);
+  color: var(--placeholder);
+  font: 400 18px var(--font-body);
+  pointer-events: none;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: start;
+  background: var(--surface);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  box-shadow: var(--shadow-xs);
+  transition: transform 0.18s ease;
+}
+
+.result:hover {
+  transform: translateX(-4px);
+  color: inherit;
+}
+
+.resultName {
+  display: block;
+  font: 600 15px var(--font-body);
+  color: var(--ink);
+}
+
+.resultMeta {
+  display: block;
+  font: 400 11.5px var(--font-body);
+  color: var(--subtle);
+}
+
+.noResults {
+  font: 400 14px var(--font-body);
+  color: var(--subtle);
+  text-align: center;
+  padding: 14px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.tile {
+  text-align: start;
+  border-radius: var(--r-lg);
+  padding: 16px 16px 15px;
+  background: var(--tile-bg);
+  color: var(--tile-fg);
+  animation: tileIn 0.4s var(--ease-pop) backwards;
+  animation-delay: var(--delay, 0s);
+  transition: transform 0.2s var(--ease-pop);
+}
+
+.tile:hover {
+  transform: translateY(-3px) scale(1.02);
+  color: var(--tile-fg);
+}
+
+.tileIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 400 22px var(--font-display);
+  color: var(--tile-fg);
+  box-shadow: 0 4px 10px rgb(0 0 0 / 6%);
+  overflow: hidden;
+}
+
+.tileTitle {
+  font: 600 15.5px var(--font-body);
+  margin-top: 11px;
+}
+
+.tileNote {
+  font: 400 11.5px/1.4 var(--font-body);
+  opacity: 0.72;
+  margin-top: 1px;
+}
+
+.legend {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  margin-top: 12px;
+  box-shadow: var(--shadow-xs);
+}
+
+.legendTitle {
+  font: 600 12px var(--font-body);
+  color: var(--subtle);
+  margin-bottom: 8px;
+}
+
+.legendGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 14px;
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legendDot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.legendName {
+  font: 600 11.5px var(--font-body);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.legendRange {
+  font: 400 11px var(--font-body);
+  color: var(--subtle);
+  white-space: nowrap;
+}
+
+.signOut {
+  display: block;
+  margin: 14px auto 0;
+  font: 600 12.5px var(--font-body);
+  color: var(--faint);
+  border-bottom: 2px dashed var(--border-dashed);
+  padding-bottom: 2px;
+}
+
+.signOut:hover {
+  color: var(--ink);
+}
+
+@media (min-width: 560px) {
+  .tiles {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .legendGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

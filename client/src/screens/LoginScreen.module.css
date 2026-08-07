@@ -1,0 +1,229 @@
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--page-wash);
+  animation: fadeIn 0.4s ease both;
+}
+
+.inner {
+  text-align: center;
+  padding: 40px 24px;
+  max-width: 720px;
+  width: 100%;
+}
+
+.mark {
+  display: inline-flex;
+  gap: 6px;
+  animation: popIn 0.5s var(--ease-pop) both;
+}
+
+.mark span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.mark span:nth-child(1) {
+  background: var(--accent);
+}
+.mark span:nth-child(2) {
+  background: var(--amber);
+}
+.mark span:nth-child(3) {
+  background: var(--teal);
+}
+.mark span:nth-child(4) {
+  background: var(--violet);
+}
+
+.question {
+  font: 400 clamp(32px, 8vw, 48px) / 1.3 var(--font-display);
+  color: var(--ink);
+  margin-top: 16px;
+  animation: popIn 0.5s 0.06s var(--ease-pop) backwards;
+  text-wrap: balance;
+}
+
+.lead {
+  font: 300 16px/1.6 var(--font-body);
+  color: var(--muted);
+  margin-top: 8px;
+  max-width: 42ch;
+  margin-inline: auto;
+  text-wrap: pretty;
+}
+
+.nameInput {
+  margin-top: 28px;
+  width: min(420px, 84vw);
+  padding: 18px 28px;
+  border-radius: var(--r-pill);
+  border: 3px solid var(--border);
+  background: var(--surface);
+  font: 400 20px var(--font-body);
+  color: var(--ink);
+  text-align: center;
+  outline: none;
+  box-shadow: var(--shadow-lg);
+  animation: popIn 0.5s 0.12s var(--ease-pop) backwards;
+  transition: border-color 0.18s ease;
+}
+
+.nameInput:focus {
+  border-color: var(--accent);
+}
+
+.yearInput {
+  composes: nameInput;
+  width: 200px;
+  padding: 16px 24px;
+  font-size: 22px;
+  margin-top: 26px;
+}
+
+.yearInput:focus {
+  border-color: var(--violet);
+}
+
+.nameInput::placeholder,
+.yearInput::placeholder {
+  color: var(--placeholder);
+}
+
+.suggestions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 26px;
+  min-height: 60px;
+}
+
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border-radius: var(--r-pill);
+  padding: 8px 18px 8px 12px;
+  box-shadow: var(--shadow-sm);
+  animation: popIn 0.4s var(--ease-pop) backwards;
+  animation-delay: var(--delay, 0s);
+  transition:
+    transform 0.18s var(--ease-pop),
+    box-shadow 0.18s ease;
+}
+
+.suggestion:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: var(--shadow-lg);
+}
+
+.suggestionName {
+  display: block;
+  font: 600 14px var(--font-body);
+  color: var(--ink);
+  white-space: nowrap;
+  text-align: start;
+}
+
+.suggestionMeta {
+  display: block;
+  font: 400 10.5px var(--font-body);
+  color: var(--subtle);
+  white-space: nowrap;
+  text-align: start;
+}
+
+.primary {
+  display: inline-block;
+  padding: 14px 30px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 600 15px var(--font-body);
+  box-shadow: 0 10px 26px var(--accent-shadow);
+  animation: popIn 0.4s var(--ease-pop) both;
+  transition: transform 0.18s ease;
+}
+
+.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.primary:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.cohort {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--gen-wash);
+  border-radius: var(--r-pill);
+  padding: 8px 20px;
+  animation: popIn 0.4s var(--ease-pop) both;
+}
+
+.cohortDot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--gen);
+}
+
+.cohortText {
+  font: 600 14px var(--font-body);
+  color: var(--gen-text);
+}
+
+.joinButton {
+  composes: primary;
+  padding: 14px 32px;
+  background: var(--gen);
+  box-shadow: 0 10px 26px var(--gen-shadow);
+  animation-delay: 0.08s;
+}
+
+.yearBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 22px;
+  min-height: 112px;
+}
+
+.quiet {
+  display: inline-block;
+  margin-top: 20px;
+  font: 600 12.5px var(--font-body);
+  color: var(--faint);
+  border-bottom: 2px dashed var(--border-dashed);
+  padding-bottom: 2px;
+}
+
+.quiet:hover {
+  color: var(--ink);
+}
+
+.plain {
+  composes: quiet;
+  border-bottom: 0;
+}
+
+.inviteRow {
+  margin-top: 18px;
+}
+
+.error {
+  margin: 16px auto 0;
+  max-width: 420px;
+}

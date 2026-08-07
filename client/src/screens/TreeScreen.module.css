@@ -1,0 +1,280 @@
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg);
+  user-select: none;
+  touch-action: none;
+  animation: screenIn 0.5s var(--ease-screen) both;
+}
+
+.canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  direction: ltr;
+}
+
+.wires {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.wire {
+  fill: none;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.wireDrawn {
+  animation: draw 1.3s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay: var(--delay, 0s);
+}
+
+.branchLabel {
+  position: absolute;
+  direction: rtl;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border-radius: var(--r-pill);
+  padding: 5px 16px;
+  font: 600 12.5px var(--font-body);
+  color: #8a6a4f;
+  white-space: nowrap;
+  box-shadow: var(--shadow-xs);
+  pointer-events: none;
+}
+
+.station {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.halo {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  margin-left: -42px;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 4px solid var(--gen, var(--accent));
+  animation: halo 1.7s ease-out infinite;
+  pointer-events: none;
+}
+
+.node {
+  border-radius: 50%;
+  animation: popIn 0.5s var(--ease-pop) backwards;
+  animation-delay: var(--delay, 0s);
+  transition: transform 0.18s var(--ease-pop);
+}
+
+.node:hover {
+  transform: scale(1.1);
+}
+
+.node:active {
+  transform: scale(0.93);
+}
+
+/* The viewer's own node keeps a gentle pulse so it can be found at a glance. */
+.nodeMe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+.pill {
+  direction: rtl;
+  background: var(--surface);
+  border-radius: var(--r-pill);
+  padding: 4px 14px;
+  box-shadow: var(--shadow-xs);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pillName {
+  font: 600 12.5px var(--font-body);
+  color: var(--ink);
+}
+
+.pillYears {
+  font: 400 10.5px var(--font-body);
+  color: var(--subtle);
+}
+
+.card {
+  direction: rtl;
+  width: 308px;
+  max-width: 84vw;
+  background: var(--surface);
+  border-radius: var(--r-card);
+  padding: 18px 20px 16px;
+  box-shadow: var(--shadow-xl);
+  transform-origin: top center;
+  animation: popIn 0.45s var(--ease-pop) both;
+  text-align: start;
+  cursor: default;
+}
+
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.cardCohort {
+  font: 600 11px var(--font-body);
+  color: var(--gen-text, var(--accent-strong));
+  letter-spacing: 0.06em;
+}
+
+.cardName {
+  font: 400 25px var(--font-display);
+  color: var(--ink);
+  margin-top: 2px;
+}
+
+.cardClose {
+  color: var(--faint);
+  font: 400 18px var(--font-body);
+  flex: none;
+  line-height: 1;
+}
+
+.cardClose:hover {
+  color: var(--ink);
+}
+
+.cardTags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.tagCohort {
+  font: 600 11px var(--font-body);
+  color: var(--gen-text, var(--accent-strong));
+  background: var(--gen-wash, var(--accent-wash));
+  border-radius: var(--r-pill);
+  padding: 4px 12px;
+}
+
+.tagPlace {
+  font: 600 11px var(--font-body);
+  color: var(--body);
+  background: var(--bg);
+  border-radius: var(--r-pill);
+  padding: 4px 12px;
+}
+
+.cardStory {
+  font: 300 13px/1.62 var(--font-body);
+  color: var(--body);
+  margin-top: 10px;
+  text-wrap: pretty;
+}
+
+.cardLink {
+  display: inline-block;
+  font: 600 13px var(--font-body);
+  color: var(--on-accent);
+  background: var(--gen, var(--accent));
+  border-radius: var(--r-pill);
+  padding: 9px 22px;
+  margin-top: 14px;
+  box-shadow: 0 8px 20px var(--gen-shadow, var(--accent-shadow));
+  transition: transform 0.18s ease;
+}
+
+.cardLink:hover {
+  color: var(--on-accent);
+  transform: translateY(-2px);
+}
+
+.youAreHere {
+  position: absolute;
+  direction: rtl;
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: var(--r-pill);
+  padding: 6px 16px;
+  font: 600 12px var(--font-body);
+  white-space: nowrap;
+  transform: rotate(-3deg);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------- controls */
+
+.controls {
+  position: absolute;
+  top: 16px;
+  inset-inline-end: 18px;
+  display: flex;
+  gap: 8px;
+  z-index: 5;
+}
+
+.zoomButton {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgb(178 120 70 / 20%);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 400 19px var(--font-body);
+}
+
+.zoomButton:hover {
+  background: var(--surface-hover);
+}
+
+.resetButton {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: var(--r-pill);
+  background: var(--violet);
+  color: var(--on-accent);
+  display: flex;
+  align-items: center;
+  font: 600 12.5px var(--font-body);
+  box-shadow: 0 4px 16px rgb(124 92 255 / 35%);
+  white-space: nowrap;
+}
+
+.title {
+  position: absolute;
+  top: 14px;
+  inset-inline-start: 20px;
+  font: 400 22px var(--font-display);
+  color: var(--ink);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.hint {
+  position: absolute;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  inset-inline-start: 50%;
+  transform: translateX(50%);
+  font: 400 11.5px var(--font-body);
+  color: var(--faint);
+  background: rgb(255 247 238 / 86%);
+  padding: 5px 14px;
+  border-radius: var(--r-pill);
+  pointer-events: none;
+  white-space: nowrap;
+}
