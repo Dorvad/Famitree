@@ -1,17 +1,15 @@
 import { build } from 'esbuild';
 import { cp, mkdir } from 'node:fs/promises';
 
-// Three entry points: the long-running server, the app on its own for the
-// serverless function to import, and the migration step that applies the
-// schema and loads the sample family.
+// Two entry points: the long-running server, and the migration step that
+// applies the schema and loads the sample family. Everything is bundled, so
+// `node dist/index.js` runs with no resolution step at boot — there is no
+// native addon left to keep external now that the database is Postgres.
 //
-// The function imports `dist/app.js` rather than the TypeScript source on
-// purpose. The sources import each other with explicit `.ts` extensions, which
-// needs `allowImportingTsExtensions` and a resolver that honours it; handing
-// the platform one plain, already-bundled ESM file removes that from the list
-// of things that have to be true for a deploy to work.
+// The serverless function is not built here. Vercel compiles api/index.ts
+// itself, from source, so that a deploy never depends on this having run first.
 await build({
-  entryPoints: ['src/index.ts', 'src/app.ts', 'src/db/migrate.ts'],
+  entryPoints: ['src/index.ts', 'src/db/migrate.ts'],
   outdir: 'dist',
   bundle: true,
   platform: 'node',
@@ -37,4 +35,4 @@ await build({
 await mkdir('dist/db', { recursive: true });
 await cp('src/db/schema.sql', 'dist/db/schema.sql');
 
-console.log('server bundled -> dist/index.js, dist/app.js, dist/db/migrate.js');
+console.log('server bundled -> dist/index.js, dist/db/migrate.js');

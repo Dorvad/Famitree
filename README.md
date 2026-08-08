@@ -85,8 +85,8 @@ client/
 | | |
 | --- | --- |
 | `vercel.json` | Builds the client, routes `/api/*` to the function and everything else to the SPA |
-| `api/index.ts` | The function. Imports the built Express app and hands it the request |
-| `server/dist/app.js` | The app with no listener — built by `npm run build` |
+| `api/index.ts` | The function. Hands the Express app the request |
+| `server/src/app.ts` | The app with no listener. Imported from source, so the deploy never depends on a build artifact existing at the moment functions are compiled |
 
 **Set these in the project's environment variables:**
 
