@@ -7,7 +7,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import { ensureReady } from './db/index.js';
-import { configProblems, env, inviteRequired } from './env.js';
+import { configProblems, configWarnings, env, inviteRequired } from './env.js';
 import { errorHandler, notFoundHandler } from './middleware/errors.js';
 import { attachUser } from './middleware/session.js';
 import { archiveRouter } from './routes/archive.js';
@@ -123,8 +123,10 @@ app.get('/api/health', (_req, res) => {
     inviteRequired,
     publicRead: env.publicRead,
     storage: env.storageDriver,
+    uploads: env.storageReady ? 'ready' : 'unavailable',
     database: env.databaseUrl ? 'configured' : 'missing',
     ...(configProblems.length > 0 && { problems: configProblems }),
+    ...(configWarnings.length > 0 && { warnings: configWarnings }),
   });
 });
 

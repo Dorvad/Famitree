@@ -48,16 +48,20 @@ const nodeEnv = process.env.NODE_ENV ?? 'development';
 const isProduction = nodeEnv === 'production';
 
 /**
- * Misconfiguration is collected, not thrown.
+ * Misconfiguration is collected, not thrown, and sorted by what it costs.
  *
  * Throwing here happens at *import*, which on a serverless platform means the
  * function dies before it can say anything — the visitor gets an unexplained
- * 500 and the operator gets to guess which variable is missing. Collecting the
- * problems instead lets `/api/health` name them and every other route refuse
- * with a message that says what to fix. The app still serves nothing it should
- * not: `configProblems` being non-empty is a hard stop on the whole API.
+ * 500 and the operator gets to guess which variable is missing.
+ *
+ * `problems` stop the API: without a database there is nothing to serve, and
+ * without a real session secret anything served would be served unsafely.
+ * `warnings` cost one feature and nothing else. An archive that refuses to show
+ * the family tree because *uploads* are unconfigured is worse than one that
+ * shows it and says so when somebody tries to add a photograph.
  */
 const problems: string[] = [];
+const warnings: string[] = [];
 
 const sessionSecret = process.env.SESSION_SECRET?.trim() ?? '';
 if (isProduction && sessionSecret.length < 32) {
@@ -87,10 +91,12 @@ const storageDriver = (process.env.STORAGE_DRIVER ?? (isProduction ? 'blob' : 'd
 if (storageDriver !== 'disk' && storageDriver !== 'blob') {
   problems.push(`STORAGE_DRIVER must be "disk" or "blob", not "${storageDriver}".`);
 }
-if (storageDriver === 'blob' && !process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
-  problems.push(
-    'STORAGE_DRIVER is "blob" but BLOB_READ_WRITE_TOKEN is not set. Connect a ' +
-      'Blob store to the project, then redeploy.',
+const blobConfigured = Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
+if (storageDriver === 'blob' && !blobConfigured) {
+  warnings.push(
+    'STORAGE_DRIVER is "blob" but BLOB_READ_WRITE_TOKEN is not set, so uploads ' +
+      'will be refused. Connect a Blob store to the project, then redeploy. ' +
+      'Everything else works.',
   );
 }
 
@@ -115,6 +121,8 @@ export const env = {
   sessionSecret: sessionSecret || 'insecure-development-secret',
   databaseUrl,
   storageDriver,
+  /** False when the blob driver is selected but has no token to use. */
+  storageReady: storageDriver !== 'blob' || blobConfigured,
   dataDir,
   /** Only used by the `disk` storage driver. */
   uploadDir: path.join(dataDir, 'uploads'),
@@ -131,7 +139,10 @@ export const env = {
 export const inviteRequired = env.inviteCode.length > 0;
 
 /**
- * Everything wrong with the configuration, in plain words. Empty means the app
- * is safe to serve; anything in it means the API answers 503 and says so.
+ * Faults that stop the API. Empty means it is safe to serve; anything in it
+ * means every route answers 503 and says why.
  */
 export const configProblems: readonly string[] = problems;
+
+/** Faults that cost one feature. Reported, but nothing is withheld for them. */
+export const configWarnings: readonly string[] = warnings;

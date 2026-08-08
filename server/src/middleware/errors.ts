@@ -36,6 +36,11 @@ export class ApiError extends Error {
   static conflict(message: string): ApiError {
     return new ApiError(409, 'conflict', message);
   }
+
+  /** A feature the deployment has not been given what it needs to perform. */
+  static unavailable(message: string): ApiError {
+    return new ApiError(503, 'unavailable', message);
+  }
 }
 
 export function notFoundHandler(_req: Request, res: Response): void {

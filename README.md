@@ -120,6 +120,12 @@ PUBLIC_READ      false, unless you want the archive readable by link
 by itself — there is no migration step to run, and nothing to do from a
 terminal.
 
+`/api/health` is the check. It answers whatever else is broken, and reports the
+database, the upload store, and anything missing by name. A fault that stops the
+API comes back as `problems`; one that only costs uploads comes back as a
+`warning`, because an archive should not refuse to show the family tree over a
+photograph store that has not been connected yet.
+
 **Join first, before sharing the link.** The first account to join becomes the
 `steward` — the only role that can edit other people's records or archive
 anything. Everyone after is a member.

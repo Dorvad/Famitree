@@ -79,6 +79,18 @@ const uploadLimiter = rateLimit({
 });
 
 mediaRouter.post('/media', requireAuth, uploadLimiter, (req, res, next) => {
+  // The one route a missing upload store actually costs. Reading the archive,
+  // the tree and everything already uploaded is unaffected, so this is refused
+  // here rather than by taking the whole API down.
+  if (!env.storageReady) {
+    next(
+      ApiError.unavailable(
+        'העלאת קבצים עדיין לא מוגדרת בשרת. אפשר להוסיף את שאר הפרטים בינתיים.',
+      ),
+    );
+    return;
+  }
+
   upload.single('file')(req, res, (err: unknown) => {
     void (async () => {
     if (err instanceof MulterError) {
