@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { ARCHIVE_KINDS } from '../../../shared/types.js';
-
+import { ARCHIVE_KINDS } from '../lib/kinds.js';
 import { ApiError } from '../middleware/errors.js';
 import { pathParam } from '../lib/http.js';
 import { requireAuth, requireReadAccess, requireRole } from '../middleware/session.js';
