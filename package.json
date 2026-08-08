@@ -2,6 +2,7 @@
   "name": "shoresh",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "שורשים — a living family archive: tree, timeline and heirlooms",
   "workspaces": [
     "client",
