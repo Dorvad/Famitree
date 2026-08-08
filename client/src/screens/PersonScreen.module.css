@@ -1,8 +1,7 @@
 .wrap {
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: 16px 18px 40px;
-  animation: screenIn 0.5s var(--ease-screen) both;
+  padding: 16px 18px 48px;
 }
 
 .back {
@@ -12,11 +11,15 @@
   padding: 7px 18px;
   font: 600 12.5px var(--font-body);
   color: var(--muted);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--lift-1);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
 }
 
 .back:hover {
   color: var(--ink);
+  transform: translateX(-4px);
 }
 
 .header {
@@ -27,12 +30,14 @@
   margin-top: 16px;
 }
 
+/* The portrait resolves like a print in the tray. */
 .portrait {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
   flex: none;
+  animation: develop 1s var(--spring-firm) both;
 }
 
 .tags {
@@ -46,7 +51,7 @@
   font: 600 11.5px var(--font-body);
   color: var(--gen-text);
   background: var(--gen-wash);
-  border-radius: var(--r-pill);
+  border-radius: 3px;
   padding: 5px 14px;
   white-space: nowrap;
 }
@@ -54,10 +59,10 @@
 .tagPlace {
   font: 600 11.5px var(--font-body);
   color: var(--body);
-  background: var(--surface);
-  border-radius: var(--r-pill);
+  background: var(--paper);
+  border-radius: 3px;
   padding: 5px 14px;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--lift-1);
   white-space: nowrap;
 }
 
@@ -70,13 +75,15 @@
 .cohort {
   font: 600 12.5px var(--font-body);
   color: var(--gen-text);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
+  animation: focusIn 640ms var(--spring-firm) 100ms both;
 }
 
 .name {
   font: 400 clamp(26px, 5vw, 34px) / 1.2 var(--font-display);
   color: var(--ink);
   margin-top: 4px;
+  animation: focusIn 720ms var(--spring-firm) 180ms both;
 }
 
 .story {
@@ -86,34 +93,61 @@
   max-width: var(--prose-max);
   margin-inline: auto;
   text-wrap: pretty;
+  animation: focusIn 760ms var(--spring-firm) 260ms both;
 }
 
 .sectionTitle {
   font: 400 20px var(--font-display);
   color: var(--ink);
-  margin-top: 30px;
+  margin-top: 34px;
+  /* A rule that runs out from the heading, like a section divider on a form. */
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sectionTitle::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
 }
 
 .milestones {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 14px;
+  margin-top: 14px;
+  perspective: 1400px;
 }
 
+/*
+ * Milestones are index cards from a card file: a coloured spine down the
+ * leading edge, a faint rule under the heading, and each one hinges open as it
+ * arrives.
+ */
 .milestone {
-  background: var(--surface);
-  border-radius: var(--r-lg);
-  padding: 14px 16px;
-  box-shadow: 0 6px 18px rgb(178 120 70 / 12%);
+  position: relative;
+  background: var(--paper);
+  border-start-start-radius: 3px;
+  border-end-start-radius: 3px;
+  border-start-end-radius: var(--r-lg);
+  border-end-end-radius: var(--r-lg);
+  padding: 14px 16px 14px 18px;
+  box-shadow: var(--lift-2);
+  border-inline-start: 5px solid var(--gen);
+  transform-origin: top center;
+  animation: unfold 700ms var(--spring-settle) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger));
   transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
 }
 
 .milestone:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px) rotate(-0.5deg);
+  box-shadow: var(--lift-3);
 }
 
 .milestoneYear {
@@ -121,27 +155,33 @@
   font: 400 15px var(--font-display);
   color: var(--on-accent);
   background: var(--gen);
-  border-radius: var(--r-pill);
+  border-radius: 3px;
   padding: 2px 12px;
 }
 
 .milestoneTitle {
   font: 600 14px var(--font-body);
   color: var(--ink);
-  margin-top: 7px;
+  margin-top: 8px;
 }
 
 .milestoneBody {
   font: 300 12px/1.55 var(--font-body);
   color: var(--muted);
-  margin-top: 3px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
   text-wrap: pretty;
 }
 
+/* An empty slot in the card file, waiting to be filled. */
 .addCard {
-  min-height: 96px;
+  min-height: 108px;
   border: 3px dashed var(--border-dashed);
-  border-radius: var(--r-lg);
+  border-start-start-radius: 3px;
+  border-end-start-radius: 3px;
+  border-start-end-radius: var(--r-lg);
+  border-end-end-radius: var(--r-lg);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
@@ -149,18 +189,20 @@
   justify-content: center;
   gap: 8px;
   transition:
-    border-color 0.18s ease,
-    background 0.18s ease;
+    border-color var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    transform var(--t-touch) var(--ease-touch);
 }
 
 .addCard:hover {
   border-color: var(--accent);
-  background: var(--surface);
+  background: var(--paper);
+  transform: translateY(-3px);
 }
 
 .addPlus {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: var(--accent-wash);
   display: flex;
@@ -168,6 +210,11 @@
   justify-content: center;
   font: 400 20px var(--font-body);
   color: var(--accent-strong);
+  transition: transform var(--t-settle) var(--spring-loose);
+}
+
+.addCard:hover .addPlus {
+  transform: rotate(90deg) scale(1.12);
 }
 
 .addLabel {
@@ -180,10 +227,16 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: var(--surface);
-  border-radius: var(--r-lg);
+  background: var(--paper);
+  border-start-start-radius: 3px;
+  border-end-start-radius: 3px;
+  border-start-end-radius: var(--r-lg);
+  border-end-end-radius: var(--r-lg);
   padding: 16px;
-  box-shadow: var(--shadow-sm);
+  border-inline-start: 5px solid var(--gen);
+  box-shadow: var(--lift-2);
+  transform-origin: top center;
+  animation: unfold 620ms var(--spring-settle) both;
 }
 
 .input {
@@ -194,6 +247,7 @@
   font: 400 14px var(--font-body);
   color: var(--ink);
   outline: none;
+  transition: border-color var(--t-touch) var(--ease-touch);
 }
 
 .input:focus {
@@ -219,6 +273,7 @@
   border-radius: var(--r-pill);
   font: 600 13px var(--font-body);
   color: var(--muted);
+  transition: color var(--t-touch) var(--ease-touch);
 }
 
 .ghost:hover {
@@ -231,7 +286,16 @@
   background: var(--gen, var(--accent));
   color: var(--on-accent);
   font: 600 13px var(--font-body);
-  box-shadow: 0 8px 20px var(--gen-shadow);
+  box-shadow: 0 2px 2px rgb(0 0 0 / 8%), 0 10px 22px var(--gen-shadow);
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+.primary:hover:not(:disabled) {
+  transform: translateY(-3px) rotate(-1deg);
+}
+
+.primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
 }
 
 .primary:disabled {
@@ -241,18 +305,22 @@
 
 /* ------------------------------------------------------------- recording */
 
+/* Reel-to-reel: the label sits on a dark band, the way a tape box is titled. */
 .recording {
   display: flex;
   align-items: center;
   gap: 14px;
-  background: var(--surface);
+  background: var(--paper);
   border-radius: var(--r-lg);
   padding: 14px 18px;
-  box-shadow: var(--shadow-md);
-  margin-top: 24px;
+  box-shadow: var(--lift-2);
+  margin-top: 26px;
   max-width: var(--prose-max);
   margin-inline: auto;
   flex-wrap: wrap;
+  border-top: 5px solid var(--gen);
+  animation: unfold 720ms var(--spring-settle) 200ms both;
+  transform-origin: top center;
 }
 
 .equaliser {
@@ -280,7 +348,7 @@
 }
 
 .recordingNote {
-  font: 400 11.5px var(--font-body);
+  font: 400 11.5px/1.5 var(--font-body);
   color: var(--subtle);
   margin-top: 4px;
 }
@@ -294,22 +362,34 @@
 
 .pieces {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-  margin-top: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
 }
 
 .piece {
-  background: var(--surface);
-  border-radius: var(--r-md);
-  padding: 10px;
-  box-shadow: var(--shadow-xs);
+  background: var(--paper);
+  border-radius: var(--r-print);
+  padding: 10px 10px 13px;
+  box-shadow: var(--lift-2);
+  transform: rotate(var(--rest-tilt, 0deg));
+  animation: slot 640ms var(--spring-settle) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
+}
+
+.piece:hover {
+  transform: rotate(0deg) translateY(-6px) scale(1.02);
+  box-shadow: var(--lift-3);
+  color: inherit;
 }
 
 .pieceThumb {
   width: 100%;
-  height: 96px;
-  border-radius: var(--r-sm);
+  height: 100px;
+  border-radius: 2px;
   background: var(--tone-wash);
   display: flex;
   align-items: center;
@@ -317,6 +397,7 @@
   overflow: hidden;
   font: 400 22px var(--font-display);
   color: var(--tone-text);
+  box-shadow: inset 0 0 0 1px var(--paper-edge);
 }
 
 .pieceThumb img {
@@ -328,7 +409,7 @@
 .pieceTitle {
   font: 600 12.5px var(--font-body);
   color: var(--ink);
-  margin-top: 7px;
+  margin-top: 8px;
 }
 
 .pieceMeta {
@@ -340,9 +421,15 @@
 
 .linkBox {
   background: var(--violet-wash);
-  border-radius: var(--r-lg);
+  border-start-start-radius: 3px;
+  border-end-start-radius: 3px;
+  border-start-end-radius: var(--r-lg);
+  border-end-end-radius: var(--r-lg);
   padding: 16px 18px;
-  margin-top: 24px;
+  margin-top: 26px;
+  border-inline-start: 5px solid var(--violet);
+  transform-origin: top center;
+  animation: unfold 700ms var(--spring-settle) 120ms both;
 }
 
 .linkTitle {
@@ -380,7 +467,7 @@
 .pager {
   display: flex;
   gap: 10px;
-  margin-top: 30px;
+  margin-top: 34px;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -391,13 +478,16 @@
   background: var(--surface);
   color: var(--body);
   font: 600 13px var(--font-body);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--lift-1);
   white-space: nowrap;
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
 }
 
 .pagerPrev:hover {
   color: var(--ink);
-  transform: translateY(-2px);
+  transform: translateX(6px);
 }
 
 .pagerNext {
@@ -406,13 +496,14 @@
   background: var(--gen);
   color: var(--on-accent);
   font: 600 13px var(--font-body);
-  box-shadow: 0 8px 20px var(--gen-shadow);
+  box-shadow: 0 2px 2px rgb(0 0 0 / 8%), 0 10px 22px var(--gen-shadow);
   white-space: nowrap;
+  transition: transform var(--t-touch) var(--ease-touch);
 }
 
 .pagerNext:hover {
   color: var(--on-accent);
-  transform: translateY(-2px);
+  transform: translateX(-6px);
 }
 
 @media (min-width: 760px) {
@@ -423,7 +514,7 @@
   .header {
     flex-direction: row;
     align-items: flex-start;
-    gap: 28px;
+    gap: 30px;
   }
 
   .identity {

@@ -1,9 +1,11 @@
 /*
- * Design tokens lifted from the שורשים prototype.
+ * Design tokens.
  *
- * The prototype carried every value inline; collecting them here means a colour
- * or radius is changed in one place. Names describe the role, not the hue, so
- * the palette can shift without a rename cascade.
+ * The palette and type come from the שורשים prototype. The material layer
+ * below it is new: this archive holds prints, letters and tape, so surfaces are
+ * built to read as paper on a table rather than as panels on a screen —
+ * directional warm shadows, a mount-and-print frame, and resting angles that
+ * keep a feed from looking like a grid.
  */
 
 :root {
@@ -13,6 +15,16 @@
   --surface: #fff;
   --surface-hover: #ffeede;
   --surface-sunken: #fffbf7;
+
+  /* Paper is a touch warmer and less bright than pure white, so a photograph
+     mounted on it reads as a print rather than a screenshot. */
+  --paper: #fffdfa;
+  --paper-tint: #fdf4e8;
+  --paper-edge: rgb(120 80 40 / 12%);
+
+  /* Gummed paper tape, for photographs pinned into the archive. */
+  --tape: rgb(255 233 196 / 72%);
+  --tape-edge: rgb(186 146 96 / 30%);
 
   /* ------------------------------------------------------------- text */
   --ink: #2b2320;
@@ -34,7 +46,7 @@
   --accent: #ff5a5f;
   --accent-strong: #e04347;
   --accent-wash: #ffe3e4;
-  --accent-shadow: rgba(255, 90, 95, 0.3);
+  --accent-shadow: rgb(255 90 95 / 30%);
 
   --amber: #ffb020;
   --amber-strong: #c28a1e;
@@ -55,30 +67,40 @@
   --rose-wash: #ffe0ec;
 
   /* ---------------------------------------------------------- shadows */
-  --shadow-xs: 0 3px 10px rgba(178, 120, 70, 0.12);
-  --shadow-sm: 0 4px 14px rgba(178, 120, 70, 0.14);
-  --shadow-md: 0 8px 22px rgba(178, 120, 70, 0.16);
-  --shadow-lg: 0 14px 34px rgba(178, 120, 70, 0.18);
-  --shadow-xl: 0 26px 60px rgba(120, 80, 40, 0.3);
-  --shadow-sheet: 0 -22px 54px rgba(43, 35, 32, 0.28);
-  --scrim: rgba(43, 35, 32, 0.45);
+  /*
+   * Two layers each: a tight contact shadow that pins the object to the
+   * surface, and a wide soft one for the lift. A single blurred shadow is what
+   * makes stock cards look like they float in a vacuum.
+   */
+  --lift-1: 0 1px 1px rgb(120 80 40 / 7%), 0 3px 7px rgb(120 80 40 / 7%);
+  --lift-2: 0 2px 2px rgb(120 80 40 / 7%), 0 9px 20px rgb(120 80 40 / 11%);
+  --lift-3: 0 4px 4px rgb(120 80 40 / 7%), 0 20px 42px rgb(120 80 40 / 16%);
+  --lift-4: 0 8px 8px rgb(120 80 40 / 8%), 0 38px 76px rgb(120 80 40 / 26%);
+
+  /* Legacy aliases, kept so nothing has to change in one sweep. */
+  --shadow-xs: var(--lift-1);
+  --shadow-sm: var(--lift-1);
+  --shadow-md: var(--lift-2);
+  --shadow-lg: var(--lift-3);
+  --shadow-xl: var(--lift-4);
+
+  --shadow-sheet: 0 -2px 2px rgb(43 35 32 / 6%), 0 -30px 70px rgb(43 35 32 / 30%);
+  --scrim: rgb(43 35 32 / 46%);
 
   /* ------------------------------------------------------------ radii */
   --r-pill: 999px;
-  --r-sheet: 32px;
+  --r-sheet: 34px;
   --r-card: 26px;
   --r-lg: 22px;
   --r-md: 18px;
   --r-sm: 14px;
 
+  /* A photographic print: square-ish, not a rounded app tile. */
+  --r-print: 4px;
+
   /* ------------------------------------------------------------ fonts */
   --font-display: "Suez One", Georgia, "Times New Roman", serif;
   --font-body: "Heebo", system-ui, -apple-system, "Segoe UI", sans-serif;
-
-  /* ------------------------------------------------------------ easing */
-  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-screen: cubic-bezier(0.2, 0.9, 0.3, 1.15);
-  --ease-sheet: cubic-bezier(0.34, 1.4, 0.5, 1);
 
   /* ------------------------------------------------------------ layout */
   --header-h: 68px;

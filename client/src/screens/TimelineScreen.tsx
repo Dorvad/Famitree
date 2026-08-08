@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { useTimeline, useTree } from '../api/hooks.ts';
 import { EmptyState, ErrorState, LoadingScreen } from '../components/Feedback.tsx';
+import { restTilt } from '../lib/format.ts';
 import { usePanZoom } from '../lib/usePanZoom.ts';
 import { useUi } from '../state/ui.tsx';
 import styles from './TimelineScreen.module.css';
@@ -162,7 +163,7 @@ export function TimelineScreen(): React.JSX.Element {
           </span>
         ))}
 
-        {model.placed.map((event) => {
+        {model.placed.map((event, index) => {
           const person = event.personId
             ? tree?.people.find((p) => p.id === event.personId)
             : undefined;
@@ -178,7 +179,9 @@ export function TimelineScreen(): React.JSX.Element {
             <div key={event.id}>
               <span
                 className={styles.dot}
-                style={{ left: event.x, background: event.tone }}
+                style={
+                  { left: event.x, background: event.tone, '--i': index } as React.CSSProperties
+                }
                 aria-hidden="true"
               />
               {person ? (
@@ -186,7 +189,13 @@ export function TimelineScreen(): React.JSX.Element {
                   to={`/person/${person.id}`}
                   className={styles.event}
                   style={
-                    { left: event.x, top: event.top, '--tone': event.tone } as React.CSSProperties
+                    {
+                      left: event.x,
+                      top: event.top,
+                      '--tone': event.tone,
+                      '--rest-tilt': restTilt(event.id, 1.6),
+                      '--i': index,
+                    } as React.CSSProperties
                   }
                   data-no-pan
                 >
@@ -196,7 +205,13 @@ export function TimelineScreen(): React.JSX.Element {
                 <div
                   className={styles.event}
                   style={
-                    { left: event.x, top: event.top, '--tone': event.tone } as React.CSSProperties
+                    {
+                      left: event.x,
+                      top: event.top,
+                      '--tone': event.tone,
+                      '--rest-tilt': restTilt(event.id, 1.6),
+                      '--i': index,
+                    } as React.CSSProperties
                   }
                 >
                   {card}

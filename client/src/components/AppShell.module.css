@@ -64,8 +64,9 @@
   margin-inline: auto;
   padding: 4px;
   border-radius: var(--r-pill);
-  background: var(--surface);
-  box-shadow: var(--shadow-xs);
+  background: var(--paper);
+  box-shadow: var(--lift-1);
+  border: 1px solid var(--border);
 }
 
 .tab {
@@ -75,18 +76,22 @@
   color: var(--muted);
   white-space: nowrap;
   transition:
-    background 0.18s ease,
-    color 0.18s ease;
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch),
+    transform var(--t-touch) var(--ease-touch);
 }
 
 .tab:hover {
   color: var(--ink);
+  transform: translateY(-1px);
 }
 
 .tabActive,
 .tabActive:hover {
   background: var(--accent);
   color: var(--on-accent);
+  transform: none;
+  box-shadow: 0 2px 2px rgb(224 67 71 / 20%), 0 6px 14px var(--accent-shadow);
 }
 
 .actions {
@@ -109,9 +114,13 @@
   white-space: nowrap;
 }
 
+.identity {
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
 .identity:hover {
   color: var(--ink);
-  transform: translateY(-1px);
+  transform: translateY(-2px) rotate(-1deg);
 }
 
 .joinLink {
@@ -121,32 +130,44 @@
   color: var(--bg);
   font: 600 13px var(--font-body);
   white-space: nowrap;
-  transition: transform 0.18s ease;
+  box-shadow: 0 2px 2px rgb(43 35 32 / 16%), 0 8px 18px rgb(43 35 32 / 22%);
+  transition: transform var(--t-touch) var(--ease-touch);
 }
 
 .joinLink:hover {
   color: var(--bg);
-  transform: translateY(-2px);
+  transform: translateY(-3px) rotate(-1.5deg);
 }
 
-/* The 2×2 dot grid that opens the sheet. */
+.joinLink:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* The dot grid rotates a quarter turn on hover — the same four marks, rearranged. */
 .menuButton {
   width: 46px;
   height: 46px;
   flex: none;
-  border-radius: 16px;
+  border-radius: 16px 16px 16px 5px;
   background: var(--surface);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 5px;
   place-content: center;
   padding: 11px;
-  box-shadow: var(--shadow-md);
-  transition: transform 0.2s var(--ease-pop);
+  box-shadow: var(--lift-2);
+  transition:
+    transform var(--t-settle) var(--spring-loose),
+    box-shadow var(--t-touch) var(--ease-touch);
 }
 
 .menuButton:hover {
-  transform: scale(1.06) rotate(-4deg);
+  transform: rotate(-90deg) scale(1.08);
+  box-shadow: var(--lift-3);
+}
+
+.menuButton:active {
+  transform: rotate(-90deg) scale(0.94);
 }
 
 .menuButton span {

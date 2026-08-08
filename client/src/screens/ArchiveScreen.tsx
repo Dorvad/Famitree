@@ -7,7 +7,7 @@ import { useArchive, useSession } from '../api/hooks.ts';
 import { ScrollArea } from '../components/AppShell.tsx';
 import { EmptyState, ErrorState, LoadingScreen } from '../components/Feedback.tsx';
 import { Years } from '../components/Years.tsx';
-import { kindColours } from '../lib/format.ts';
+import { kindColours, restTilt } from '../lib/format.ts';
 import { useUi } from '../state/ui.tsx';
 import styles from './ArchiveScreen.module.css';
 
@@ -21,7 +21,13 @@ const KIND_GLYPHS: Record<ArchiveKind, string> = {
   סיפור: '❞',
 };
 
-/** Anything added in the last day gets the "new" flag from the design. */
+/**
+ * How recently something must have been contributed to carry the "new" mark.
+ *
+ * Seeded entries are excluded regardless: they all share the moment the
+ * database was created, so on a fresh install every single tile would be
+ * stamped new, which tells nobody anything. Seed rows have no `createdBy`.
+ */
 const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function isKind(value: string | null): value is ArchiveKind {
@@ -99,19 +105,31 @@ export function ArchiveScreen(): React.JSX.Element {
           />
         ) : (
           <div className={styles.feed}>
-            {items.map((item) => {
+            {items.map((item, index) => {
               const tone = kindColours(item.kind);
               const src = mediaUrl(item.mediaId);
               const isImage = Boolean(src) && item.kind !== 'קול';
               const isAudio = Boolean(src) && item.kind === 'קול';
-              const isNew = Date.now() - Date.parse(item.createdAt) < NEW_WINDOW_MS;
+              const isNew =
+                item.createdBy !== null &&
+                Date.now() - Date.parse(item.createdAt) < NEW_WINDOW_MS;
+
+              // Only the kinds that would actually be taped into an album get
+              // the tape strip; a recording or a story would look odd with one.
+              const taped = item.kind === 'תצלום' || item.kind === 'מסמך';
 
               return (
                 <article
                   key={item.id}
-                  className={styles.card}
+                  className={taped ? `${styles.card} ${styles.taped}` : styles.card}
                   style={
-                    { '--tone-wash': tone.wash, '--tone-text': tone.text } as React.CSSProperties
+                    {
+                      '--tone-wash': tone.wash,
+                      '--tone-text': tone.text,
+                      '--rest-tilt': restTilt(item.id),
+                      // Drives both the entrance stagger and the develop delay.
+                      '--i': Math.min(index, 12),
+                    } as React.CSSProperties
                   }
                 >
                   <div className={styles.thumb} style={{ height: item.tileHeight }}>
@@ -123,7 +141,7 @@ export function ArchiveScreen(): React.JSX.Element {
                       </span>
                     )}
                     <span className={styles.kindBadge}>{item.kind}</span>
-                    {isNew && <span className={styles.newBadge}>חדש ✦</span>}
+                    {isNew && <span className={styles.newBadge}>חדש</span>}
                   </div>
 
                   {isAudio && src && (

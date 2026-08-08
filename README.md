@@ -63,6 +63,63 @@ client/
 
 ---
 
+## The design language
+
+The app is meant to feel like handling an archive box, not operating a web
+form. Two systems carry that, both defined once and used everywhere.
+
+### Motion — `client/src/styles/motion.css`
+
+The easings are **real damped-spring solutions**, not hand-tuned béziers. A
+generator samples `x(t) = 1 - e^(-ζωt)(cos(ω_d t) + (ζω/ω_d) sin(ω_d t))` and
+emits the result as a CSS `linear()` curve. This matters: a cubic-bezier can
+overshoot its target exactly once, whereas a spring rocks past and back several
+times, which is what reads as physical rather than merely eased. Three are
+defined — a firm one with no overshoot, a settling one with a single rebound,
+and a loose one that rocks three times. `--anticipate` goes further and dips
+*below* zero before advancing: the animator's anticipation principle, rarely
+seen on the web.
+
+Each curve is paired with its own duration token, because a spring played over
+the wrong duration stops looking like a spring.
+
+Six signature animations are built on them:
+
+| | |
+| --- | --- |
+| `unfold` | Cards hinge down from their top edge in perspective, like a letter opened flat. The house animation. |
+| `develop` | Images wipe in over-exposed and washed out, then resolve to full contrast — a print coming up in the tray. |
+| `slot` | Items push out from below already tilted, rotating to their resting angle. |
+| `plant` | Tree nodes and portraits wind up, land, and wobble. |
+| `ink` | Connectors draw with the nib widening as the line travels. |
+| `stamp` | Confirmations land oversized and blurred, then thump down at an angle. |
+
+### Material
+
+Surfaces are paper. Shadows come in two layers — a tight contact shadow pinning
+the object down plus a wide soft one for the lift — because a single blurred
+shadow is what makes stock cards look like they float in a vacuum. A fixed
+layer of fractal noise sits over the whole app at 4% opacity, which is what
+stops the large flat cream fields from reading as flat screen colour.
+
+Cards carry a permanent resting tilt seeded from their own id, so a feed reads
+as loose prints rather than a grid, and never twitches between renders.
+Photographs and documents get a strip of gummed tape; hovering one straightens
+and lifts it, the way you would pick a photograph up off a table. Milestones are
+index cards with a coloured spine on the bound edge and square corners there,
+rounded opposite. Archive filters are the tabs on a card file. The modal is a
+drawer with a four-colour band across its front edge.
+
+**Browser support note:** `linear()` easing needs Chrome 113+, Safari 17.4+ or
+Firefox 112+ (all shipped in 2023). Older browsers drop the declaration and fall
+back to the default ease — the animation still plays, it just loses the rebound.
+Everything else here is long-standing CSS.
+
+**Reduced motion:** the whole vocabulary collapses to a single instant frame
+under `prefers-reduced-motion`, with fill modes intact so nothing that animates
+in is left invisible, and the filters and clip-paths are dropped entirely. This
+is verified in the smoke run, not assumed.
+
 ## Notable decisions
 
 **The tree draws itself from relationships.** The prototype carried hand-written

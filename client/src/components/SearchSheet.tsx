@@ -126,13 +126,19 @@ export function SearchSheet(): React.JSX.Element {
 
       {trimmed ? (
         <div className={styles.results}>
-          {matches.map((person) => {
+          {matches.map((person, index) => {
             const generation = tree?.generations.find((g) => g.id === person.generationId);
             return (
               <button
                 key={person.id}
                 type="button"
                 className={styles.result}
+                style={
+                  {
+                    '--i': Math.min(index, 10),
+                    '--result-tone': generation?.color ?? 'var(--border)',
+                  } as React.CSSProperties
+                }
                 onClick={() => go(`/tree?focus=${encodeURIComponent(person.id)}`)}
               >
                 <Avatar person={person} generation={generation} size={40} />

@@ -93,14 +93,21 @@ export function HomeScreen(): React.JSX.Element {
           <h1 className={styles.headline}>
             {hasOrigins ? (
               <>
-                {origins},<br />
-                עד <em>אלינו</em>.
+                <span className={styles.line} style={{ '--i': 0 } as React.CSSProperties}>
+                  {origins},
+                </span>
+                <span className={styles.line} style={{ '--i': 1 } as React.CSSProperties}>
+                  עד <em>אלינו</em>.
+                </span>
               </>
             ) : (
               <>
-                כל הסיפורים,
-                <br />
-                במקום <em>אחד</em>.
+                <span className={styles.line} style={{ '--i': 0 } as React.CSSProperties}>
+                  כל הסיפורים,
+                </span>
+                <span className={styles.line} style={{ '--i': 1 } as React.CSSProperties}>
+                  במקום <em>אחד</em>.
+                </span>
               </>
             )}
           </h1>
@@ -131,7 +138,7 @@ export function HomeScreen(): React.JSX.Element {
                   key={person.id}
                   to={`/tree?focus=${encodeURIComponent(person.id)}`}
                   className={styles.stop}
-                  style={{ '--delay': `${(index * 0.3).toFixed(1)}s` } as React.CSSProperties}
+                  style={{ '--delay': `${(0.65 + index * 0.07).toFixed(2)}s` } as React.CSSProperties}
                 >
                   <Avatar person={person} generation={generation} size={56} filled={isMe} />
                   <span className={isMe ? styles.stopNameMe : styles.stopName}>

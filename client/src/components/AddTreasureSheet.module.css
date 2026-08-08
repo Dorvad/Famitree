@@ -1,7 +1,8 @@
+/* Progress reads as three stitched segments filling in, not a loading bar. */
 .progress {
   display: flex;
   gap: 6px;
-  margin: 4px 44px 16px 44px;
+  margin: 4px 48px 18px 48px;
 }
 
 .progress span {
@@ -9,22 +10,30 @@
   flex: 1;
   border-radius: var(--r-pill);
   background: var(--border);
-  transition: background 0.3s ease;
+  transform-origin: right center;
+  transition:
+    background var(--t-settle) var(--spring-settle),
+    transform var(--t-settle) var(--spring-settle);
 }
 
-.progress span[data-done='true']:nth-child(1) {
+.progress span[data-done="true"] {
+  transform: scaleY(1.35);
+}
+
+.progress span[data-done="true"]:nth-child(1) {
   background: var(--accent);
 }
-.progress span[data-done='true']:nth-child(2) {
+.progress span[data-done="true"]:nth-child(2) {
   background: var(--amber);
 }
-.progress span[data-done='true']:nth-child(3) {
+.progress span[data-done="true"]:nth-child(3) {
   background: var(--teal);
 }
 
 .heading {
   font: 400 clamp(24px, 5vw, 30px) var(--font-display);
   color: var(--ink);
+  animation: focusIn 560ms var(--spring-firm) both;
 }
 
 .subheading {
@@ -32,6 +41,7 @@
   color: var(--muted);
   margin-top: 4px;
   text-wrap: pretty;
+  animation: focusIn 600ms var(--spring-firm) 70ms both;
 }
 
 /* ------------------------------------------------------------- step one */
@@ -40,33 +50,49 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 20px;
+  perspective: 1200px;
 }
 
+/*
+ * Each type is a blank of that kind — a photo, a folded letter, a reel — drawn
+ * as a shape rather than an icon, and the card hinges open as it arrives.
+ */
 .typeCard {
-  height: 118px;
-  border-radius: var(--r-lg);
+  height: 122px;
+  border-radius: 4px 4px var(--r-lg) var(--r-lg);
   background: var(--card-bg);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  animation: popIn 0.4s var(--ease-pop) backwards;
+  transform-origin: top center;
+  animation: unfold 640ms var(--spring-settle) backwards;
   animation-delay: var(--delay, 0s);
   transition:
-    transform 0.2s var(--ease-pop),
-    box-shadow 0.2s ease;
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
 }
 
 .typeCard:hover {
-  transform: translateY(-4px) scale(1.04);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-6px) scale(1.04) rotate(-1.5deg);
+  box-shadow: var(--lift-3);
+}
+
+.typeCard:active {
+  transform: translateY(-2px) scale(0.98);
 }
 
 .typeGlyph {
-  background: var(--surface);
-  box-shadow: 0 4px 10px rgb(0 0 0 / 8%);
+  background: var(--paper);
+  box-shadow: var(--lift-1);
+  transition: transform var(--t-settle) var(--spring-loose);
+}
+
+/* The blank tips up as if being picked out of the box. */
+.typeCard:hover .typeGlyph {
+  transform: rotate(var(--glyph-rot, 0deg)) scale(1.12) translateY(-3px);
 }
 
 .typeLabel {
@@ -80,8 +106,22 @@
   display: flex;
   flex-direction: column;
   gap: 13px;
-  margin-top: 16px;
+  margin-top: 18px;
 }
+
+.form > * {
+  animation: slot 560ms var(--spring-settle) backwards;
+}
+
+/* Fields arrive in reading order. Indexed here rather than threaded through
+   the JSX, since the form's shape is fixed. */
+.form > *:nth-child(1) { animation-delay: 0ms; }
+.form > *:nth-child(2) { animation-delay: 45ms; }
+.form > *:nth-child(3) { animation-delay: 90ms; }
+.form > *:nth-child(4) { animation-delay: 135ms; }
+.form > *:nth-child(5) { animation-delay: 180ms; }
+.form > *:nth-child(6) { animation-delay: 225ms; }
+.form > *:nth-child(7) { animation-delay: 270ms; }
 
 .field {
   padding: 14px 22px;
@@ -91,7 +131,9 @@
   font: 400 15px var(--font-body);
   color: var(--ink);
   outline: none;
-  transition: border-color 0.18s ease;
+  transition:
+    border-color var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
 }
 
 .field::placeholder {
@@ -100,6 +142,7 @@
 
 .field:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-wash);
 }
 
 .textarea {
@@ -112,6 +155,7 @@
 
 .textarea:focus {
   border-color: var(--teal);
+  box-shadow: 0 0 0 4px var(--teal-wash);
 }
 
 .fieldLabel {
@@ -133,17 +177,21 @@
   color: var(--body);
   font: 600 12.5px var(--font-body);
   white-space: nowrap;
-  box-shadow: var(--shadow-xs);
-  transition: transform 0.15s ease;
+  box-shadow: var(--lift-1);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
 }
 
 .chip:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px) rotate(-1deg);
 }
 
 .chipActive {
   background: var(--ink);
   color: var(--bg);
+  transform: translateY(-2px);
 }
 
 /* ------------------------------------------------------------- dropzone */
@@ -157,14 +205,21 @@
   text-align: center;
   cursor: pointer;
   transition:
-    border-color 0.18s ease,
-    background 0.18s ease;
+    border-color var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    transform var(--t-touch) var(--ease-touch);
 }
 
-.dropzone:hover,
-.dropzoneActive {
+.dropzone:hover {
   border-color: var(--accent);
   background: var(--surface-sunken);
+}
+
+/* Dragging over it opens the slot up. */
+.dropzoneActive {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  transform: scale(1.02);
 }
 
 .dropzoneInput {
@@ -185,6 +240,11 @@
   justify-content: center;
   font: 400 22px var(--font-body);
   color: var(--accent-strong);
+  transition: transform var(--t-settle) var(--spring-loose);
+}
+
+.dropzone:hover .dropIcon {
+  transform: translateY(-5px);
 }
 
 .dropTitle {
@@ -204,20 +264,24 @@
   align-items: center;
   gap: 12px;
   text-align: start;
+  animation: slot 560ms var(--spring-settle) both;
 }
 
 .previewImage {
-  width: 72px;
-  height: 72px;
-  border-radius: var(--r-sm);
+  width: 76px;
+  height: 76px;
+  border-radius: var(--r-print);
   object-fit: cover;
   flex: none;
+  box-shadow: var(--lift-2);
+  transform: rotate(-2deg);
+  animation: develop 800ms var(--spring-firm) both;
 }
 
 .previewGlyph {
-  width: 72px;
-  height: 72px;
-  border-radius: var(--r-sm);
+  width: 76px;
+  height: 76px;
+  border-radius: var(--r-print);
   flex: none;
   display: flex;
   align-items: center;
@@ -225,6 +289,7 @@
   font: 400 26px var(--font-display);
   background: var(--accent-wash);
   color: var(--accent-strong);
+  transform: rotate(-2deg);
 }
 
 .previewName {
@@ -259,11 +324,15 @@
   background: var(--surface);
   color: var(--muted);
   font: 600 13.5px var(--font-body);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--lift-1);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
 }
 
 .back:hover {
   color: var(--ink);
+  transform: translateX(4px);
 }
 
 .save {
@@ -272,12 +341,19 @@
   background: var(--accent);
   color: var(--on-accent);
   font: 600 14px var(--font-body);
-  box-shadow: 0 8px 22px var(--accent-shadow);
-  transition: transform 0.18s ease;
+  box-shadow: 0 2px 2px rgb(224 67 71 / 22%), 0 10px 24px var(--accent-shadow);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
 }
 
 .save:hover:not(:disabled) {
-  transform: translateY(-2px);
+  transform: translateY(-3px) rotate(-1deg);
+  box-shadow: 0 3px 3px rgb(224 67 71 / 22%), 0 16px 32px var(--accent-shadow);
+}
+
+.save:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
 }
 
 .save:disabled {
@@ -296,59 +372,80 @@
   border-radius: 24px;
 }
 
+/* The tick lands like a rubber stamp: oversized and blurred, then thumped
+   down at a slight angle. */
 .tick {
-  width: 86px;
-  height: 86px;
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
   background: var(--teal);
   margin: 10px auto 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: popIn 0.6s var(--ease-pop) both;
-  box-shadow: 0 14px 36px rgb(0 194 168 / 40%);
+  animation: stamp 700ms var(--spring-settle) both;
+  box-shadow: 0 3px 3px rgb(0 161 139 / 26%), 0 18px 40px rgb(0 194 168 / 38%);
 }
 
 .doneTitle {
   font: 400 30px var(--font-display);
   color: var(--ink);
-  margin-top: 14px;
-  animation: popIn 0.5s 0.1s var(--ease-pop) backwards;
+  margin-top: 16px;
+  animation: focusIn 620ms var(--spring-firm) 240ms backwards;
 }
 
 .doneNote {
   font: 300 14px var(--font-body);
   color: var(--muted);
   margin-top: 4px;
-  animation: popIn 0.5s 0.18s var(--ease-pop) backwards;
+  animation: focusIn 620ms var(--spring-firm) 330ms backwards;
 }
 
+/* The finished item slots out as a taped print. */
 .doneCard {
-  width: 250px;
-  margin: 18px auto 0;
-  background: var(--surface);
-  border-radius: var(--r-lg);
-  padding: 11px;
-  box-shadow: var(--shadow-md);
-  animation: popIn 0.5s 0.26s var(--ease-pop) backwards;
+  position: relative;
+  width: 254px;
+  margin: 22px auto 0;
+  background: var(--paper);
+  border-radius: var(--r-print);
+  padding: 10px 10px 14px;
+  box-shadow: var(--lift-3);
+  animation: slot 760ms var(--spring-loose) 420ms backwards;
   text-align: start;
+  --rest-tilt: -1.8deg;
+}
+
+.doneCard::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  inset-inline-start: 22px;
+  width: 62px;
+  height: 21px;
+  background: var(--tape);
+  border-inline: 1px dashed var(--tape-edge);
+  transform: rotate(-6deg);
+  box-shadow: 0 1px 2px rgb(120 80 40 / 12%);
+  z-index: 1;
 }
 
 .doneThumb {
   position: relative;
   width: 100%;
-  height: 100px;
-  border-radius: var(--r-sm);
+  height: 104px;
+  border-radius: 2px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: inset 0 0 0 1px var(--paper-edge);
 }
 
 .doneThumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  animation: develop 900ms var(--spring-firm) 620ms both;
 }
 
 .doneBadge {
@@ -363,19 +460,22 @@
 
 .doneNew {
   position: absolute;
-  top: 8px;
-  inset-inline-start: 8px;
-  background: var(--accent);
-  color: var(--on-accent);
-  border-radius: var(--r-pill);
-  padding: 2px 10px;
-  font: 600 10.5px var(--font-body);
+  top: 10px;
+  inset-inline-start: 10px;
+  color: var(--accent-strong);
+  border: 2px solid var(--accent-strong);
+  border-radius: 3px;
+  padding: 2px 8px;
+  font: 700 10px var(--font-body);
+  letter-spacing: 0.08em;
+  transform: rotate(-8deg);
+  animation: stamp 620ms var(--spring-settle) 900ms both;
 }
 
 .doneCardTitle {
   font: 600 13px var(--font-body);
   color: var(--ink);
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .doneCardMeta {
@@ -388,7 +488,8 @@
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-top: 20px;
+  margin-top: 24px;
+  animation: focusIn 620ms var(--spring-firm) 640ms backwards;
 }
 
 /* ------------------------------------------------------------------ gate */
@@ -406,11 +507,13 @@
   background: var(--accent);
   color: var(--on-accent);
   font: 600 14px var(--font-body);
-  box-shadow: 0 8px 22px var(--accent-shadow);
+  box-shadow: 0 2px 2px rgb(224 67 71 / 22%), 0 10px 24px var(--accent-shadow);
+  transition: transform var(--t-touch) var(--ease-touch);
 }
 
 .gateAction:hover {
   color: var(--on-accent);
+  transform: translateY(-3px) rotate(-1deg);
 }
 
 @media (min-width: 560px) {

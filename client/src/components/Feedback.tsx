@@ -17,7 +17,7 @@ export function LoadingScreen({ label = 'טוענים את הארכיון…' }:
   return (
     <div className={styles.centre} role="status" aria-live="polite">
       <LoadingDots />
-      <p className={styles.message}>{label}</p>
+      <p className={styles.loadingLabel}>{label}</p>
     </div>
   );
 }

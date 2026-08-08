@@ -221,12 +221,16 @@ export function AddTreasureSheet(): React.JSX.Element {
                 <span
                   className={styles.typeGlyph}
                   aria-hidden="true"
-                  style={{
-                    width: option.glyph.width,
-                    height: option.glyph.height,
-                    borderRadius: option.glyph.radius,
-                    transform: `rotate(${option.glyph.rotate}deg)`,
-                  }}
+                  style={
+                    {
+                      width: option.glyph.width,
+                      height: option.glyph.height,
+                      borderRadius: option.glyph.radius,
+                      // Held in a custom property so the :hover transform can
+                      // build on it — an inline transform would win outright.
+                      '--glyph-rot': `${option.glyph.rotate}deg`,
+                    } as React.CSSProperties
+                  }
                 />
                 <span className={styles.typeLabel}>{option.label}</span>
               </button>

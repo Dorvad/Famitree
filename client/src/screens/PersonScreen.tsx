@@ -14,7 +14,7 @@ import { ScrollArea } from '../components/AppShell.tsx';
 import { Avatar } from '../components/Avatar.tsx';
 import { ErrorState, InlineError, LoadingScreen } from '../components/Feedback.tsx';
 import { Years } from '../components/Years.tsx';
-import { generationVars, givenName, kindColours } from '../lib/format.ts';
+import { generationVars, givenName, kindColours, restTilt } from '../lib/format.ts';
 import { useUi } from '../state/ui.tsx';
 import styles from './PersonScreen.module.css';
 
@@ -160,8 +160,12 @@ export function PersonScreen(): React.JSX.Element {
         <h2 className={styles.sectionTitle}>התחנות של {firstName}</h2>
 
         <div className={styles.milestones}>
-          {person.milestones.map((milestone) => (
-            <article key={milestone.id} className={styles.milestone}>
+          {person.milestones.map((milestone, index) => (
+            <article
+              key={milestone.id}
+              className={styles.milestone}
+              style={{ '--i': index } as React.CSSProperties}
+            >
               <Years className={styles.milestoneYear}>{milestone.yearLabel}</Years>
               <h3 className={styles.milestoneTitle}>{milestone.title}</h3>
               {milestone.body && <p className={styles.milestoneBody}>{milestone.body}</p>}
@@ -255,7 +259,7 @@ export function PersonScreen(): React.JSX.Element {
           <>
             <h2 className={styles.sectionTitle}>אוצרות של {firstName}</h2>
             <div className={styles.pieces}>
-              {pieces.map((piece) => {
+              {pieces.map((piece, index) => {
                 const tone = kindColours(piece.kind);
                 const src = mediaUrl(piece.mediaId);
                 return (
@@ -264,7 +268,12 @@ export function PersonScreen(): React.JSX.Element {
                     to={`/archive?kind=${encodeURIComponent(piece.kind)}`}
                     className={styles.piece}
                     style={
-                      { '--tone-wash': tone.wash, '--tone-text': tone.text } as React.CSSProperties
+                      {
+                        '--tone-wash': tone.wash,
+                        '--tone-text': tone.text,
+                        '--rest-tilt': restTilt(piece.id),
+                        '--i': index,
+                      } as React.CSSProperties
                     }
                   >
                     <span className={styles.pieceThumb}>

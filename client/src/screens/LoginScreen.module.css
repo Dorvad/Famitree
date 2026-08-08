@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   background: var(--page-wash);
-  animation: fadeIn 0.4s ease both;
+  animation: fadeIn 380ms var(--spring-firm) both;
 }
 
 .inner {
@@ -16,40 +16,46 @@
   width: 100%;
 }
 
+/* The four marks drop in one after another before the question is asked. */
 .mark {
   display: inline-flex;
   gap: 6px;
-  animation: popIn 0.5s var(--ease-pop) both;
 }
 
 .mark span {
   width: 12px;
   height: 12px;
   border-radius: 50%;
+  animation: plant 640ms var(--anticipate) backwards;
 }
 
 .mark span:nth-child(1) {
   background: var(--accent);
+  animation-delay: 60ms;
 }
 .mark span:nth-child(2) {
   background: var(--amber);
+  animation-delay: 130ms;
 }
 .mark span:nth-child(3) {
   background: var(--teal);
+  animation-delay: 200ms;
 }
 .mark span:nth-child(4) {
   background: var(--violet);
+  animation-delay: 270ms;
 }
 
 .question {
   font: 400 clamp(32px, 8vw, 48px) / 1.3 var(--font-display);
   color: var(--ink);
   margin-top: 16px;
-  animation: popIn 0.5s 0.06s var(--ease-pop) backwards;
+  animation: focusIn 820ms var(--spring-firm) 300ms backwards;
   text-wrap: balance;
 }
 
 .lead {
+  animation: focusIn 760ms var(--spring-firm) 400ms backwards;
   font: 300 16px/1.6 var(--font-body);
   color: var(--muted);
   margin-top: 8px;
@@ -69,13 +75,16 @@
   color: var(--ink);
   text-align: center;
   outline: none;
-  box-shadow: var(--shadow-lg);
-  animation: popIn 0.5s 0.12s var(--ease-pop) backwards;
-  transition: border-color 0.18s ease;
+  box-shadow: var(--lift-3);
+  animation: slot 760ms var(--spring-loose) 460ms backwards;
+  transition:
+    border-color var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
 }
 
 .nameInput:focus {
   border-color: var(--accent);
+  box-shadow: var(--lift-3), 0 0 0 5px var(--accent-wash);
 }
 
 .yearInput {
@@ -88,6 +97,7 @@
 
 .yearInput:focus {
   border-color: var(--violet);
+  box-shadow: var(--lift-3), 0 0 0 5px var(--violet-wash);
 }
 
 .nameInput::placeholder,
@@ -105,24 +115,29 @@
   min-height: 60px;
 }
 
+/* Candidate matches are dealt out like cards from the file. */
 .suggestion {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--surface);
+  background: var(--paper);
   border-radius: var(--r-pill);
   padding: 8px 18px 8px 12px;
-  box-shadow: var(--shadow-sm);
-  animation: popIn 0.4s var(--ease-pop) backwards;
+  box-shadow: var(--lift-2);
+  animation: slot 620ms var(--spring-settle) backwards;
   animation-delay: var(--delay, 0s);
   transition:
-    transform 0.18s var(--ease-pop),
-    box-shadow 0.18s ease;
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
 }
 
 .suggestion:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-5px) scale(1.05) rotate(-1.5deg);
+  box-shadow: var(--lift-3);
+}
+
+.suggestion:active {
+  transform: translateY(-1px) scale(0.98);
 }
 
 .suggestionName {
@@ -148,13 +163,20 @@
   background: var(--accent);
   color: var(--on-accent);
   font: 600 15px var(--font-body);
-  box-shadow: 0 10px 26px var(--accent-shadow);
-  animation: popIn 0.4s var(--ease-pop) both;
-  transition: transform 0.18s ease;
+  box-shadow: 0 3px 3px rgb(224 67 71 / 22%), 0 12px 28px var(--accent-shadow);
+  animation: slot 680ms var(--spring-loose) both;
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
 }
 
 .primary:hover:not(:disabled) {
-  transform: translateY(-2px);
+  transform: translateY(-4px) rotate(-1deg);
+  box-shadow: 0 4px 4px rgb(224 67 71 / 22%), 0 18px 36px var(--accent-shadow);
+}
+
+.primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
 }
 
 .primary:disabled {
@@ -162,14 +184,17 @@
   cursor: progress;
 }
 
+/* The cohort verdict lands like a stamp: this is the moment the year is read. */
 .cohort {
   display: inline-flex;
   align-items: center;
   gap: 9px;
   background: var(--gen-wash);
-  border-radius: var(--r-pill);
+  border: 2px solid var(--gen);
+  border-radius: 4px;
   padding: 8px 20px;
-  animation: popIn 0.4s var(--ease-pop) both;
+  transform: rotate(-1.5deg);
+  animation: stamp 640ms var(--spring-settle) both;
 }
 
 .cohortDot {
@@ -188,8 +213,8 @@
   composes: primary;
   padding: 14px 32px;
   background: var(--gen);
-  box-shadow: 0 10px 26px var(--gen-shadow);
-  animation-delay: 0.08s;
+  box-shadow: 0 3px 3px rgb(0 0 0 / 10%), 0 12px 28px var(--gen-shadow);
+  animation-delay: 140ms;
 }
 
 .yearBlock {

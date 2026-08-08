@@ -118,7 +118,8 @@ export function Sheet({
             ×
           </button>
         )}
-        {children}
+        {/* Contents resolve a beat after the drawer, so the panel leads. */}
+        <div className={styles.body}>{children}</div>
       </div>
     </div>,
     document.body,

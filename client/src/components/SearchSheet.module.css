@@ -5,18 +5,26 @@
 
 .input {
   width: 100%;
-  padding: 15px 48px 15px 18px;
+  /* Logical padding, so the room reserved for the icon is on the reading-start
+     side in both directions. Physical values put it on the wrong edge in RTL. */
+  padding-block: 15px;
+  padding-inline-start: 48px;
+  padding-inline-end: 18px;
+  width: 100%;
   border-radius: var(--r-md);
   border: 3px solid var(--border);
   background: var(--surface);
   font: 400 16px var(--font-body);
   color: var(--ink);
   outline: none;
-  transition: border-color 0.18s ease;
+  transition:
+    border-color var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
 }
 
 .input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-wash);
 }
 
 .input::placeholder {
@@ -26,7 +34,7 @@
 .searchIcon {
   position: absolute;
   top: 50%;
-  inset-inline-end: 17px;
+  inset-inline-start: 17px;
   transform: translateY(-50%);
   color: var(--placeholder);
   font: 400 18px var(--font-body);
@@ -40,21 +48,31 @@
   margin-top: 12px;
 }
 
+/* Results arrive one after another, like cards dealt out of the file. */
 .result {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   text-align: start;
-  background: var(--surface);
-  border-radius: var(--r-sm);
+  background: var(--paper);
+  border-start-start-radius: 3px;
+  border-end-start-radius: 3px;
+  border-start-end-radius: var(--r-sm);
+  border-end-end-radius: var(--r-sm);
   padding: 10px 12px;
-  box-shadow: var(--shadow-xs);
-  transition: transform 0.18s ease;
+  box-shadow: var(--lift-1);
+  border-inline-start: 4px solid var(--result-tone, var(--border));
+  animation: slot 520ms var(--spring-settle) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
 }
 
 .result:hover {
-  transform: translateX(-4px);
+  transform: translateX(-6px);
+  box-shadow: var(--lift-2);
   color: inherit;
 }
 
@@ -84,26 +102,37 @@
   margin-top: 14px;
 }
 
+/* Each quick action is a card pushed out of the drawer, tilted a touch so the
+   row reads as loose cards rather than a button bar. */
 .tile {
   text-align: start;
-  border-radius: var(--r-lg);
+  border-radius: 4px 4px var(--r-lg) var(--r-lg);
   padding: 16px 16px 15px;
   background: var(--tile-bg);
   color: var(--tile-fg);
-  animation: tileIn 0.4s var(--ease-pop) backwards;
+  transform-origin: top center;
+  animation: unfold 620ms var(--spring-settle) backwards;
   animation-delay: var(--delay, 0s);
-  transition: transform 0.2s var(--ease-pop);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
 }
 
 .tile:hover {
-  transform: translateY(-3px) scale(1.02);
+  transform: translateY(-5px) scale(1.03) rotate(-1.2deg);
+  box-shadow: var(--lift-3);
   color: var(--tile-fg);
+}
+
+.tile:active {
+  transform: translateY(-1px) scale(0.98);
 }
 
 .tileIcon {
   width: 44px;
   height: 44px;
-  border-radius: var(--r-sm);
+  border-radius: 12px 12px 12px 4px;
+  transition: transform var(--t-settle) var(--spring-loose);
   background: var(--surface);
   display: flex;
   align-items: center;
@@ -114,23 +143,32 @@
   overflow: hidden;
 }
 
+.tile:hover .tileIcon {
+  transform: rotate(-8deg) scale(1.1);
+}
+
 .tileTitle {
+  display: block;
   font: 600 15.5px var(--font-body);
   margin-top: 11px;
 }
 
 .tileNote {
+  display: block;
   font: 400 11.5px/1.4 var(--font-body);
   opacity: 0.72;
   margin-top: 1px;
 }
 
+/* The colour key, presented as the legend printed inside a box lid. */
 .legend {
-  background: var(--surface);
+  background: var(--paper);
   border-radius: var(--r-lg);
   padding: 14px 16px;
-  margin-top: 12px;
-  box-shadow: var(--shadow-xs);
+  margin-top: 14px;
+  box-shadow: var(--lift-1);
+  border: 1px solid var(--border);
+  animation: focusIn 620ms var(--spring-firm) 280ms both;
 }
 
 .legendTitle {

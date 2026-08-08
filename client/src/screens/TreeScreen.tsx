@@ -5,7 +5,7 @@ import { useSession, useTree } from '../api/hooks.ts';
 import { Avatar } from '../components/Avatar.tsx';
 import { EmptyState, ErrorState, LoadingScreen } from '../components/Feedback.tsx';
 import { Years } from '../components/Years.tsx';
-import { generationVars, givenName } from '../lib/format.ts';
+import { generationVars, givenName, restTilt } from '../lib/format.ts';
 import { NODE_SIZE, buildTreeLayout, centreOn, fitView } from '../lib/tree-layout.ts';
 import { usePanZoom } from '../lib/usePanZoom.ts';
 import { useUi } from '../state/ui.tsx';
@@ -186,8 +186,11 @@ export function TreeScreen(): React.JSX.Element {
                 top: node.top,
                 width: NODE_SIZE,
                 zIndex: isOpen ? 40 : 1,
+                // A small permanent tilt on the name plate, so a row of them
+                // reads as pinned labels rather than a ruled table.
+                '--rest-tilt': restTilt(person.id, 1.4),
                 ...generationVars(generation),
-              }}
+              } as React.CSSProperties}
               data-no-pan
             >
               {isOpen && <span className={styles.halo} aria-hidden="true" />}

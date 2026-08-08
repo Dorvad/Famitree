@@ -1,3 +1,12 @@
+/*
+ * The app's one modal surface, treated as a drawer being pulled out rather
+ * than a panel fading in.
+ *
+ * On a phone it rises from the bottom edge on a loose spring, over-travelling
+ * past its resting point and rocking back. On a wide screen it hinges open in
+ * perspective from its top edge, matching the `unfold` language the cards use.
+ */
+
 .scrim {
   position: fixed;
   inset: 0;
@@ -5,9 +14,14 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  background: var(--scrim);
-  backdrop-filter: blur(5px);
-  animation: fadeIn 0.25s ease both;
+
+  /* A vignette rather than a flat wash: the darkness gathers at the edges and
+     leaves the middle readable, so the page behind stays legible as context. */
+  background:
+    radial-gradient(120% 90% at 50% 60%, rgb(43 35 32 / 26%) 0%, rgb(43 35 32 / 62%) 100%);
+  background-repeat: no-repeat;
+  backdrop-filter: blur(6px);
+  animation: iris 380ms var(--spring-firm) both;
 }
 
 .sheet {
@@ -18,42 +32,88 @@
   overscroll-behavior: contain;
   background: var(--bg);
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
-  padding: 12px 20px max(26px, env(safe-area-inset-bottom));
+  padding: 20px 20px max(26px, env(safe-area-inset-bottom));
   box-shadow: var(--shadow-sheet);
-  animation: sheetUp 0.5s var(--ease-sheet) both;
+  animation: drawer var(--t-loose) var(--spring-loose) both;
+
+  /* The drawer's front face: a thin band of the four brand colours across the
+     top edge, so the panel reads as a physical component of the app rather
+     than a floating rectangle. */
+  border-top: 3px solid transparent;
+  background-image:
+    linear-gradient(var(--bg), var(--bg)),
+    linear-gradient(
+      90deg,
+      var(--accent) 0%,
+      var(--amber) 33%,
+      var(--teal) 66%,
+      var(--violet) 100%
+    );
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+/*
+ * The spring overshoots upward, which would briefly expose the scrim under a
+ * bottom-anchored drawer. This skirt travels with the panel and covers it.
+ */
+.sheet::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: 240px;
+  background: var(--bg);
+  pointer-events: none;
 }
 
 .grabber {
-  width: 46px;
+  width: 52px;
   height: 5px;
   border-radius: var(--r-pill);
   background: var(--border-dashed);
-  margin: 2px auto 16px;
+  margin: 0 auto 18px;
 }
 
+/* A pressed tab rather than a floating circle — it belongs to the drawer. */
 .close {
   position: absolute;
-  top: 16px;
+  top: 18px;
   inset-inline-start: 18px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px 12px 12px 4px;
   background: var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
   font: 400 17px var(--font-body);
   color: var(--muted);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--lift-1);
   z-index: 2;
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
 }
 
 .close:hover {
   color: var(--ink);
+  transform: rotate(-90deg) scale(1.08);
+  box-shadow: var(--lift-2);
 }
 
-/* On a wide screen a full-width sheet is a long way for the eye to travel, so
-   it becomes a centred panel instead. */
+.close:active {
+  transform: rotate(-90deg) scale(0.94);
+  box-shadow: var(--lift-1);
+}
+
+/* Content arrives just behind the drawer, so the panel leads and the contents
+   follow it out. */
+.body {
+  animation: focusIn 460ms var(--spring-firm) 120ms both;
+}
+
 @media (min-width: 760px) {
   .scrim {
     align-items: center;
@@ -62,11 +122,18 @@
   }
 
   .sheet {
-    width: min(680px, 100%);
+    width: min(700px, 100%);
     max-height: min(86vh, 900px);
-    border-radius: var(--r-sheet);
+    border-radius: 0 0 var(--r-sheet) var(--r-sheet);
+    border-top-width: 4px;
     padding-bottom: 26px;
-    animation: popIn 0.34s var(--ease-pop) both;
+    transform-origin: top center;
+    animation: unfold var(--t-settle) var(--spring-settle) both;
+  }
+
+  /* No bottom edge to cover once the panel floats. */
+  .sheet::after {
+    display: none;
   }
 
   .grabber {
