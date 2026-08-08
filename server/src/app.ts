@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
+import { ensureReady } from './db/index.ts';
 import { env, inviteRequired } from './env.ts';
 import { errorHandler, notFoundHandler } from './middleware/errors.ts';
 import { attachUser } from './middleware/session.ts';
@@ -109,6 +110,16 @@ app.use(
     },
   }),
 );
+
+/**
+ * Nothing reaches a route until the database has its tables and the sample
+ * family. Memoised per process and serialised across processes by an advisory
+ * lock, so this is one await on a resolved promise after the first request —
+ * and there is no setup command to run from a machine you may not have.
+ */
+app.use('/api', (_req, _res, next) => {
+  ensureReady().then(() => next(), next);
+});
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, inviteRequired, publicRead: env.publicRead });

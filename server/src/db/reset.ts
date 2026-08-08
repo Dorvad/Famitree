@@ -5,13 +5,8 @@
  * `--yes` everywhere else. Uploaded originals are left alone: the point is to
  * reset structure, not to shred the photographs.
  */
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import { env } from '../env.ts';
-import { applySchema, closePool, exec } from './index.ts';
-import { seedIfEmpty } from './seed.ts';
+import { closePool, ensureReady, exec } from './index.ts';
 
 if (env.isProduction) {
   console.error('Refusing to reset the database with NODE_ENV=production.');
@@ -40,14 +35,7 @@ await exec(`
 `);
 console.log('tables dropped.');
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const schema = [path.join(here, 'schema.sql'), path.join(here, 'db', 'schema.sql')].find(
-  (candidate) => existsSync(candidate),
-);
-if (!schema) throw new Error('schema.sql not found next to the reset script.');
-
-await applySchema(readFileSync(schema, 'utf8'));
-const { seeded } = await seedIfEmpty();
-console.log(seeded ? 'database rebuilt and seeded.' : 'database rebuilt (nothing to seed).');
+await ensureReady();
+console.log('database rebuilt and seeded.');
 
 await closePool();

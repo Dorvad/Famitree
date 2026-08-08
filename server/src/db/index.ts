@@ -1,6 +1,7 @@
 import pg from 'pg';
 
 import { env } from '../env.ts';
+import { SCHEMA } from './schema.ts';
 
 /**
  * Postgres connection and the thin query layer everything above it uses.
@@ -132,9 +133,56 @@ export async function transact<T>(fn: (tx: Queryable) => Promise<T>): Promise<T>
   }
 }
 
-/** Applies schema.sql. Safe to run repeatedly — every statement is IF NOT EXISTS. */
-export async function applySchema(sql: string): Promise<void> {
+/** Applies the schema. Safe to run repeatedly — every statement is IF NOT EXISTS. */
+export async function applySchema(sql: string = SCHEMA): Promise<void> {
   await pool.query(sql);
+}
+
+/**
+ * Arbitrary but fixed: any two processes using the same number contend, and
+ * nothing else in this database takes advisory locks.
+ */
+const MIGRATION_LOCK = 8_140_231;
+
+/** Resolves once this process has a database with tables and a family in it. */
+let ready: Promise<void> | null = null;
+
+/**
+ * Brings the database up to date, at most once per process and once at a time
+ * across every process.
+ *
+ * This started life as a step you ran by hand, precisely so that several
+ * instances starting at once could not each decide the database was empty and
+ * seed it. That avoided the race rather than solving it, and it assumed a
+ * terminal — which is a poor assumption for someone deploying from a tablet.
+ *
+ * A Postgres advisory lock solves it properly: the first process through does
+ * the work while the others wait, and by the time they get the lock the seed
+ * has recorded its version and they do nothing. The lock lives in the database,
+ * so it holds across processes, machines and cold starts alike.
+ */
+export function ensureReady(): Promise<void> {
+  ready ??= (async () => {
+    const client = await pool.connect();
+    try {
+      await client.query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK]);
+      await client.query(SCHEMA);
+      // Imported here rather than at the top: seed.ts imports this module, and
+      // a static cycle would leave one of them half-initialised.
+      const { seedIfEmpty } = await import('./seed.ts');
+      await seedIfEmpty();
+    } finally {
+      await client.query('SELECT pg_advisory_unlock($1)', [MIGRATION_LOCK]);
+      client.release();
+    }
+  })().catch((error: unknown) => {
+    // Leave no memoised rejection behind: a database that was briefly
+    // unreachable should not take this instance down until it is recycled.
+    ready = null;
+    throw error;
+  });
+
+  return ready;
 }
 
 export async function closePool(): Promise<void> {

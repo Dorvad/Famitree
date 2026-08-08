@@ -18,7 +18,6 @@ Needs Node 20.11+ and a Postgres you can reach.
 ```bash
 npm install
 cp .env.example .env          # set DATABASE_URL; the rest works as shipped
-npm run db:migrate            # applies the schema, loads the sample family
 npm run dev                   # API on :4000, client on :5173
 ```
 
@@ -34,10 +33,15 @@ SESSION_SECRET="$(node -e "console.log(require('crypto').randomBytes(48).toStrin
   NODE_ENV=production npm start   # everything on :4000
 ```
 
-**`db:migrate` is a step you run, not something that happens at boot.** It used
-to run on startup, which was free when startup meant one process opening one
-file. Against a shared database, on a platform free to start several instances
-at once, it is a race that writes the family in twice.
+**The tables create themselves.** The first request to reach the API applies
+the schema and loads the sample family, behind a Postgres advisory lock, so
+there is no setup command to run and nothing to do from a machine you may not
+have. Several instances cold-starting at once is the case the lock is there
+for: one does the work, the rest wait and then find it already done. Verified
+with five separate processes against an empty database — seeded exactly once.
+
+`npm run db:migrate` does the same thing on demand, for when you would rather
+it happened before a deploy goes live than on the first visitor's request.
 
 ### Other commands
 
@@ -45,7 +49,7 @@ at once, it is a race that writes the family in twice.
 | --- | --- |
 | `npm run typecheck` | TypeScript across both packages |
 | `npm run build` | Bundles the API and builds the client |
-| `npm run db:migrate` | Applies the schema and seeds if the database is empty |
+| `npm run db:migrate` | Applies the schema and seeds now, rather than on first request |
 | `npm run db:reset -- --yes` | Drops every table and rebuilds from schema + seed |
 | `npm run fonts:fetch -w client` | Re-downloads the self-hosted font subsets |
 
@@ -112,17 +116,9 @@ PUBLIC_READ      false, unless you want the archive readable by link
 
 `NODE_ENV` is set by the platform.
 
-**Then create the tables, once.** Rather than copying a connection string out of
-a console, pull the project's own environment:
-
-```bash
-npx vercel link
-npx vercel env pull .env --environment=production
-npm run db:migrate
-```
-
-`.env` is git-ignored, so the credentials never leave the machine. Redeploy
-afterwards so the function starts against a database that has tables in it.
+**Redeploy.** The first request creates the tables and loads the sample family
+by itself — there is no migration step to run, and nothing to do from a
+terminal.
 
 **Join first, before sharing the link.** The first account to join becomes the
 `steward` — the only role that can edit other people's records or archive

@@ -1,14 +1,25 @@
--- שורשים — schema.
+/**
+ * The schema, as a string rather than a .sql file.
+ *
+ * It has to be readable from inside a serverless function bundle, where there
+ * is no `server/src/db/` to read a sibling file out of — a bundler inlines
+ * modules, not the data files sitting next to them. Keeping it as a TypeScript
+ * constant means one source of truth that every entry point can reach: the
+ * long-running server, the migration script, and the function.
+ *
+ * Every statement is `IF NOT EXISTS`, so applying it repeatedly is a no-op.
+ */
+export const SCHEMA = `-- שורשים — schema.
 --
 -- Nothing is ever hard-deleted. People, milestones and archive items carry an
--- `archived_at` tombstone instead: an heirloom archive that can silently lose a
+-- \`archived_at\` tombstone instead: an heirloom archive that can silently lose a
 -- letter or a photograph is worse than one that keeps a little clutter, and a
 -- mistaken removal stays recoverable.
 --
 -- Postgres. Timestamps are stored as ISO-8601 TEXT rather than TIMESTAMPTZ:
 -- they are written and read as strings end to end, all the way to the client
 -- contract in shared/types.ts, and converting them here would only add a
--- serialisation step that has to be undone on the way out. `is_provisional`
+-- serialisation step that has to be undone on the way out. \`is_provisional\`
 -- stays INTEGER for the same reason — one place decides it is a boolean, and
 -- that place is the repo that maps the row.
 
@@ -135,3 +146,4 @@ CREATE TABLE IF NOT EXISTS meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+`;

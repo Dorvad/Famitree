@@ -1,5 +1,4 @@
 import { build } from 'esbuild';
-import { cp, mkdir } from 'node:fs/promises';
 
 // Two entry points: the long-running server, and the migration step that
 // applies the schema and loads the sample family. Everything is bundled, so
@@ -30,9 +29,5 @@ await build({
   },
   logLevel: 'info',
 });
-
-// schema.sql is read at runtime, so it has to sit next to the bundle.
-await mkdir('dist/db', { recursive: true });
-await cp('src/db/schema.sql', 'dist/db/schema.sql');
 
 console.log('server bundled -> dist/index.js, dist/db/migrate.js');
