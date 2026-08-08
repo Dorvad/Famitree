@@ -89,6 +89,8 @@
 }
 
 .action {
+  display: inline-block;
+  text-decoration: none;
   margin-top: 6px;
   padding: 13px 30px;
   border-radius: var(--r-pill);
@@ -103,6 +105,7 @@
 }
 
 .action:hover {
+  color: var(--on-accent);
   transform: translateY(-4px) rotate(-1deg);
   box-shadow: 0 4px 4px rgb(224 67 71 / 22%), 0 18px 36px var(--accent-shadow);
 }

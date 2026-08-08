@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { ApiError } from '../api/client.ts';
 import styles from './Feedback.module.css';
 
@@ -32,8 +34,25 @@ interface ErrorStateProps {
  * Shows the API's own Hebrew message when there is one. A thrown value that is
  * not an ApiError has no user-facing text worth trusting, so it gets a generic
  * line instead of leaking an internal string.
+ *
+ * A 401 is not a failure and must not be dressed as one. On a private archive
+ * it is the ordinary first thing a relative meets when they open the link, and
+ * "לא הצלחנו לטעון · נסו שוב" makes a working deployment look broken — retrying
+ * cannot possibly help, because nothing went wrong. It gets the door instead.
  */
 export function ErrorState({ error, onRetry, title }: ErrorStateProps): React.JSX.Element {
+  if (error instanceof ApiError && error.isUnauthorized) {
+    return (
+      <div className={styles.centre} role="status">
+        <h2 className={styles.title}>הארכיון הזה פרטי</h2>
+        <p className={styles.message}>{error.message}</p>
+        <Link to="/login" className={styles.action}>
+          הצטרפו לאילן ←
+        </Link>
+      </div>
+    );
+  }
+
   const message =
     error instanceof ApiError
       ? error.message

@@ -181,25 +181,32 @@ export function LoginScreen(): React.JSX.Element {
               </div>
             )}
 
+            {/*
+              The cohort chip is decoration — the server works the real
+              generation out from the birth year on join. So the way in is not
+              gated on it: `cohort` comes from the tree, the tree is refused to
+              anyone not yet joined on a private archive, and gating the join
+              button on it made such an archive impossible to join at all.
+            */}
             <div className={styles.yearBlock}>
               {cohort && (
-                <>
-                  <span className={styles.cohort} style={generationVars(cohort)}>
-                    <span className={styles.cohortDot} aria-hidden="true" />
-                    <span className={styles.cohortText}>
-                      {cohort.name} · <Years>{cohort.rangeLabel}</Years>
-                    </span>
+                <span className={styles.cohort} style={generationVars(cohort)}>
+                  <span className={styles.cohortDot} aria-hidden="true" />
+                  <span className={styles.cohortText}>
+                    {cohort.name} · <Years>{cohort.rangeLabel}</Years>
                   </span>
-                  <button
-                    type="button"
-                    className={styles.joinButton}
-                    style={generationVars(cohort)}
-                    onClick={() => submit(null)}
-                    disabled={join.isPending || (inviteRequired && !invite)}
-                  >
-                    {join.isPending ? 'מצרפים אתכם…' : 'הצטרפו לאילן ←'}
-                  </button>
-                </>
+                </span>
+              )}
+              {yearValue != null && (
+                <button
+                  type="button"
+                  className={styles.joinButton}
+                  style={generationVars(cohort)}
+                  onClick={() => submit(null)}
+                  disabled={join.isPending || (inviteRequired && !invite)}
+                >
+                  {join.isPending ? 'מצרפים אתכם…' : 'הצטרפו לאילן ←'}
+                </button>
               )}
             </div>
 
