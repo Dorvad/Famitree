@@ -33,7 +33,7 @@
 .heading {
   font: 400 clamp(24px, 5vw, 30px) var(--font-display);
   color: var(--ink);
-  animation: focusIn 560ms var(--spring-firm) both;
+  animation: global(focusIn) 560ms var(--spring-firm) both;
 }
 
 .subheading {
@@ -41,7 +41,7 @@
   color: var(--muted);
   margin-top: 4px;
   text-wrap: pretty;
-  animation: focusIn 600ms var(--spring-firm) 70ms both;
+  animation: global(focusIn) 600ms var(--spring-firm) 70ms both;
 }
 
 /* ------------------------------------------------------------- step one */
@@ -68,7 +68,7 @@
   justify-content: center;
   gap: 12px;
   transform-origin: top center;
-  animation: unfold 640ms var(--spring-settle) backwards;
+  animation: global(unfold) 640ms var(--spring-settle) backwards;
   animation-delay: var(--delay, 0s);
   transition:
     transform var(--t-touch) var(--ease-touch),
@@ -196,7 +196,7 @@
 }
 
 .form > * {
-  animation: slot 560ms var(--spring-settle) backwards;
+  animation: global(slot) 560ms var(--spring-settle) backwards;
 }
 
 /* Fields arrive in reading order. Indexed here rather than threaded through
@@ -350,7 +350,7 @@
   align-items: center;
   gap: 12px;
   text-align: start;
-  animation: slot 560ms var(--spring-settle) both;
+  animation: global(slot) 560ms var(--spring-settle) both;
 }
 
 .previewImage {
@@ -361,7 +361,7 @@
   flex: none;
   box-shadow: var(--lift-2);
   transform: rotate(-2deg);
-  animation: develop 800ms var(--spring-firm) both;
+  animation: global(develop) 800ms var(--spring-firm) both;
 }
 
 .previewGlyph {
@@ -469,7 +469,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: stamp 700ms var(--spring-settle) both;
+  animation: global(stamp) 700ms var(--spring-settle) both;
   box-shadow: 0 3px 3px rgb(0 161 139 / 26%), 0 18px 40px rgb(0 194 168 / 38%);
 }
 
@@ -477,14 +477,14 @@
   font: 400 30px var(--font-display);
   color: var(--ink);
   margin-top: 16px;
-  animation: focusIn 620ms var(--spring-firm) 240ms backwards;
+  animation: global(focusIn) 620ms var(--spring-firm) 240ms backwards;
 }
 
 .doneNote {
   font: 300 14px var(--font-body);
   color: var(--muted);
   margin-top: 4px;
-  animation: focusIn 620ms var(--spring-firm) 330ms backwards;
+  animation: global(focusIn) 620ms var(--spring-firm) 330ms backwards;
 }
 
 /* The finished item slots out as a taped print. */
@@ -496,7 +496,7 @@
   border-radius: var(--r-print);
   padding: 10px 10px 14px;
   box-shadow: var(--lift-3);
-  animation: slot 760ms var(--spring-loose) 420ms backwards;
+  animation: global(slot) 760ms var(--spring-loose) 420ms backwards;
   text-align: start;
   --rest-tilt: -1.8deg;
 }
@@ -531,7 +531,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  animation: develop 900ms var(--spring-firm) 620ms both;
+  animation: global(develop) 900ms var(--spring-firm) 620ms both;
 }
 
 .doneBadge {
@@ -555,7 +555,7 @@
   font: 700 10px var(--font-body);
   letter-spacing: 0.08em;
   transform: rotate(-8deg);
-  animation: stamp 620ms var(--spring-settle) 900ms both;
+  animation: global(stamp) 620ms var(--spring-settle) 900ms both;
 }
 
 .doneCardTitle {
@@ -575,7 +575,7 @@
   justify-content: center;
   gap: 10px;
   margin-top: 24px;
-  animation: focusIn 620ms var(--spring-firm) 640ms backwards;
+  animation: global(focusIn) 620ms var(--spring-firm) 640ms backwards;
 }
 
 /* ------------------------------------------------------------------ gate */

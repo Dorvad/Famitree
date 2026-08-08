@@ -21,7 +21,7 @@
     radial-gradient(120% 90% at 50% 60%, rgb(43 35 32 / 26%) 0%, rgb(43 35 32 / 62%) 100%);
   background-repeat: no-repeat;
   backdrop-filter: blur(6px);
-  animation: iris 380ms var(--spring-firm) both;
+  animation: global(iris) 380ms var(--spring-firm) both;
 }
 
 .sheet {
@@ -34,7 +34,7 @@
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
   padding: 20px 20px max(26px, env(safe-area-inset-bottom));
   box-shadow: var(--shadow-sheet);
-  animation: drawer var(--t-loose) var(--spring-loose) both;
+  animation: global(drawer) var(--t-loose) var(--spring-loose) both;
 
   /* The drawer's front face: a thin band of the four brand colours across the
      top edge, so the panel reads as a physical component of the app rather
@@ -111,7 +111,7 @@
 /* Content arrives just behind the drawer, so the panel leads and the contents
    follow it out. */
 .body {
-  animation: focusIn 460ms var(--spring-firm) 120ms both;
+  animation: global(focusIn) 460ms var(--spring-firm) 120ms both;
 }
 
 @media (min-width: 760px) {
@@ -128,7 +128,7 @@
     border-top-width: 4px;
     padding-bottom: 26px;
     transform-origin: top center;
-    animation: unfold var(--t-settle) var(--spring-settle) both;
+    animation: global(unfold) var(--t-settle) var(--spring-settle) both;
   }
 
   /* No bottom edge to cover once the panel floats. */

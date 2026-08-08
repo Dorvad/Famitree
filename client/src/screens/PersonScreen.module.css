@@ -61,7 +61,7 @@
   align-items: center;
   gap: 14px;
   flex: none;
-  animation: develop 1s var(--spring-firm) both;
+  animation: global(develop) 1s var(--spring-firm) both;
 }
 
 .tags {
@@ -100,14 +100,14 @@
   font: 600 12.5px var(--font-body);
   color: var(--gen-text);
   letter-spacing: 0.14em;
-  animation: focusIn 640ms var(--spring-firm) 100ms both;
+  animation: global(focusIn) 640ms var(--spring-firm) 100ms both;
 }
 
 .name {
   font: 400 clamp(26px, 5vw, 34px) / 1.2 var(--font-display);
   color: var(--ink);
   margin-top: 4px;
-  animation: focusIn 720ms var(--spring-firm) 180ms both;
+  animation: global(focusIn) 720ms var(--spring-firm) 180ms both;
 }
 
 .story {
@@ -117,7 +117,7 @@
   max-width: var(--prose-max);
   margin-inline: auto;
   text-wrap: pretty;
-  animation: focusIn 760ms var(--spring-firm) 260ms both;
+  animation: global(focusIn) 760ms var(--spring-firm) 260ms both;
 }
 
 .sectionTitle {
@@ -162,7 +162,7 @@
   box-shadow: var(--lift-2);
   border-inline-start: 5px solid var(--gen);
   transform-origin: top center;
-  animation: unfold 700ms var(--spring-settle) both;
+  animation: global(unfold) 700ms var(--spring-settle) both;
   animation-delay: calc(var(--i, 0) * var(--stagger));
   transition:
     transform var(--t-touch) var(--ease-touch),
@@ -260,7 +260,7 @@
   border-inline-start: 5px solid var(--gen);
   box-shadow: var(--lift-2);
   transform-origin: top center;
-  animation: unfold 620ms var(--spring-settle) both;
+  animation: global(unfold) 620ms var(--spring-settle) both;
 }
 
 .input {
@@ -343,7 +343,7 @@
   margin-inline: auto;
   flex-wrap: wrap;
   border-top: 5px solid var(--gen);
-  animation: unfold 720ms var(--spring-settle) 200ms both;
+  animation: global(unfold) 720ms var(--spring-settle) 200ms both;
   transform-origin: top center;
 }
 
@@ -397,7 +397,7 @@
   padding: 10px 10px 13px;
   box-shadow: var(--lift-2);
   transform: rotate(var(--rest-tilt, 0deg));
-  animation: slot 640ms var(--spring-settle) both;
+  animation: global(slot) 640ms var(--spring-settle) both;
   animation-delay: calc(var(--i, 0) * var(--stagger));
   transition:
     transform var(--t-touch) var(--ease-touch),
@@ -453,7 +453,7 @@
   margin-top: 26px;
   border-inline-start: 5px solid var(--violet);
   transform-origin: top center;
-  animation: unfold 700ms var(--spring-settle) 120ms both;
+  animation: global(unfold) 700ms var(--spring-settle) 120ms both;
 }
 
 .linkTitle {

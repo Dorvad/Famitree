@@ -751,7 +751,7 @@ export function PersonEditor({
             <p className={styles.positionNote}>
               הקווים בין האנשים נגזרים מהקשרים, לא מהמקום — ההזזה משפיעה רק על הסידור על
               הלוח.{' '}
-              <Link to={`/tree?focus=${encodeURIComponent(personId)}`}>לראות באילן ←</Link>
+              <Link to={`/?focus=${encodeURIComponent(personId)}`}>לראות באילן ←</Link>
             </p>
           </div>
         </>

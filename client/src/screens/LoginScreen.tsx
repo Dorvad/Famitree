@@ -56,7 +56,7 @@ export function LoginScreen(): React.JSX.Element {
       {
         onSuccess: (result) => {
           const target = result.user?.personId;
-          navigate(target ? `/tree?focus=${encodeURIComponent(target)}` : '/');
+          navigate(target ? `/?focus=${encodeURIComponent(target)}` : '/');
         },
       },
     );

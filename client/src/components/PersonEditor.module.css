@@ -16,7 +16,7 @@
   flex-direction: column;
   gap: 14px;
   transform-origin: top center;
-  animation: unfold var(--t-settle) var(--spring-settle) both;
+  animation: global(unfold) var(--t-settle) var(--spring-settle) both;
 }
 
 .loading {
@@ -206,7 +206,7 @@
   background: var(--bg);
   border-radius: 4px;
   padding: 10px 12px;
-  animation: slot 480ms var(--spring-settle) backwards;
+  animation: global(slot) 480ms var(--spring-settle) backwards;
   animation-delay: calc(var(--i, 0) * 36ms);
 }
 
@@ -275,7 +275,7 @@
   background: var(--bg);
   border-radius: 4px;
   padding: 12px;
-  animation: unfold 520ms var(--spring-settle) both;
+  animation: global(unfold) 520ms var(--spring-settle) both;
   transform-origin: top center;
 }
 
@@ -346,7 +346,7 @@
   background: var(--bg);
   border-radius: 4px;
   padding: 8px 12px;
-  animation: slot 460ms var(--spring-settle) backwards;
+  animation: global(slot) 460ms var(--spring-settle) backwards;
   animation-delay: calc(var(--i, 0) * 34ms);
   transition:
     transform var(--t-touch) var(--ease-touch),
@@ -428,7 +428,7 @@
   background: var(--bg);
   border-radius: 4px;
   padding: 8px 12px;
-  animation: slot 440ms var(--spring-settle) both;
+  animation: global(slot) 440ms var(--spring-settle) both;
 }
 
 .linkKind {

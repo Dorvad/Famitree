@@ -53,6 +53,19 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+/**
+ * Clamp between two bounds without assuming which one is the lower.
+ *
+ * The pan limits are written as "how far past the edge may the content go",
+ * which only puts them in order while the content is *larger* than the
+ * viewport. A tree small enough to fit inverts them, and a plain clamp then
+ * collapses to whichever bound it tests last — pinning the canvas against one
+ * edge and quietly undoing the centring that fitView just computed.
+ */
+function clampBetween(value: number, a: number, b: number): number {
+  return clamp(value, Math.min(a, b), Math.max(a, b));
+}
+
 export function usePanZoom(options: PanZoomOptions = {}): PanZoom {
   const {
     minScale = 0.2,
@@ -103,11 +116,11 @@ export function usePanZoom(options: PanZoomOptions = {}): PanZoom {
 
     // Allow the content to be dragged off-screen only until a sliver remains,
     // so it can never be lost entirely.
-    const x = clamp(next.x, view.width - scaledWidth - KEEP_VISIBLE, KEEP_VISIBLE);
+    const x = clampBetween(next.x, view.width - scaledWidth - KEEP_VISIBLE, KEEP_VISIBLE);
     const y =
       axis === 'x'
         ? next.y
-        : clamp(next.y, view.height - scaledHeight - KEEP_VISIBLE, KEEP_VISIBLE);
+        : clampBetween(next.y, view.height - scaledHeight - KEEP_VISIBLE, KEEP_VISIBLE);
 
     return { ...next, x, y };
   }, [axis]);

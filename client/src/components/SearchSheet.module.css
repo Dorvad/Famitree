@@ -63,7 +63,7 @@
   padding: 10px 12px;
   box-shadow: var(--lift-1);
   border-inline-start: 4px solid var(--result-tone, var(--border));
-  animation: slot 520ms var(--spring-settle) backwards;
+  animation: global(slot) 520ms var(--spring-settle) backwards;
   animation-delay: calc(var(--i, 0) * 45ms);
   transition:
     transform var(--t-touch) var(--ease-touch),
@@ -111,7 +111,7 @@
   background: var(--tile-bg);
   color: var(--tile-fg);
   transform-origin: top center;
-  animation: unfold 620ms var(--spring-settle) backwards;
+  animation: global(unfold) 620ms var(--spring-settle) backwards;
   animation-delay: var(--delay, 0s);
   transition:
     transform var(--t-touch) var(--ease-touch),
@@ -168,7 +168,7 @@
   margin-top: 14px;
   box-shadow: var(--lift-1);
   border: 1px solid var(--border);
-  animation: focusIn 620ms var(--spring-firm) 280ms both;
+  animation: global(focusIn) 620ms var(--spring-firm) 280ms both;
 }
 
 .legendTitle {

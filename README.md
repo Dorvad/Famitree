@@ -4,9 +4,10 @@ A Hebrew, right-to-left web application for keeping a family's tree, timeline
 and heirlooms in one place. Built from a design prototype into a working
 full-stack app: React on the front, an Express + SQLite API behind it.
 
-Seven screens — join, home, the tree, the timeline, the archive, a person's
-page, and an editing workshop where every record in the app can be created,
-corrected or removed.
+**The tree is the app.** It answers at `/`, it is what you land on, and opening
+a person happens inside it rather than by leaving it. Around that: the timeline,
+the archive, a person's full page, the join flow, and an editing workshop where
+every record in the app can be created, corrected or removed.
 
 ---
 
@@ -56,12 +57,56 @@ server/
 client/
   src/api/          fetch wrapper + TanStack Query hooks
   src/lib/          Tree geometry, pan/zoom, formatting
-  src/components/   Shell, sheets, avatar, feedback states
+  src/components/   Shell, sheets, the lens, avatar, feedback states
   src/screens/      One file per screen, with a CSS module each
   src/styles/       Design tokens and global rules
 ```
 
 ---
+
+## The lens — opening a person
+
+Touching a node does not slide a panel in from the edge. A circle grows out of
+that node's own position until it fills the screen, the tree behind it pulls
+back and goes soft, and the person's file assembles inside the circle.
+
+Four things make it read as one movement rather than as a transition:
+
+**The origin is measured, not assumed.** `originFromElement` takes the clicked
+circle's `getBoundingClientRect` and hands the overlay `--ox`, `--oy` (the
+node's centre), `--r0` (its radius) and `--r1` (the distance to the furthest
+viewport corner). The clip-path animates between those two radii, so the circle
+starts exactly the size of the thing you touched and stops the moment it has
+covered the screen — no matter where on the canvas that was, or what the zoom
+happened to be.
+
+**The portrait is the same portrait.** A FLIP: the hero image is measured where
+it comes to rest, then played back from the offset and scale that put it over
+the node. The node's own circle is hidden while the lens is open, so there is
+never a copy of it left in the tree to give the trick away.
+
+**The depth of field belongs to the lens.** The blur is a `backdrop-filter` on
+the overlay, not a filter on the canvas — so it irises outward with the circle
+instead of being applied to a surface several thousand pixels wide. The tree
+only takes a `scale` and a desaturation, and it keeps them on the independent
+`scale` property, because an animation on `transform` would replace the inline
+pan/zoom outright.
+
+**Relatives re-form the lens rather than replacing it.** Parents, partners and
+children sit as satellites beside the portrait; touching one measures *that*
+circle and opens the next lens from it, gliding the camera underneath so that
+closing leaves you looking at whoever you walked to. `?focus=` follows along, so
+the URL always names the person on screen.
+
+Closing runs it backwards into the same node. It is a genuine exit animation —
+the overlay stays mounted through `lensClose` and unmounts on `animationend`,
+since unmounting on click would kill the animation on its first frame.
+
+Arriving on `/` for the first time in a session plays an overture: the derived
+headline resolves over the tree while the connectors ink themselves in, then
+lifts away. It never takes the pointer, so dragging, zooming and opening a
+person all work from the first frame. A `?focus=` link skips it — you came for
+a person, not a title card.
 
 ## Editing — `/edit`
 
@@ -134,7 +179,7 @@ seen on the web.
 Each curve is paired with its own duration token, because a spring played over
 the wrong duration stops looking like a spring.
 
-Six signature animations are built on them:
+The signature animations are built on them:
 
 | | |
 | --- | --- |
@@ -144,6 +189,26 @@ Six signature animations are built on them:
 | `plant` | Tree nodes and portraits wind up, land, and wobble. |
 | `ink` | Connectors draw with the nib widening as the line travels. |
 | `stamp` | Confirmations land oversized and blurred, then thump down at an angle. |
+| `lensOpen` / `lensClose` | The circle growing out of a node to fill the screen, and collapsing back into it. |
+| `land` | The FLIP that flies a node out of the tree into the dossier's portrait. |
+| `recede` | The tree pulling back and losing its colour while a lens is open. |
+| `deal` | A milestone card dealt onto the table, over-rotated and swinging to rest. |
+| `orbit` | A relative's satellite spinning up into its place beside the portrait. |
+
+### Referencing them from a CSS module — `global(name)`
+
+Write `animation: global(unfold) 500ms …` inside a `.module.css`, never
+`animation: unfold 500ms …`.
+
+Vite's CSS-modules transform rewrites **every** identifier in an `animation`
+value to that module's scoped name, whether or not the keyframes are declared
+locally. `animation: unfold` compiles to `animation: _unfold_a1b2c_3`, which
+matches nothing: the keyframes live in `motion.css`, a plain global stylesheet,
+and keep their real names. Nothing errors and the build stays green — the
+animation simply never runs, and only in the production build, which is exactly
+how it goes unnoticed. `global()` is the transform's own escape hatch and emits
+the bare name. A keyframe genuinely declared inside a module (there is one,
+`tumble` in `Feedback.module.css`) must be referenced without it.
 
 ### Material
 
@@ -164,7 +229,13 @@ drawer with a four-colour band across its front edge.
 **Browser support note:** `linear()` easing needs Chrome 113+, Safari 17.4+ or
 Firefox 112+ (all shipped in 2023). Older browsers drop the declaration and fall
 back to the default ease — the animation still plays, it just loses the rebound.
-Everything else here is long-standing CSS.
+
+The lens adds three more of roughly that vintage, each of which degrades to
+something sensible rather than to nothing: `color-mix()` (a fallback `background`
+is declared first, so the wash goes fully opaque instead of translucent),
+`backdrop-filter` (the depth of field is simply absent), and the independent
+`scale` property (the tree stops pulling back). Everything else here is
+long-standing CSS.
 
 **Reduced motion:** the whole vocabulary collapses to a single instant frame
 under `prefers-reduced-motion`, with fill modes intact so nothing that animates
@@ -223,8 +294,15 @@ Each of these was a deliberate change, not an oversight:
 - **The recording player is honest.** The mockup showed a fixed "04:12 / 12:40"
   progress bar. A real `<audio>` element appears when a recording has been
   uploaded; otherwise the card says so and points at the upload flow.
-- **The hero headline is derived.** "מלודז׳ וברלין, עד אלינו" is built from the
-  founding row's places, so it still tells the truth for a different family.
+- **The hero headline is derived, and it plays over the tree.** "מלודז׳ וברלין,
+  עד אלינו" is built from the founding row's places, so it still tells the truth
+  for a different family. The mockup gave it a home screen of its own; a page
+  *about* the tree in front of the tree is one screen too many, so the line is
+  now the overture that opens over the real thing.
+- **A person opens in place.** The mockup popped a small card under the node
+  with the name, the years and a link. That card is gone: the name plate under
+  every node already carries what it said, and touching a node now opens the
+  lens.
 - **Full-viewport rather than a phone frame.** The mockup rendered inside a
   432×896 device shell. The tree in particular wants the room; the layout is
   responsive from 390px up.
@@ -244,9 +322,16 @@ Each of these was a deliberate change, not an oversight:
   git-ignored. It is the only thing worth backing up, and nothing else in the
   repo is stateful.
 - **There is no automated test suite yet.** Verification so far is a browser
-  smoke run over the seven screens plus the join, upload, memory and editing
-  flows. Unit tests around `tree-layout.ts`, `placement.ts` and the permission
-  checks would be the highest-value place to start.
+  smoke run over every screen plus the join, upload, memory, editing and lens
+  flows — including a pass under `prefers-reduced-motion` and one at 390px.
+  Unit tests around `tree-layout.ts`, `placement.ts` and the permission checks
+  would be the highest-value place to start.
+- **Nothing catches a CSS animation that references a keyframe which is not
+  there.** It was possible to ship the entire motion vocabulary dead in the
+  production bundle for as long as it took to look for it (see `global(name)`
+  above). A build step that cross-checks every `animation:` identifier in the
+  emitted CSS against the `@keyframes` it declares would be cheap and would have
+  caught it on the first build.
 - **Schema changes need a line in `ensureColumn`.** `CREATE TABLE IF NOT EXISTS`
   leaves an existing table alone, so a column added to `schema.sql` has no
   effect on a database that already holds records. `server/src/db/index.ts`

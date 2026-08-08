@@ -114,7 +114,7 @@
   padding: 10px 10px 13px;
   box-shadow: var(--lift-2);
   transform: rotate(var(--rest-tilt, 0deg));
-  animation: slot 560ms var(--spring-settle) backwards;
+  animation: global(slot) 560ms var(--spring-settle) backwards;
   animation-delay: calc(var(--i, 0) * 34ms);
   transition:
     transform var(--t-touch) var(--ease-touch),

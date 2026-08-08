@@ -11,7 +11,7 @@ export function NotFoundScreen(): React.JSX.Element {
         title="הדף הזה לא קיים"
         message="אולי הקישור ישן, או שהתחנה עברה מקום. אפשר לחזור לאילן ולהמשיך משם."
         actionLabel="חזרה לאילן"
-        onAction={() => navigate('/tree')}
+        onAction={() => navigate('/')}
       />
     </ScrollArea>
   );

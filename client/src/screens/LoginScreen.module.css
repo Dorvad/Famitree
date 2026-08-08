@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   background: var(--page-wash);
-  animation: fadeIn 380ms var(--spring-firm) both;
+  animation: global(fadeIn) 380ms var(--spring-firm) both;
 }
 
 .inner {
@@ -26,7 +26,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  animation: plant 640ms var(--anticipate) backwards;
+  animation: global(plant) 640ms var(--anticipate) backwards;
 }
 
 .mark span:nth-child(1) {
@@ -50,12 +50,12 @@
   font: 400 clamp(32px, 8vw, 48px) / 1.3 var(--font-display);
   color: var(--ink);
   margin-top: 16px;
-  animation: focusIn 820ms var(--spring-firm) 300ms backwards;
+  animation: global(focusIn) 820ms var(--spring-firm) 300ms backwards;
   text-wrap: balance;
 }
 
 .lead {
-  animation: focusIn 760ms var(--spring-firm) 400ms backwards;
+  animation: global(focusIn) 760ms var(--spring-firm) 400ms backwards;
   font: 300 16px/1.6 var(--font-body);
   color: var(--muted);
   margin-top: 8px;
@@ -76,7 +76,7 @@
   text-align: center;
   outline: none;
   box-shadow: var(--lift-3);
-  animation: slot 760ms var(--spring-loose) 460ms backwards;
+  animation: global(slot) 760ms var(--spring-loose) 460ms backwards;
   transition:
     border-color var(--t-touch) var(--ease-touch),
     box-shadow var(--t-touch) var(--ease-touch);
@@ -124,7 +124,7 @@
   border-radius: var(--r-pill);
   padding: 8px 18px 8px 12px;
   box-shadow: var(--lift-2);
-  animation: slot 620ms var(--spring-settle) backwards;
+  animation: global(slot) 620ms var(--spring-settle) backwards;
   animation-delay: var(--delay, 0s);
   transition:
     transform var(--t-touch) var(--ease-touch),
@@ -164,7 +164,7 @@
   color: var(--on-accent);
   font: 600 15px var(--font-body);
   box-shadow: 0 3px 3px rgb(224 67 71 / 22%), 0 12px 28px var(--accent-shadow);
-  animation: slot 680ms var(--spring-loose) both;
+  animation: global(slot) 680ms var(--spring-loose) both;
   transition:
     transform var(--t-touch) var(--ease-touch),
     box-shadow var(--t-touch) var(--ease-touch);
@@ -194,7 +194,7 @@
   border-radius: 4px;
   padding: 8px 20px;
   transform: rotate(-1.5deg);
-  animation: stamp 640ms var(--spring-settle) both;
+  animation: global(stamp) 640ms var(--spring-settle) both;
 }
 
 .cohortDot {

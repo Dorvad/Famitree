@@ -7,8 +7,7 @@ import { Avatar } from './Avatar.tsx';
 import styles from './AppShell.module.css';
 
 const TABS = [
-  { to: '/', label: 'הבית', end: true },
-  { to: '/tree', label: 'האילן', end: false },
+  { to: '/', label: 'האילן', end: true },
   { to: '/timeline', label: 'ציר זמן', end: false },
   { to: '/archive', label: 'הארכיון', end: false },
 ] as const;

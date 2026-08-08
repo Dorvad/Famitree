@@ -13,7 +13,7 @@
 .strip {
   position: absolute;
   top: -20px;
-  animation-name: scatter;
+  animation-name: global(scatter);
   animation-timing-function: cubic-bezier(0.3, 0.1, 0.7, 0.9);
   animation-fill-mode: both;
   transform-style: preserve-3d;

@@ -215,7 +215,7 @@ export function EditScreen(): React.JSX.Element {
         <header className={styles.header}>
           <h1 className={styles.title}>סדנת האילן</h1>
           <p className={styles.subtitle}>הכול נערך מכאן — אנשים, אוצרות וציר הזמן</p>
-          <Link to="/tree" className={styles.headerLink}>
+          <Link to="/" className={styles.headerLink}>
             לצפייה באילן ←
           </Link>
         </header>
@@ -514,7 +514,7 @@ export function EditScreen(): React.JSX.Element {
         )}
 
         <p className={styles.footNote}>
-          כל מה שנוסף כאן מופיע מיד ב<Link to="/tree">אילן</Link>, ב
+          כל מה שנוסף כאן מופיע מיד ב<Link to="/">אילן</Link>, ב
           <Link to="/timeline">ציר הזמן</Link> וב<Link to="/archive">ארכיון</Link>.
         </p>
       </div>

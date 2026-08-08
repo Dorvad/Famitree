@@ -50,7 +50,7 @@
   border: 3px solid var(--surface);
   transform: translateX(-50%);
   box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
-  animation: plant 620ms var(--anticipate) backwards;
+  animation: global(plant) 620ms var(--anticipate) backwards;
   animation-delay: calc(var(--i, 0) * 60ms);
 }
 
@@ -70,7 +70,7 @@
   box-shadow: var(--lift-2);
   border-top: 4px solid var(--tone, var(--accent));
   text-align: start;
-  animation: slot 660ms var(--spring-settle) backwards;
+  animation: global(slot) 660ms var(--spring-settle) backwards;
   animation-delay: calc(var(--i, 0) * 60ms);
   transition:
     transform var(--t-touch) var(--ease-touch),
@@ -128,7 +128,7 @@
   color: var(--ink);
   pointer-events: none;
   z-index: 4;
-  animation: focusIn 780ms var(--spring-firm) both;
+  animation: global(focusIn) 780ms var(--spring-firm) both;
 }
 
 .hint {

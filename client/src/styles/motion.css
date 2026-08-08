@@ -15,6 +15,24 @@
  *
  * Every duration is paired with its curve: a spring played over the wrong
  * duration stops looking like a spring.
+ *
+ * ---------------------------------------------------------------------------
+ * USING THESE FROM A .module.css FILE — read this before adding an animation.
+ *
+ * Write `animation: global(unfold) 500ms …`, never `animation: unfold 500ms …`.
+ *
+ * Vite's CSS-modules transform rewrites *every* identifier in an `animation`
+ * value to that module's scoped name, whether or not the keyframes are declared
+ * locally. `animation: unfold` becomes `animation: _unfold_a1b2c_3`, which
+ * matches nothing — the keyframes live here, in a plain global stylesheet, and
+ * keep their real names. The declaration is not an error and the build stays
+ * green; the animation simply never runs, and only in the production build,
+ * which is precisely how it goes unnoticed.
+ *
+ * `global(name)` is the transform's own escape hatch: it emits the bare name.
+ * A keyframe declared inside a module (there is one, `tumble` in
+ * Feedback.module.css) is genuinely local and must be referenced without it.
+ * ---------------------------------------------------------------------------
  */
 
 :root {
@@ -177,6 +195,129 @@
     stroke-dashoffset: 0;
     stroke-width: 7;
     opacity: 1;
+  }
+}
+
+/**
+ * lensOpen — the app's signature moment.
+ *
+ * A circle grows from the exact screen position of the node that was clicked
+ * until it covers the viewport. Because the origin is the thing you touched
+ * rather than the centre of the screen, the panel reads as *coming out of* that
+ * person rather than appearing on top of them. `--r0` is the node's radius and
+ * `--r1` is the distance to the furthest viewport corner, both measured in JS
+ * at the moment of the click.
+ */
+@keyframes lensOpen {
+  from {
+    clip-path: circle(var(--r0, 42px) at var(--ox, 50%) var(--oy, 50%));
+  }
+  to {
+    clip-path: circle(var(--r1, 150vmax) at var(--ox, 50%) var(--oy, 50%));
+  }
+}
+
+@keyframes lensClose {
+  from {
+    clip-path: circle(var(--r1, 150vmax) at var(--ox, 50%) var(--oy, 50%));
+  }
+  to {
+    clip-path: circle(var(--r0, 42px) at var(--ox, 50%) var(--oy, 50%));
+  }
+}
+
+/**
+ * recede — what the tree does while the lens is open.
+ *
+ * Not a fade: the canvas pulls back and loses its colour, the way a lens throws
+ * a background out of focus. The tree stays visible as context, which is the
+ * point — you are looking *into* it, not away from it. The blur is left to the
+ * lens's own backdrop-filter so it irises outward with the circle rather than
+ * being applied to a canvas several thousand pixels wide.
+ *
+ * Uses the independent `scale` property rather than `transform: scale()`: the
+ * canvas carries its pan and zoom as an inline transform, and an animation on
+ * `transform` would replace it outright.
+ */
+@keyframes recede {
+  to {
+    scale: 0.945;
+    filter: saturate(0.4) brightness(0.99);
+  }
+}
+
+/**
+ * land — the node flying out of the tree to become the dossier's portrait.
+ *
+ * A FLIP: the portrait is measured in its resting position, then played back
+ * from the offset and scale that puts it exactly over the node that was
+ * clicked. So the circle you touched *is* the circle that arrives, rather than
+ * one fading out while another fades in somewhere else.
+ */
+@keyframes land {
+  from {
+    transform: translate3d(var(--dx, 0), var(--dy, 0), 0) scale(var(--ds, 0.4));
+  }
+  to {
+    transform: none;
+  }
+}
+
+/** rise — a dossier layer arriving from below with a touch of scale. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/**
+ * deal — a milestone card dealt onto the table.
+ *
+ * Arrives from the side, over-rotated, and swings down to its resting angle.
+ */
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translate3d(56px, 26px, 0) rotate(9deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(var(--rest-tilt, 0deg)) scale(1);
+  }
+}
+
+/** orbit — a relative satellite settling into its ring position. */
+@keyframes orbit {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-40deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/**
+ * overture — the opening title lifting away once the tree has drawn itself.
+ * Runs forwards so the element ends up out of the way without unmounting mid
+ * animation.
+ */
+@keyframes overtureOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -40px, 0) scale(1.04);
+    filter: blur(10px);
   }
 }
 

@@ -11,7 +11,7 @@
   align-items: baseline;
   gap: 14px;
   flex-wrap: wrap;
-  animation: focusIn 560ms var(--spring-firm) both;
+  animation: global(focusIn) 560ms var(--spring-firm) both;
 }
 
 .title {
@@ -94,7 +94,7 @@
   border: 3px dashed var(--border-dashed);
   border-radius: 4px 4px var(--r-lg) var(--r-lg);
   text-align: start;
-  animation: slot 620ms var(--spring-settle) 80ms backwards;
+  animation: global(slot) 620ms var(--spring-settle) 80ms backwards;
   transition:
     border-color var(--t-touch) var(--ease-touch),
     background var(--t-touch) var(--ease-touch),
@@ -146,7 +146,7 @@
   box-shadow: var(--lift-3);
   padding: 20px;
   transform-origin: top center;
-  animation: unfold var(--t-settle) var(--spring-settle) both;
+  animation: global(unfold) var(--t-settle) var(--spring-settle) both;
 }
 
 .addTitle {
@@ -344,7 +344,7 @@
   padding: 12px 16px;
   box-shadow: var(--lift-2);
   transform: rotate(var(--rest-tilt, 0deg));
-  animation: slot 560ms var(--spring-settle) backwards;
+  animation: global(slot) 560ms var(--spring-settle) backwards;
   animation-delay: calc(var(--i, 0) * 40ms);
   transition:
     transform var(--t-touch) var(--ease-touch),
@@ -438,7 +438,7 @@
   background: var(--bg);
   border-radius: 4px;
   padding: 10px 14px;
-  animation: slot 480ms var(--spring-settle) both;
+  animation: global(slot) 480ms var(--spring-settle) both;
   /* Removed records read as faded until they are put back. */
   opacity: 0.72;
 }
@@ -476,7 +476,7 @@
 .gateTitle {
   font: 400 28px var(--font-display);
   color: var(--ink);
-  animation: focusIn 620ms var(--spring-firm) both;
+  animation: global(focusIn) 620ms var(--spring-firm) both;
 }
 
 .gateNote {
@@ -493,7 +493,7 @@
   color: var(--on-accent);
   font: 600 14px var(--font-body);
   box-shadow: 0 3px 3px rgb(224 67 71 / 22%), 0 12px 28px var(--accent-shadow);
-  animation: slot 680ms var(--spring-loose) 160ms both;
+  animation: global(slot) 680ms var(--spring-loose) 160ms both;
   transition: transform var(--t-touch) var(--ease-touch);
 }
 

@@ -149,7 +149,7 @@ export function SearchSheet(): React.JSX.Element {
                     '--result-tone': generation?.color ?? 'var(--border)',
                   } as React.CSSProperties
                 }
-                onClick={() => go(`/tree?focus=${encodeURIComponent(person.id)}`)}
+                onClick={() => go(`/?focus=${encodeURIComponent(person.id)}`)}
               >
                 <Avatar person={person} generation={generation} size={40} />
                 <span>

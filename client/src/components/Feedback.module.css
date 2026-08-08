@@ -60,7 +60,7 @@
 .title {
   font: 400 26px/1.3 var(--font-display);
   color: var(--ink);
-  animation: focusIn 640ms var(--spring-firm) both;
+  animation: global(focusIn) 640ms var(--spring-firm) both;
 }
 
 .message {
@@ -85,7 +85,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: shimmer 2.1s linear infinite;
+  animation: global(shimmer) 2.1s linear infinite;
 }
 
 .action {
@@ -96,7 +96,7 @@
   color: var(--on-accent);
   font: 600 14px var(--font-body);
   box-shadow: 0 3px 3px rgb(224 67 71 / 22%), 0 12px 28px var(--accent-shadow);
-  animation: slot 680ms var(--spring-loose) 160ms both;
+  animation: global(slot) 680ms var(--spring-loose) 160ms both;
   transition:
     transform var(--t-touch) var(--ease-touch),
     box-shadow var(--t-touch) var(--ease-touch);
@@ -123,5 +123,5 @@
   color: var(--accent-strong);
   font: 600 13px/1.5 var(--font-body);
   text-wrap: pretty;
-  animation: slot 480ms var(--spring-settle) both;
+  animation: global(slot) 480ms var(--spring-settle) both;
 }

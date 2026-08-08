@@ -13,12 +13,36 @@
     var(--bg);
 }
 
+/*
+ * While a lens is open the tree pulls back and loses its colour, so it reads as
+ * the background of a shot rather than as a page with a panel on it. The blur
+ * is the lens's own, applied to its backdrop, so it irises outward with the
+ * circle instead of being painted over the whole canvas.
+ */
+.screenRecede {
+  animation: global(recede) 720ms var(--spring-firm) forwards;
+}
+
+/* The same curve run backwards, so the tree comes forward as the lens shuts. */
+.screenReturn {
+  animation: global(recede) 400ms var(--ease-touch) reverse forwards;
+}
+
 .canvas {
   position: absolute;
   left: 0;
   top: 0;
   transform-origin: 0 0;
   direction: ltr;
+}
+
+/*
+ * Only while the lens is open. Pointer events are on the overlay by then, so
+ * this can never make a drag feel laggy — it exists so that walking from one
+ * relative to the next glides the camera behind the lens instead of cutting.
+ */
+.canvasGlide {
+  transition: transform 820ms var(--spring-firm);
 }
 
 .wires {
@@ -37,7 +61,7 @@
 
 /* Drawn as if inked: the nib starts fine and swells as the line travels. */
 .wireDrawn {
-  animation: ink 1.15s var(--spring-firm) both;
+  animation: global(ink) 1.15s var(--spring-firm) both;
   animation-delay: var(--delay, 0s);
 }
 
@@ -56,7 +80,7 @@
   box-shadow: var(--lift-1);
   border-bottom: 2px solid var(--paper-edge);
   pointer-events: none;
-  animation: focusIn 700ms var(--spring-firm) 500ms both;
+  animation: global(focusIn) 700ms var(--spring-firm) 500ms both;
 }
 
 .station {
@@ -77,14 +101,14 @@
   height: 84px;
   border-radius: 50%;
   border: 6px solid var(--gen, var(--accent));
-  animation: pulseRing 1.9s var(--ease-touch) infinite;
+  animation: global(pulseRing) 1.9s var(--ease-touch) infinite;
   pointer-events: none;
 }
 
 /* Nodes wind up, drop, and wobble to rest. */
 .node {
   border-radius: 50%;
-  animation: plant 700ms var(--anticipate) backwards;
+  animation: global(plant) 700ms var(--anticipate) backwards;
   animation-delay: var(--delay, 0s);
   transition: transform var(--t-touch) var(--ease-touch);
 }
@@ -99,7 +123,18 @@
 
 /* The viewer's own node keeps a gentle pulse so it can be found at a glance. */
 .nodeMe {
-  animation: breathe 3.4s ease-in-out infinite;
+  animation: global(breathe) 3.4s ease-in-out infinite;
+}
+
+/*
+ * The open person's circle is not in the tree — it flew out of it and is the
+ * portrait at the top of their file. Leaving a copy behind would give the
+ * flight away, so the socket sits empty until the lens closes. The ring stays,
+ * marking where they came from.
+ */
+.nodeLifted {
+  opacity: 0;
+  transition: opacity 140ms var(--ease-exit);
 }
 
 .pill {
@@ -123,129 +158,6 @@
   color: var(--subtle);
 }
 
-/*
- * The person card, treated as a folded letter opening flat: it hinges down
- * from the node on a spring, carries a coloured file tab across its top edge,
- * and points back at the node with a small notch.
- */
-.card {
-  position: relative;
-  direction: rtl;
-  width: 308px;
-  max-width: 84vw;
-  background: var(--paper);
-  border-radius: 2px 2px var(--r-card) var(--r-card);
-  padding: 18px 20px 16px;
-  box-shadow: var(--lift-4);
-  transform-origin: top center;
-  animation: unfold var(--t-settle) var(--spring-settle) both;
-  text-align: start;
-  cursor: default;
-  border-top: 5px solid var(--gen, var(--accent));
-}
-
-/* The notch tying the card back to the node it belongs to. */
-.card::before {
-  content: "";
-  position: absolute;
-  top: -14px;
-  left: 50%;
-  margin-left: -9px;
-  width: 0;
-  height: 0;
-  border-left: 9px solid transparent;
-  border-right: 9px solid transparent;
-  border-bottom: 10px solid var(--gen, var(--accent));
-}
-
-.cardHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.cardCohort {
-  font: 600 11px var(--font-body);
-  color: var(--gen-text, var(--accent-strong));
-  letter-spacing: 0.08em;
-  text-transform: none;
-}
-
-.cardName {
-  font: 400 25px var(--font-display);
-  color: var(--ink);
-  margin-top: 2px;
-}
-
-.cardClose {
-  color: var(--faint);
-  font: 400 18px var(--font-body);
-  flex: none;
-  line-height: 1;
-  transition:
-    transform var(--t-touch) var(--ease-touch),
-    color var(--t-touch) var(--ease-touch);
-}
-
-.cardClose:hover {
-  color: var(--ink);
-  transform: rotate(-90deg);
-}
-
-.cardTags {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.tagCohort {
-  font: 600 11px var(--font-body);
-  color: var(--gen-text, var(--accent-strong));
-  background: var(--gen-wash, var(--accent-wash));
-  border-radius: 3px;
-  padding: 4px 12px;
-}
-
-.tagPlace {
-  font: 600 11px var(--font-body);
-  color: var(--body);
-  background: var(--paper-tint);
-  border-radius: 3px;
-  padding: 4px 12px;
-}
-
-.cardStory {
-  font: 300 13px/1.62 var(--font-body);
-  color: var(--body);
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-  text-wrap: pretty;
-}
-
-.cardLink {
-  display: inline-block;
-  font: 600 13px var(--font-body);
-  color: var(--on-accent);
-  background: var(--gen, var(--accent));
-  border-radius: var(--r-pill);
-  padding: 9px 22px;
-  margin-top: 14px;
-  box-shadow: 0 2px 2px rgb(0 0 0 / 8%), 0 10px 22px var(--gen-shadow, var(--accent-shadow));
-  transition: transform var(--t-touch) var(--ease-touch);
-}
-
-.cardLink:hover {
-  color: var(--on-accent);
-  transform: translateY(-3px) rotate(-1deg);
-}
-
-.cardLink:active {
-  transform: translateY(0) scale(0.97);
-}
-
 /* Hand-written on the print, so it sits at an angle. */
 .youAreHere {
   position: absolute;
@@ -258,7 +170,7 @@
   white-space: nowrap;
   transform: rotate(-3deg);
   pointer-events: none;
-  animation: slot 700ms var(--spring-loose) 700ms both;
+  animation: global(slot) 700ms var(--spring-loose) 700ms both;
 }
 
 /* ------------------------------------------------------------- controls */
@@ -327,7 +239,7 @@
   color: var(--ink);
   pointer-events: none;
   z-index: 4;
-  animation: focusIn 800ms var(--spring-firm) both;
+  animation: global(focusIn) 800ms var(--spring-firm) both;
 }
 
 .hint {
@@ -342,5 +254,5 @@
   border-radius: var(--r-pill);
   pointer-events: none;
   white-space: nowrap;
-  animation: focusIn 900ms var(--spring-firm) 1.4s both;
+  animation: global(focusIn) 900ms var(--spring-firm) 1.4s both;
 }

@@ -1,0 +1,479 @@
+/*
+ * The lens.
+ *
+ * A person is not shown in a panel that slides in from somewhere; the screen
+ * opens up around the node that was touched. Everything here serves that: the
+ * circle grows from `--ox/--oy`, the light in the background blooms from the
+ * same point, and the portrait flies out of the tree into its place in the file.
+ *
+ * The blur belongs to the lens rather than to the tree, so the depth of field
+ * irises outward with the circle — and so a canvas several thousand pixels wide
+ * never has a filter applied to it.
+ */
+.lens {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  direction: rtl;
+  overflow: hidden;
+  isolation: isolate;
+  cursor: zoom-out;
+
+  background: var(--gen-wash, var(--accent-wash));
+  background:
+    radial-gradient(
+      54% 46% at var(--ox, 50%) var(--oy, 50%),
+      rgb(255 255 255 / 55%) 0%,
+      rgb(255 255 255 / 12%) 42%,
+      transparent 68%
+    ),
+    color-mix(in srgb, var(--gen-wash, var(--accent-wash)) 88%, transparent);
+  backdrop-filter: blur(7px) saturate(0.34) brightness(1.04);
+
+  animation: global(lensOpen) 780ms var(--spring-firm) both;
+}
+
+.lensClosing {
+  animation: global(lensClose) 420ms var(--ease-exit) both;
+}
+
+/*
+ * The person's initial, set enormous and nearly invisible behind everything.
+ * Wrapped so it can overflow its own box without ever adding to the page's
+ * scrollable area.
+ */
+.monogramWrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.monogram {
+  position: absolute;
+  /* Away from the hero column, so it fills the quiet corner under the
+     milestones rather than sitting behind the family. */
+  inset-inline-end: -0.06em;
+  bottom: -0.22em;
+  font: 400 clamp(240px, 52vh, 520px) / 0.8 var(--font-display);
+  color: var(--gen, var(--accent));
+  opacity: 0.085;
+  user-select: none;
+  animation: global(focusIn) 1400ms var(--spring-firm) 220ms backwards;
+}
+
+.close {
+  position: absolute;
+  z-index: 3;
+  top: max(16px, env(safe-area-inset-top));
+  inset-inline-end: max(16px, env(safe-area-inset-right));
+  width: 48px;
+  height: 48px;
+  /* Three round corners and one square: the same off-key shape the rest of the
+     app uses for its controls. */
+  border-radius: 50% 50% 50% 8px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--lift-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 400 23px var(--font-body);
+  line-height: 1;
+  cursor: pointer;
+  animation: global(plant) 700ms var(--anticipate) 380ms backwards;
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
+}
+
+.close:hover {
+  transform: rotate(-90deg) scale(1.1);
+  box-shadow: var(--lift-4);
+}
+
+.close:active {
+  transform: rotate(-90deg) scale(0.94);
+}
+
+/* The scrolling layer. Clicking its empty margin bubbles up to the lens and
+   closes it; `.stage` swallows clicks on the file itself. */
+.sheet {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: clamp(24px, 5.5vh, 64px) clamp(18px, 4vw, 56px)
+    max(48px, env(safe-area-inset-bottom));
+}
+
+/*
+ * One column on a phone — portrait, name, the way onward, the story, the
+ * milestones, then the family. Two on a desk, with the family tucked under the
+ * portrait and the story running full height beside them.
+ */
+.stage {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  gap: clamp(24px, 3vw, 46px);
+  grid-template-areas:
+    "hero"
+    "body"
+    "kin";
+  align-content: start;
+  cursor: default;
+}
+
+/* ------------------------------------------------------------------- hero */
+
+.hero {
+  grid-area: hero;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/*
+ * The FLIP element. It carries no resting transform of its own, so the
+ * animation can own that property outright, and `backwards` means the moment
+ * the flight ends the element is back under normal CSS control.
+ */
+.portrait {
+  display: flex;
+  flex: none;
+  border-radius: 50%;
+  filter: drop-shadow(0 20px 38px var(--gen-shadow, var(--accent-shadow)));
+}
+
+.portraitLanding {
+  animation: global(land) 880ms var(--spring-settle) backwards;
+}
+
+.cohort {
+  margin-top: 22px;
+  font: 600 12px var(--font-body);
+  letter-spacing: 0.1em;
+  color: var(--gen-text, var(--accent-strong));
+  animation: global(rise) 620ms var(--spring-settle) calc(220ms + var(--l, 0) * 80ms) backwards;
+}
+
+.name {
+  margin-top: 4px;
+  font: 400 clamp(34px, 5vw, 52px) / 1.06 var(--font-display);
+  color: var(--ink);
+  text-wrap: balance;
+  animation: global(rise) 620ms var(--spring-settle) calc(220ms + var(--l, 0) * 80ms) backwards;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 14px;
+  animation: global(rise) 620ms var(--spring-settle) calc(220ms + var(--l, 0) * 80ms) backwards;
+}
+
+.tagYears,
+.tagPlace,
+.tagMe {
+  border-radius: 3px;
+  padding: 5px 13px;
+  font: 600 11.5px var(--font-body);
+}
+
+.tagYears {
+  background: var(--paper);
+  color: var(--gen-text, var(--accent-strong));
+  box-shadow: var(--lift-1);
+}
+
+.tagPlace {
+  background: var(--paper);
+  color: var(--body);
+  box-shadow: var(--lift-1);
+}
+
+.tagMe {
+  background: var(--ink);
+  color: var(--bg);
+  transform: rotate(-2.5deg);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 20px;
+  animation: global(rise) 620ms var(--spring-settle) calc(220ms + var(--l, 0) * 80ms) backwards;
+}
+
+/*
+ * Ink rather than the cohort colour, deliberately.
+ *
+ * The whole field behind it is that cohort's wash, and the founders' brown on
+ * its own tan reads at about 2.7:1 — the one control that must never be hard to
+ * find would be hardest to find for the oldest generation. The colour is
+ * carried by the ring, the spines and the labels instead, and the way onward
+ * stays the same weight for everyone.
+ */
+.primaryAction {
+  padding: 11px 26px;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--bg);
+  font: 600 13.5px var(--font-body);
+  white-space: nowrap;
+  box-shadow: 0 2px 2px rgb(43 35 32 / 16%), 0 12px 26px rgb(43 35 32 / 26%);
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+.primaryAction:hover {
+  color: var(--bg);
+  transform: translateY(-3px) rotate(-1deg);
+}
+
+.primaryAction:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.ghostAction {
+  padding: 11px 22px;
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  color: var(--body);
+  font: 600 13.5px var(--font-body);
+  white-space: nowrap;
+  box-shadow: var(--lift-1);
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+.ghostAction:hover {
+  color: var(--ink);
+  transform: translateY(-3px) rotate(1deg);
+}
+
+/* -------------------------------------------------------------------- kin */
+
+/*
+ * The family, as satellites around the person who is open. Touching one does
+ * not close this file and open another: the lens re-forms from that satellite's
+ * own circle, so walking the tree is one continuous movement.
+ */
+.kin {
+  grid-area: kin;
+  padding-top: 20px;
+  border-top: 1px dashed var(--paper-edge);
+  animation: global(rise) 620ms var(--spring-settle) calc(220ms + var(--l, 0) * 80ms) backwards;
+}
+
+.kinHint {
+  font: 600 11px var(--font-body);
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.kinGroup {
+  margin-top: 12px;
+}
+
+.kinLabel {
+  font: 600 11.5px var(--font-body);
+  color: var(--gen-text, var(--accent-strong));
+}
+
+.kinRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.satellite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 66px;
+  cursor: pointer;
+  animation: global(orbit) 640ms var(--spring-settle) calc(620ms + var(--o, 0) * 70ms) backwards;
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+.satellite:hover {
+  transform: translateY(-5px) scale(1.06);
+}
+
+.satellite:active {
+  transform: translateY(-1px) scale(0.95);
+}
+
+/* Sized to the avatar exactly — it is what the next lens is measured from. */
+.satelliteDisc {
+  display: flex;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  filter: drop-shadow(0 6px 12px var(--gen-shadow, var(--accent-shadow)));
+}
+
+.satelliteName {
+  font: 600 11px var(--font-body);
+  color: var(--body);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* ------------------------------------------------------------------- body */
+
+.body {
+  grid-area: body;
+  min-width: 0;
+}
+
+.story {
+  font: 300 clamp(15px, 1.5vw, 17.5px) / 1.72 var(--font-body);
+  color: var(--body);
+  max-width: 62ch;
+  text-wrap: pretty;
+  /* A rule down the bound edge, the way a quoted passage is marked. */
+  padding-inline-start: 18px;
+  border-inline-start: 3px solid var(--gen, var(--accent));
+  animation: global(rise) 620ms var(--spring-settle) calc(220ms + var(--l, 0) * 80ms) backwards;
+}
+
+.track,
+.relics {
+  margin-top: 30px;
+  animation: global(rise) 620ms var(--spring-settle) calc(220ms + var(--l, 0) * 80ms) backwards;
+}
+
+.sectionTitle {
+  font: 400 20px var(--font-display);
+  color: var(--ink);
+}
+
+.trackRail {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(214px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+/* An index card: coloured spine on the bound edge, square there, rounded away
+   from it. */
+.milestone {
+  position: relative;
+  background: var(--paper);
+  padding: 14px 18px 16px;
+  box-shadow: var(--lift-2);
+  border-inline-start: 5px solid var(--gen, var(--accent));
+  border-start-start-radius: 3px;
+  border-end-start-radius: 3px;
+  border-start-end-radius: 16px;
+  border-end-end-radius: 16px;
+  transform: rotate(var(--rest-tilt, 0deg));
+  animation: global(deal) 720ms var(--spring-settle) calc(560ms + var(--i, 0) * 85ms) backwards;
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
+}
+
+.milestone:hover {
+  transform: rotate(0deg) translateY(-4px);
+  box-shadow: var(--lift-3);
+}
+
+.milestoneYear {
+  font: 600 11px var(--font-body);
+  letter-spacing: 0.06em;
+  color: var(--gen-text, var(--accent-strong));
+}
+
+.milestoneTitle {
+  margin-top: 3px;
+  font: 600 14px var(--font-body);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.milestoneBody {
+  margin-top: 6px;
+  font: 300 12.5px/1.6 var(--font-body);
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.relicRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.relic {
+  width: 108px;
+  background: var(--paper);
+  border-radius: var(--r-print);
+  padding: 8px 8px 10px;
+  box-shadow: var(--lift-2);
+  transform: rotate(var(--rest-tilt, 0deg));
+  animation: global(slot) 640ms var(--spring-settle) calc(640ms + var(--i, 0) * 60ms) backwards;
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
+}
+
+.relic:hover {
+  transform: rotate(0deg) translateY(-6px) scale(1.03);
+  box-shadow: var(--lift-3);
+}
+
+.relicThumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 76px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--tone-wash);
+  color: var(--tone-text);
+  font: 400 24px var(--font-display);
+  box-shadow: inset 0 0 0 1px var(--paper-edge);
+}
+
+.relicThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.relicTitle {
+  display: block;
+  margin-top: 7px;
+  font: 600 11px var(--font-body);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+/* ----------------------------------------------------------------- layout */
+
+@media (min-width: 900px) {
+  .stage {
+    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+    grid-template-areas:
+      "hero body"
+      "kin  body";
+    align-items: start;
+  }
+
+  .body {
+    /* Optically level with the name rather than with the top of the portrait. */
+    padding-top: clamp(0px, 12vh, 96px);
+  }
+}

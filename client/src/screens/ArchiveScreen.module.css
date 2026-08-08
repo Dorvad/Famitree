@@ -9,7 +9,7 @@
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  animation: focusIn 520ms var(--spring-firm) both;
+  animation: global(focusIn) 520ms var(--spring-firm) both;
 }
 
 .title {
@@ -103,7 +103,7 @@
   padding: 10px 10px 14px;
   box-shadow: var(--lift-2);
   transform: rotate(var(--rest-tilt, 0deg));
-  animation: slot 620ms var(--spring-settle) both;
+  animation: global(slot) 620ms var(--spring-settle) both;
   animation-delay: calc(var(--i, 0) * var(--stagger));
   transition:
     transform var(--t-touch) var(--ease-touch),
@@ -157,7 +157,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  animation: develop 900ms var(--spring-firm) both;
+  animation: global(develop) 900ms var(--spring-firm) both;
   animation-delay: calc(var(--i, 0) * var(--stagger) + 140ms);
 }
 
@@ -193,7 +193,7 @@
   letter-spacing: 0.08em;
   transform: rotate(-8deg);
   opacity: 0.9;
-  animation: stamp 620ms var(--spring-settle) 360ms both;
+  animation: global(stamp) 620ms var(--spring-settle) 360ms both;
 }
 
 /* Sits on the mount, revealed on hover so it never competes with the print. */
