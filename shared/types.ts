@@ -165,6 +165,11 @@ export interface CreatePersonRequest {
   x?: number;
   y?: number;
   isProvisional?: boolean;
+  /** Uploaded portrait, shown inside the person's node instead of an initial. */
+  portraitMediaId?: string | null;
+  /** Uploaded oral-history recording. */
+  audioMediaId?: string | null;
+  audioLabel?: string | null;
 }
 
 export type UpdatePersonRequest = Partial<CreatePersonRequest>;
@@ -174,6 +179,8 @@ export interface CreateMilestoneRequest {
   title: string;
   body?: string;
 }
+
+export type UpdateMilestoneRequest = Partial<CreateMilestoneRequest>;
 
 export interface CreateArchiveItemRequest {
   kind: ArchiveKind;

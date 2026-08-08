@@ -1,0 +1,480 @@
+.wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 18px 18px 60px;
+}
+
+/* -------------------------------------------------------------------- head */
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  animation: focusIn 560ms var(--spring-firm) both;
+}
+
+.title {
+  font: 400 27px var(--font-display);
+  color: var(--ink);
+}
+
+.subtitle {
+  font: 300 13.5px var(--font-body);
+  color: var(--muted);
+}
+
+.headerLink {
+  margin-inline-start: auto;
+  padding: 7px 18px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--lift-1);
+  font: 600 12.5px var(--font-body);
+  color: var(--muted);
+  white-space: nowrap;
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
+}
+
+.headerLink:hover {
+  color: var(--ink);
+  transform: translateX(-4px);
+}
+
+/* -------------------------------------------------------------- add person */
+
+/* An empty pocket at the front of the file. */
+.addSlot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 18px 20px;
+  border: 3px dashed var(--border-dashed);
+  border-radius: 4px 4px var(--r-lg) var(--r-lg);
+  text-align: start;
+  animation: slot 620ms var(--spring-settle) 80ms backwards;
+  transition:
+    border-color var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    transform var(--t-touch) var(--ease-touch);
+}
+
+.addSlot:hover {
+  border-color: var(--accent);
+  background: var(--paper);
+  transform: translateY(-3px);
+}
+
+.addPlus {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent-wash);
+  color: var(--accent-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 400 22px var(--font-body);
+  transition: transform var(--t-settle) var(--spring-loose);
+}
+
+.addSlot:hover .addPlus {
+  transform: rotate(90deg) scale(1.12);
+}
+
+.addSlotTitle {
+  display: block;
+  font: 600 15px var(--font-body);
+  color: var(--ink);
+}
+
+.addSlotNote {
+  display: block;
+  font: 400 12px var(--font-body);
+  color: var(--subtle);
+  margin-top: 2px;
+}
+
+.addPanel {
+  margin-top: 18px;
+  background: var(--paper);
+  border-radius: 4px 4px var(--r-lg) var(--r-lg);
+  border-top: 5px solid var(--accent);
+  box-shadow: var(--lift-3);
+  padding: 20px;
+  transform-origin: top center;
+  animation: unfold var(--t-settle) var(--spring-settle) both;
+}
+
+.addTitle {
+  font: 400 21px var(--font-display);
+  color: var(--ink);
+}
+
+.addBody {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.addFields {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.addActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+/* ------------------------------------------------------------------ fields */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.label {
+  font: 600 11.5px var(--font-body);
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.input {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: var(--r-pill);
+  border: 3px solid var(--border);
+  background: var(--bg);
+  font: 400 14px var(--font-body);
+  color: var(--ink);
+  outline: none;
+  transition:
+    border-color var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-wash);
+}
+
+.input::placeholder {
+  color: var(--placeholder);
+}
+
+.select {
+  composes: input;
+  padding-block: 12px;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 7px 15px;
+  border-radius: var(--r-pill);
+  background: var(--bg);
+  color: var(--body);
+  font: 600 12px var(--font-body);
+  box-shadow: var(--lift-1);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
+}
+
+.chip:hover {
+  transform: translateY(-2px) rotate(-1deg);
+}
+
+.chipActive {
+  background: var(--ink);
+  color: var(--bg);
+  transform: translateY(-2px);
+}
+
+.ghost {
+  padding: 10px 20px;
+  border-radius: var(--r-pill);
+  font: 600 12.5px var(--font-body);
+  color: var(--muted);
+  transition: color var(--t-touch) var(--ease-touch);
+}
+
+.ghost:hover {
+  color: var(--ink);
+}
+
+.primary {
+  padding: 10px 22px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 600 12.5px var(--font-body);
+  box-shadow: 0 2px 2px rgb(224 67 71 / 22%), 0 8px 18px var(--accent-shadow);
+  white-space: nowrap;
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+.primary:hover:not(:disabled) {
+  transform: translateY(-3px) rotate(-1deg);
+}
+
+.primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+
+.primary:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------- card file */
+
+.group {
+  margin-top: 30px;
+}
+
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 400 17px var(--font-display);
+  color: var(--ink);
+}
+
+.groupDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--gen);
+  flex: none;
+}
+
+.groupRange {
+  font: 400 11.5px var(--font-body);
+  color: var(--subtle);
+}
+
+.cards {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* The closed record: a tab in the file, tilted a touch. */
+.card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: start;
+  background: var(--paper);
+  border-start-start-radius: 3px;
+  border-end-start-radius: 3px;
+  border-start-end-radius: var(--r-md);
+  border-end-end-radius: var(--r-md);
+  border-inline-start: 5px solid var(--gen);
+  padding: 12px 16px;
+  box-shadow: var(--lift-2);
+  transform: rotate(var(--rest-tilt, 0deg));
+  animation: slot 560ms var(--spring-settle) backwards;
+  animation-delay: calc(var(--i, 0) * 40ms);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
+}
+
+.card:hover {
+  transform: rotate(0deg) translateX(-5px);
+  box-shadow: var(--lift-3);
+}
+
+/* Open: straightened and pulled forward out of the drawer. */
+.cardOpen {
+  transform: rotate(0deg) translateX(-8px);
+  box-shadow: var(--lift-3);
+}
+
+.cardText {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardName {
+  display: block;
+  font: 600 15px var(--font-body);
+  color: var(--ink);
+}
+
+.cardMeta {
+  display: block;
+  font: 400 11.5px var(--font-body);
+  color: var(--subtle);
+  margin-top: 1px;
+}
+
+.cardFlag {
+  flex: none;
+  font: 700 10px var(--font-body);
+  letter-spacing: 0.06em;
+  color: var(--accent-strong);
+  border: 2px solid var(--accent-strong);
+  border-radius: 3px;
+  padding: 2px 7px;
+  transform: rotate(-6deg);
+}
+
+.cardChevron {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 400 14px var(--font-body);
+}
+
+/* ---------------------------------------------------------- removed drawer */
+
+.drawer {
+  margin-top: 34px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border-dashed);
+}
+
+.drawerToggle {
+  font: 600 12.5px var(--font-body);
+  color: var(--faint);
+  transition: color var(--t-touch) var(--ease-touch);
+}
+
+.drawerToggle:hover {
+  color: var(--ink);
+}
+
+.drawerList {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawerItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 10px 14px;
+  animation: slot 480ms var(--spring-settle) both;
+  /* Removed records read as faded until they are put back. */
+  opacity: 0.72;
+}
+
+.drawerItem:hover {
+  opacity: 1;
+}
+
+.drawerName {
+  flex: 1;
+  font: 600 13.5px var(--font-body);
+  color: var(--ink);
+}
+
+/* -------------------------------------------------------------------- misc */
+
+.footNote {
+  margin-top: 32px;
+  font: 300 12.5px/1.7 var(--font-body);
+  color: var(--subtle);
+  text-wrap: pretty;
+}
+
+.gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 60vh;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.gateTitle {
+  font: 400 28px var(--font-display);
+  color: var(--ink);
+  animation: focusIn 620ms var(--spring-firm) both;
+}
+
+.gateNote {
+  font: 300 15px/1.6 var(--font-body);
+  color: var(--muted);
+  max-width: 38ch;
+}
+
+.gateAction {
+  margin-top: 10px;
+  padding: 13px 30px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 600 14px var(--font-body);
+  box-shadow: 0 3px 3px rgb(224 67 71 / 22%), 0 12px 28px var(--accent-shadow);
+  animation: slot 680ms var(--spring-loose) 160ms both;
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+.gateAction:hover {
+  color: var(--on-accent);
+  transform: translateY(-4px) rotate(-1deg);
+}
+
+@media (max-width: 560px) {
+  .pair {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .headerLink {
+    margin-inline-start: 0;
+  }
+}

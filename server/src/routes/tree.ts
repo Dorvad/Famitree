@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { PersonDetail, SessionUser, TreeResponse } from '../../../shared/types.ts';
 
 import { allGenerations } from '../lib/generations.ts';
+import { getMedia } from '../repos/media.ts';
 import { ApiError } from '../middleware/errors.ts';
 import { pathParam } from '../lib/http.ts';
 import { requireAuth, requireReadAccess, requireRole } from '../middleware/session.ts';
@@ -19,6 +20,7 @@ import {
   listRelationships,
   removeRelationship,
   restorePerson,
+  updateMilestone,
   updatePerson,
   wouldCreateCycle,
 } from '../repos/people.ts';
@@ -28,6 +30,8 @@ export const treeRouter = Router();
 const currentYear = new Date().getFullYear();
 
 const yearField = z.number().int().min(1500).max(currentYear + 1).nullable().optional();
+
+const mediaField = z.string().trim().min(1).max(64).nullable().optional();
 
 const personBody = z.object({
   fullName: z.string().trim().min(1, 'צריך שם').max(120, 'השם ארוך מדי'),
@@ -40,9 +44,27 @@ const personBody = z.object({
   branch: z.string().trim().max(120).nullable().optional(),
   x: z.number().int().min(-20000).max(20000).optional(),
   y: z.number().int().min(-20000).max(20000).optional(),
+  // The repository has always understood these three; leaving them out of the
+  // schema meant zod stripped them and a portrait could never be attached.
+  portraitMediaId: mediaField,
+  audioMediaId: mediaField,
+  audioLabel: z.string().trim().max(200).nullable().optional(),
 });
 
 const personPatch = personBody.partial();
+
+/** Rejects a media reference that does not resolve, rather than storing a
+ *  link that would later render as a broken portrait. */
+function assertMediaExists(input: {
+  portraitMediaId?: string | null;
+  audioMediaId?: string | null;
+}): void {
+  for (const id of [input.portraitMediaId, input.audioMediaId]) {
+    if (id && !getMedia(id)) {
+      throw ApiError.badRequest('הקובץ שצורף לא נמצא. נסו להעלות אותו שוב.');
+    }
+  }
+}
 
 const milestoneBody = z.object({
   yearLabel: z.string().trim().min(1, 'צריך שנה').max(40),
@@ -89,8 +111,18 @@ treeRouter.get('/tree', requireReadAccess, (_req, res) => {
   res.json(body);
 });
 
-treeRouter.get('/people', requireReadAccess, (_req, res) => {
-  res.json(listPeople());
+/**
+ * `?includeArchived=1` is how the editor offers a restore. It is steward-only
+ * because archiving is: a member has no way to put a record back, so showing
+ * them the removed ones would only be confusing.
+ */
+treeRouter.get('/people', requireReadAccess, (req, res) => {
+  const wantsArchived = req.query['includeArchived'] === '1' ||
+    req.query['includeArchived'] === 'true';
+  if (wantsArchived && req.user?.role !== 'steward') {
+    throw ApiError.forbidden('רק מי שמופקד על הארכיון רואה רשומות שהוסרו.');
+  }
+  res.json(listPeople(wantsArchived));
 });
 
 treeRouter.get('/people/:id', requireReadAccess, (req, res) => {
@@ -103,6 +135,7 @@ treeRouter.get('/people/:id', requireReadAccess, (req, res) => {
 
 treeRouter.post('/people', requireAuth, (req, res) => {
   const input = personBody.parse(req.body);
+  assertMediaExists(input);
   res.status(201).json(createPerson(input));
 });
 
@@ -110,6 +143,7 @@ treeRouter.patch('/people/:id', requireAuth, (req, res) => {
   const person = requirePerson(pathParam(req, 'id'));
   assertCanEdit(req.user, person.id);
   const patch = personPatch.parse(req.body);
+  assertMediaExists(patch);
   res.json(updatePerson(person.id, patch));
 });
 
@@ -130,6 +164,17 @@ treeRouter.post('/people/:id/milestones', requireAuth, (req, res) => {
   const person = requirePerson(pathParam(req, 'id'));
   const input = milestoneBody.parse(req.body);
   res.status(201).json(addMilestone(person.id, input, req.user!.id));
+});
+
+treeRouter.patch('/people/:personId/milestones/:id', requireAuth, (req, res) => {
+  const person = requirePerson(pathParam(req, 'personId'));
+  const milestone = listMilestones(person.id).find((m) => m.id === pathParam(req, 'id'));
+  if (!milestone) throw ApiError.notFound('לא מצאנו את הזיכרון הזה.');
+  // Same rule as removal: your own contributions, or anything if you are the steward.
+  if (req.user!.role !== 'steward' && milestone.createdBy !== req.user!.id) {
+    throw ApiError.forbidden('אפשר לערוך רק זיכרונות שאתם הוספתם.');
+  }
+  res.json(updateMilestone(milestone.id, milestoneBody.partial().parse(req.body)));
 });
 
 treeRouter.delete('/people/:personId/milestones/:id', requireAuth, (req, res) => {

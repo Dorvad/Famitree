@@ -20,6 +20,11 @@ const TreeScreen = lazy(() =>
 const TimelineScreen = lazy(() =>
   import('./screens/TimelineScreen.tsx').then((m) => ({ default: m.TimelineScreen })),
 );
+// The workshop is only ever opened deliberately, and carries the whole editing
+// surface with it — a natural split point.
+const EditScreen = lazy(() =>
+  import('./screens/EditScreen.tsx').then((m) => ({ default: m.EditScreen })),
+);
 
 export function App(): React.JSX.Element {
   return (
@@ -33,6 +38,8 @@ export function App(): React.JSX.Element {
             <Route path="/timeline" element={<TimelineScreen />} />
             <Route path="/archive" element={<ArchiveScreen />} />
             <Route path="/person/:id" element={<PersonScreen />} />
+            <Route path="/edit" element={<EditScreen />} />
+            <Route path="/edit/:id" element={<EditScreen />} />
             {/* The design called this screen "the map"; keep the old path working. */}
             <Route path="/map" element={<Navigate to="/tree" replace />} />
             <Route path="*" element={<NotFoundScreen />} />

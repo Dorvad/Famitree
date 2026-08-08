@@ -4,9 +4,9 @@ A Hebrew, right-to-left web application for keeping a family's tree, timeline
 and heirlooms in one place. Built from a design prototype into a working
 full-stack app: React on the front, an Express + SQLite API behind it.
 
-Six screens — join, home, the tree, the timeline, the archive, and a person's
-page — plus a search sheet and a three-step flow for adding a photograph,
-letter, recording, object or story.
+Seven screens — join, home, the tree, the timeline, the archive, a person's
+page, and an editing workshop — plus a search sheet and a three-step flow for
+adding a photograph, letter, recording, object or story.
 
 ---
 
@@ -62,6 +62,36 @@ client/
 ```
 
 ---
+
+## Editing — `/edit`
+
+The workshop, presented as the card file the rest of the app borrows from: a
+drawer of records, each of which unfolds into its own editor. `/edit/:id` opens
+one directly, so a card is linkable.
+
+**Adding someone asks how they are related before creating them** — child of,
+spouse of, parent of, or unlinked. That is both how people actually think about
+it and what makes placement work: the server can only auto-place from a birth
+year, so it drops a new person at the next free slot in their cohort's row,
+which would put a new husband halfway across the board from his wife. Knowing
+the relationship first, `client/src/lib/placement.ts` puts a spouse 180px beside
+their partner, a first child centred under the couple one row down, and a later
+child next to its siblings so the sibling bus stays tight.
+
+Each opened card gives you: a portrait dropzone (uploads immediately, resolves
+with the same `develop` wipe as the archive), the core fields, the story,
+milestones with inline editing, family links with a relation picker, a D-pad for
+nudging the node's position, and — for stewards — archive with a two-step
+confirm. Saving is explicit, with an unsaved-changes indicator, rather than a
+PATCH per keystroke.
+
+Removed records collect in a drawer at the bottom that only stewards see, since
+only stewards can put one back.
+
+Permissions are the same rules as everywhere else: a member can edit the card
+bound to their own account and add people, memories and links. Everyone else's
+records are read-only for them, and the editor says so rather than failing at
+save time.
 
 ## The design language
 
@@ -193,6 +223,10 @@ Each of these was a deliberate change, not an oversight:
   git-ignored. It is the only thing worth backing up, and nothing else in the
   repo is stateful.
 - **There is no automated test suite yet.** Verification so far is a browser
-  smoke run over the six screens plus the join, upload and memory flows. Unit
-  tests around `tree-layout.ts` and the permission checks would be the highest
-  value place to start.
+  smoke run over the seven screens plus the join, upload, memory and editing
+  flows. Unit tests around `tree-layout.ts`, `placement.ts` and the permission
+  checks would be the highest-value place to start.
+- **Archive treasures and person records are edited in different places.**
+  Photographs, letters and recordings belonging to the whole family go through
+  the archive's add flow; `/edit` covers people and the information about them.
+  That split is deliberate but worth revisiting if it turns out to be confusing.

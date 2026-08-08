@@ -1,0 +1,575 @@
+/*
+ * The opened card. It hinges down from the summary row above it, so the whole
+ * thing reads as one record being unfolded rather than a form appearing.
+ */
+.panel {
+  background: var(--paper);
+  border-start-start-radius: 3px;
+  border-end-start-radius: 3px;
+  border-start-end-radius: var(--r-lg);
+  border-end-end-radius: var(--r-lg);
+  border-inline-start: 5px solid var(--gen, var(--accent));
+  box-shadow: var(--lift-3);
+  padding: 20px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transform-origin: top center;
+  animation: unfold var(--t-settle) var(--spring-settle) both;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.readOnly {
+  font: 600 12px/1.5 var(--font-body);
+  color: var(--amber-strong);
+  background: var(--amber-wash);
+  border-inline-start: 4px solid var(--amber-strong);
+  border-radius: 4px;
+  padding: 10px 14px;
+}
+
+/* ---------------------------------------------------------------- identity */
+
+.identityRow {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.identityFields {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.label {
+  font: 600 11.5px var(--font-body);
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+
+.input {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: var(--r-pill);
+  border: 3px solid var(--border);
+  background: var(--bg);
+  font: 400 14px var(--font-body);
+  color: var(--ink);
+  outline: none;
+  transition:
+    border-color var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
+}
+
+.input:focus {
+  border-color: var(--gen, var(--accent));
+  box-shadow: 0 0 0 4px var(--gen-wash, var(--accent-wash));
+}
+
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input::placeholder {
+  color: var(--placeholder);
+}
+
+.inputBad {
+  border-color: var(--accent-strong);
+}
+
+.fieldError {
+  font: 600 11px var(--font-body);
+  color: var(--accent-strong);
+}
+
+.textarea {
+  composes: input;
+  border-radius: 20px;
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+/* -------------------------------------------------------------- save strip */
+
+.saveRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.saveState {
+  font: 600 11.5px var(--font-body);
+  color: var(--muted);
+  margin-inline-end: auto;
+}
+
+.ghost {
+  padding: 9px 18px;
+  border-radius: var(--r-pill);
+  font: 600 12.5px var(--font-body);
+  color: var(--muted);
+  transition: color var(--t-touch) var(--ease-touch);
+}
+
+.ghost:hover {
+  color: var(--ink);
+}
+
+.primary {
+  padding: 10px 22px;
+  border-radius: var(--r-pill);
+  background: var(--gen, var(--accent));
+  color: var(--on-accent);
+  font: 600 12.5px var(--font-body);
+  box-shadow: 0 2px 2px rgb(0 0 0 / 8%), 0 8px 18px var(--gen-shadow, var(--accent-shadow));
+  white-space: nowrap;
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+.primary:hover:not(:disabled) {
+  transform: translateY(-3px) rotate(-1deg);
+}
+
+.primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+
+.primary:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------- sections */
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 400 16px var(--font-display);
+  color: var(--ink);
+  margin-top: 6px;
+}
+
+.sectionTitle::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+}
+
+/* -------------------------------------------------------------- milestones */
+
+.milestoneList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.milestoneItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 10px 12px;
+  animation: slot 480ms var(--spring-settle) backwards;
+  animation-delay: calc(var(--i, 0) * 36ms);
+}
+
+.milestoneYear {
+  flex: none;
+  font: 400 13px var(--font-display);
+  color: var(--on-accent);
+  background: var(--gen, var(--accent));
+  border-radius: 3px;
+  padding: 2px 10px;
+  unicode-bidi: isolate;
+}
+
+.milestoneText {
+  flex: 1;
+  min-width: 0;
+}
+
+.milestoneTitle {
+  display: block;
+  font: 600 13px var(--font-body);
+  color: var(--ink);
+}
+
+.milestoneBody {
+  display: block;
+  font: 300 12px/1.5 var(--font-body);
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.milestoneTools {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.tool {
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font: 600 11px var(--font-body);
+  color: var(--muted);
+  transition:
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
+}
+
+.tool:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.toolDanger {
+  composes: tool;
+}
+
+.toolDanger:hover {
+  background: var(--accent-wash);
+  color: var(--accent-strong);
+}
+
+.milestoneEdit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 12px;
+  animation: unfold 520ms var(--spring-settle) both;
+  transform-origin: top center;
+}
+
+.inlineActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* An empty slot in the file, waiting to be filled. */
+.addSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 3px dashed var(--border-dashed);
+  border-radius: 4px;
+  padding: 12px;
+  font: 600 12.5px var(--font-body);
+  color: var(--muted);
+  transition:
+    border-color var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    transform var(--t-touch) var(--ease-touch);
+}
+
+.addSlot:hover {
+  border-color: var(--accent);
+  background: var(--bg);
+  color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.addPlus {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-wash);
+  color: var(--accent-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 400 16px var(--font-body);
+  transition: transform var(--t-settle) var(--spring-loose);
+}
+
+.addSlot:hover .addPlus {
+  transform: rotate(90deg) scale(1.12);
+}
+
+/* ------------------------------------------------------------------ family */
+
+.linkList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.linkItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 8px 12px;
+  animation: slot 440ms var(--spring-settle) both;
+}
+
+.linkKind {
+  flex: none;
+  font: 600 10.5px var(--font-body);
+  color: var(--gen-text, var(--accent-strong));
+  background: var(--gen-wash, var(--accent-wash));
+  border-radius: 3px;
+  padding: 2px 9px;
+}
+
+.linkName {
+  flex: 1;
+  font: 600 13px var(--font-body);
+  color: var(--ink);
+}
+
+.linkRemove {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: var(--faint);
+  font: 400 15px var(--font-body);
+  line-height: 1;
+  transition:
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch),
+    transform var(--t-touch) var(--ease-touch);
+}
+
+.linkRemove:hover {
+  background: var(--accent-wash);
+  color: var(--accent-strong);
+  transform: rotate(-90deg);
+}
+
+.linkEmpty {
+  font: 300 12.5px var(--font-body);
+  color: var(--subtle);
+  padding: 6px 2px;
+}
+
+.linkForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  background: var(--bg);
+  color: var(--body);
+  font: 600 12px var(--font-body);
+  box-shadow: var(--lift-1);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
+}
+
+.chip:hover {
+  transform: translateY(-2px) rotate(-1deg);
+}
+
+.chipActive {
+  background: var(--ink);
+  color: var(--bg);
+  transform: translateY(-2px);
+}
+
+.linkRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.select {
+  flex: 1;
+  min-width: 180px;
+  padding: 11px 16px;
+  border-radius: var(--r-pill);
+  border: 3px solid var(--border);
+  background: var(--bg);
+  font: 400 13.5px var(--font-body);
+  color: var(--ink);
+  outline: none;
+}
+
+.select:focus {
+  border-color: var(--gen, var(--accent));
+}
+
+/* ---------------------------------------------------------------- position */
+
+.positionRow {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+/* A small D-pad, which is a clearer way to say "move this" than two number
+   fields holding canvas coordinates. */
+.pad {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 34px);
+  grid-template-rows: repeat(3, 34px);
+  gap: 4px;
+}
+
+.padUp,
+.padDown,
+.padStart,
+.padEnd {
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: var(--lift-1);
+  color: var(--ink);
+  font: 400 15px var(--font-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch);
+}
+
+.padUp:hover,
+.padDown:hover,
+.padStart:hover,
+.padEnd:hover {
+  background: var(--surface-hover);
+  transform: scale(1.08);
+}
+
+.padUp:active,
+.padDown:active,
+.padStart:active,
+.padEnd:active {
+  transform: scale(0.9);
+}
+
+.padUp {
+  grid-column: 2;
+  grid-row: 1;
+}
+.padStart {
+  grid-column: 1;
+  grid-row: 2;
+}
+.padEnd {
+  grid-column: 3;
+  grid-row: 2;
+}
+.padDown {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.positionNote {
+  flex: 1;
+  min-width: 200px;
+  font: 300 12px/1.6 var(--font-body);
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+/* ----------------------------------------------------------------- archive */
+
+.dangerZone {
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-dashed);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dangerNote {
+  font: 300 12.5px/1.6 var(--font-body);
+  color: var(--body);
+}
+
+.dangerQuiet {
+  align-self: flex-start;
+  font: 600 12px var(--font-body);
+  color: var(--faint);
+  border-bottom: 2px dashed var(--border-dashed);
+  padding-bottom: 2px;
+  transition: color var(--t-touch) var(--ease-touch);
+}
+
+.dangerQuiet:hover {
+  color: var(--accent-strong);
+}
+
+.danger {
+  padding: 10px 22px;
+  border-radius: var(--r-pill);
+  background: var(--accent-strong);
+  color: var(--on-accent);
+  font: 600 12.5px var(--font-body);
+  box-shadow: 0 2px 2px rgb(224 67 71 / 22%), 0 8px 18px var(--accent-shadow);
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+.danger:hover:not(:disabled) {
+  transform: translateY(-3px);
+}
+
+@media (max-width: 560px) {
+  .pair {
+    grid-template-columns: 1fr;
+  }
+
+  .milestoneItem {
+    flex-wrap: wrap;
+  }
+}

@@ -13,6 +13,9 @@ const TABS = [
   { to: '/archive', label: 'הארכיון', end: false },
 ] as const;
 
+/** Shown only to signed-in members — there is nothing to edit as a guest. */
+const EDIT_TAB = { to: '/edit', label: 'עריכה' } as const;
+
 export function AppShell({ children }: { children: React.ReactNode }): React.JSX.Element {
   const { openSearch } = useUi();
   const { data: session } = useSession();
@@ -62,6 +65,16 @@ export function AppShell({ children }: { children: React.ReactNode }): React.JSX
                 {tab.label}
               </NavLink>
             ))}
+            {user && (
+              <NavLink
+                to={EDIT_TAB.to}
+                className={({ isActive }) =>
+                  isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab
+                }
+              >
+                {EDIT_TAB.label}
+              </NavLink>
+            )}
           </nav>
 
           <div className={styles.actions}>

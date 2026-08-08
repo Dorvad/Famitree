@@ -22,6 +22,7 @@ import type {
   SessionResponse,
   TimelineEvent,
   TreeResponse,
+  UpdateMilestoneRequest,
   UpdatePersonRequest,
 } from '../../../shared/types.ts';
 
@@ -31,6 +32,7 @@ export const queryKeys = {
   session: ['session'] as const,
   tree: ['tree'] as const,
   person: (id: string) => ['person', id] as const,
+  archivedPeople: ['people', 'archived'] as const,
   archive: (kind?: ArchiveKind, personId?: string) => ['archive', kind ?? null, personId ?? null] as const,
   timeline: ['timeline'] as const,
 };
@@ -132,6 +134,86 @@ export function useAddMilestone(
         body,
       }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.person(personId) }),
+  });
+}
+
+/** Stewards only. Powers the editor's "removed records" drawer. */
+export function useArchivedPeople(enabled: boolean): UseQueryResult<Person[]> {
+  return useQuery({
+    queryKey: queryKeys.archivedPeople,
+    queryFn: () => request<Person[]>('/people?includeArchived=1'),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Invalidates everything a person's identity feeds into. Archiving or restoring
+ * changes the tree, the archived list, and that person's own page, so all three
+ * have to be refetched together or the UI contradicts itself.
+ */
+function usePersonLifecycle(path: 'archive' | 'restore') {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      request<Person>(`/people/${encodeURIComponent(id)}/${path}`, { method: 'POST' }),
+    onSuccess: (person) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.tree });
+      void qc.invalidateQueries({ queryKey: queryKeys.archivedPeople });
+      // Archiving deliberately leaves the person's own query alone. The editor
+      // is still mounted at this point, so both invalidating *and* removing
+      // would make its live observer refetch — and GET /people/:id 404s for an
+      // archived record. Left untouched, no request is made and the entry goes
+      // stale as the editor unmounts a moment later.
+      if (path === 'restore') {
+        void qc.invalidateQueries({ queryKey: queryKeys.person(person.id) });
+      }
+    },
+  });
+}
+
+export function useArchivePerson(): UseMutationResult<Person, Error, string> {
+  return usePersonLifecycle('archive');
+}
+
+export function useRestorePerson(): UseMutationResult<Person, Error, string> {
+  return usePersonLifecycle('restore');
+}
+
+export function useUpdateMilestone(
+  personId: string,
+): UseMutationResult<Milestone, Error, { id: string; patch: UpdateMilestoneRequest }> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }) =>
+      request<Milestone>(
+        `/people/${encodeURIComponent(personId)}/milestones/${encodeURIComponent(id)}`,
+        { method: 'PATCH', body: patch },
+      ),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.person(personId) }),
+  });
+}
+
+export function useRemoveMilestone(
+  personId: string,
+): UseMutationResult<void, Error, string> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      request<void>(
+        `/people/${encodeURIComponent(personId)}/milestones/${encodeURIComponent(id)}`,
+        { method: 'DELETE' },
+      ),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.person(personId) }),
+  });
+}
+
+export function useRemoveRelationship(): UseMutationResult<void, Error, string> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      request<void>(`/relationships/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.tree }),
   });
 }
 

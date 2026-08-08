@@ -93,9 +93,16 @@ export function PersonScreen(): React.JSX.Element {
   return (
     <ScrollArea>
       <div className={styles.wrap} style={generationVars(generation)}>
-        <Link to={`/tree?focus=${encodeURIComponent(person.id)}`} className={styles.back}>
-          → חזרה לאילן
-        </Link>
+        <div className={styles.topRow}>
+          <Link to={`/tree?focus=${encodeURIComponent(person.id)}`} className={styles.back}>
+            → חזרה לאילן
+          </Link>
+          {user && (
+            <Link to={`/edit/${person.id}`} className={styles.editLink}>
+              עריכת הכרטיס ✎
+            </Link>
+          )}
+        </div>
 
         <header className={styles.header}>
           <div className={styles.portrait}>

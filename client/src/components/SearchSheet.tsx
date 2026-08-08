@@ -78,15 +78,25 @@ export function SearchSheet(): React.JSX.Element {
       fg: 'var(--amber-strong)',
       onSelect: () => go('/archive'),
     },
-    {
-      key: 'timeline',
-      title: 'ציר הזמן',
-      note: 'לפי שנים',
-      icon: '⇢',
-      bg: 'var(--teal-wash)',
-      fg: 'var(--teal-strong)',
-      onSelect: () => go('/timeline'),
-    },
+    user
+      ? {
+          key: 'edit',
+          title: 'סדנת האילן',
+          note: 'אנשים ומידע',
+          icon: '✎',
+          bg: 'var(--teal-wash)',
+          fg: 'var(--teal-strong)',
+          onSelect: () => go('/edit'),
+        }
+      : {
+          key: 'timeline',
+          title: 'ציר הזמן',
+          note: 'לפי שנים',
+          icon: '⇢',
+          bg: 'var(--teal-wash)',
+          fg: 'var(--teal-strong)',
+          onSelect: () => go('/timeline'),
+        },
     user && myPerson
       ? {
           key: 'me',

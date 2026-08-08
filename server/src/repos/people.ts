@@ -186,6 +186,9 @@ export interface CreatePersonInput {
   x?: number;
   y?: number;
   isProvisional?: boolean;
+  portraitMediaId?: string | null;
+  audioMediaId?: string | null;
+  audioLabel?: string | null;
 }
 
 export function createPerson(input: CreatePersonInput): Person {
@@ -200,10 +203,12 @@ export function createPerson(input: CreatePersonInput): Person {
   db.prepare(
     `INSERT INTO people
        (id, full_name, initial, life_span, place, story, birth_year, death_year,
-        branch, x, y, is_provisional, generation_id, created_at, updated_at)
+        branch, x, y, is_provisional, generation_id,
+        portrait_media_id, audio_media_id, audio_label, created_at, updated_at)
      VALUES
        (@id, @fullName, @initial, @lifeSpan, @place, @story, @birthYear, @deathYear,
-        @branch, @x, @y, @isProvisional, @generationId, @at, @at)`,
+        @branch, @x, @y, @isProvisional, @generationId,
+        @portraitMediaId, @audioMediaId, @audioLabel, @at, @at)`,
   ).run({
     id,
     fullName: input.fullName,
@@ -218,6 +223,9 @@ export function createPerson(input: CreatePersonInput): Person {
     y: position.y,
     isProvisional: input.isProvisional ? 1 : 0,
     generationId: generationIdForYear(birthYear),
+    portraitMediaId: input.portraitMediaId ?? null,
+    audioMediaId: input.audioMediaId ?? null,
+    audioLabel: input.audioLabel ?? null,
     at,
   });
 
@@ -307,6 +315,41 @@ export function addMilestone(
     )
     .get(id) as MilestoneRow;
   return toMilestone(row);
+}
+
+/** Columns `updateMilestone` may touch, mapped from the API shape. */
+const MILESTONE_UPDATABLE: Record<string, string> = {
+  yearLabel: 'year_label',
+  title: 'title',
+  body: 'body',
+};
+
+export function updateMilestone(
+  id: string,
+  patch: Record<string, unknown>,
+): Milestone | null {
+  const sets: string[] = [];
+  const params: Record<string, unknown> = { id };
+
+  for (const [key, column] of Object.entries(MILESTONE_UPDATABLE)) {
+    if (!(key in patch)) continue;
+    sets.push(`${column} = @${key}`);
+    params[key] = patch[key] ?? '';
+  }
+
+  if (sets.length > 0) {
+    db.prepare(
+      `UPDATE milestones SET ${sets.join(', ')} WHERE id = @id AND archived_at IS NULL`,
+    ).run(params);
+  }
+
+  const row = db
+    .prepare(
+      `SELECT id, person_id, year_label, title, body, sort_order, created_by, created_at
+         FROM milestones WHERE id = ? AND archived_at IS NULL`,
+    )
+    .get(id) as MilestoneRow | undefined;
+  return row ? toMilestone(row) : null;
 }
 
 export function archiveMilestone(id: string): void {
