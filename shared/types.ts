@@ -192,6 +192,16 @@ export interface CreateArchiveItemRequest {
   mediaId?: string | null;
 }
 
+export type UpdateArchiveItemRequest = Partial<CreateArchiveItemRequest>;
+
+export interface CreateTimelineEventRequest {
+  year: number;
+  title: string;
+  personId?: string | null;
+}
+
+export type UpdateTimelineEventRequest = Partial<CreateTimelineEventRequest>;
+
 export interface CreateRelationshipRequest {
   personId: string;
   relatedPersonId: string;

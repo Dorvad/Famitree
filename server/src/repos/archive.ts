@@ -119,6 +119,40 @@ export function createArchiveItem(
   return created;
 }
 
+/** Columns `updateArchiveItem` may touch, mapped from the API shape. */
+const ARCHIVE_UPDATABLE: Record<string, string> = {
+  kind: 'kind',
+  title: 'title',
+  yearLabel: 'year_label',
+  subject: 'subject',
+  story: 'story',
+  personId: 'person_id',
+  mediaId: 'media_id',
+};
+
+export function updateArchiveItem(
+  id: string,
+  patch: Record<string, unknown>,
+): ArchiveItem | null {
+  const sets: string[] = [];
+  const params: Record<string, unknown> = { id };
+
+  for (const [key, column] of Object.entries(ARCHIVE_UPDATABLE)) {
+    if (!(key in patch)) continue;
+    sets.push(`${column} = @${key}`);
+    // personId and mediaId are nullable links; the text columns are not.
+    const nullable = key === 'personId' || key === 'mediaId';
+    params[key] = patch[key] ?? (nullable ? null : '');
+  }
+
+  if (sets.length > 0) {
+    db.prepare(
+      `UPDATE archive_items SET ${sets.join(', ')} WHERE id = @id AND archived_at IS NULL`,
+    ).run(params);
+  }
+  return getArchiveItem(id);
+}
+
 export function archiveArchiveItem(id: string): void {
   db.prepare('UPDATE archive_items SET archived_at = ? WHERE id = ?').run(nowIso(), id);
 }
@@ -134,7 +168,10 @@ interface EventRow {
 
 export function listTimelineEvents(): TimelineEvent[] {
   const rows = db
-    .prepare('SELECT id, year, title, person_id FROM timeline_events ORDER BY year ASC')
+    .prepare(
+      `SELECT id, year, title, person_id FROM timeline_events
+        WHERE archived_at IS NULL ORDER BY year ASC`,
+    )
     .all() as EventRow[];
   return rows.map((r) => ({
     id: r.id,
@@ -154,4 +191,47 @@ export function createTimelineEvent(input: {
     'INSERT INTO timeline_events (id, year, title, person_id, created_at) VALUES (?, ?, ?, ?, ?)',
   ).run(id, input.year, input.title, input.personId ?? null, nowIso());
   return { id, year: input.year, title: input.title, personId: input.personId ?? null };
+}
+
+export function getTimelineEvent(id: string): TimelineEvent | null {
+  const row = db
+    .prepare(
+      'SELECT id, year, title, person_id FROM timeline_events WHERE id = ? AND archived_at IS NULL',
+    )
+    .get(id) as EventRow | undefined;
+  return row
+    ? { id: row.id, year: row.year, title: row.title, personId: row.person_id }
+    : null;
+}
+
+const EVENT_UPDATABLE: Record<string, string> = {
+  year: 'year',
+  title: 'title',
+  personId: 'person_id',
+};
+
+export function updateTimelineEvent(
+  id: string,
+  patch: Record<string, unknown>,
+): TimelineEvent | null {
+  const sets: string[] = [];
+  const params: Record<string, unknown> = { id };
+
+  for (const [key, column] of Object.entries(EVENT_UPDATABLE)) {
+    if (!(key in patch)) continue;
+    sets.push(`${column} = @${key}`);
+    params[key] = patch[key] ?? null;
+  }
+
+  if (sets.length > 0) {
+    db.prepare(
+      `UPDATE timeline_events SET ${sets.join(', ')} WHERE id = @id AND archived_at IS NULL`,
+    ).run(params);
+  }
+  return getTimelineEvent(id);
+}
+
+/** Soft delete, matching every other record in the archive. */
+export function archiveTimelineEvent(id: string): void {
+  db.prepare('UPDATE timeline_events SET archived_at = ? WHERE id = ?').run(nowIso(), id);
 }

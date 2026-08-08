@@ -106,11 +106,12 @@ CREATE INDEX IF NOT EXISTS idx_archive_kind ON archive_items (kind, archived_at)
 CREATE INDEX IF NOT EXISTS idx_archive_created ON archive_items (created_at DESC);
 
 CREATE TABLE IF NOT EXISTS timeline_events (
-  id         TEXT    PRIMARY KEY,
-  year       INTEGER NOT NULL,
-  title      TEXT    NOT NULL,
-  person_id  TEXT REFERENCES people (id) ON DELETE SET NULL,
-  created_at TEXT    NOT NULL
+  id          TEXT    PRIMARY KEY,
+  year        INTEGER NOT NULL,
+  title       TEXT    NOT NULL,
+  person_id   TEXT REFERENCES people (id) ON DELETE SET NULL,
+  archived_at TEXT,
+  created_at  TEXT    NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_timeline_year ON timeline_events (year);

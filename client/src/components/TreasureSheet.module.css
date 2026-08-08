@@ -100,6 +100,92 @@
   color: var(--card-fg);
 }
 
+/* ---------------------------------------------------- type row (editing) */
+
+/*
+ * When editing, the kind is changed in place rather than by stepping back
+ * through a wizard the user never started.
+ */
+.typeRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.typeChip {
+  padding: 7px 15px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--body);
+  font: 600 12.5px var(--font-body);
+  box-shadow: var(--lift-1);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
+}
+
+.typeChip:hover {
+  transform: translateY(-2px) rotate(-1deg);
+}
+
+.typeChipActive {
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+  transform: translateY(-2px);
+  box-shadow: var(--lift-2);
+}
+
+/* ----------------------------------------------------------- remove zone */
+
+.dangerZone {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-dashed);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dangerNote {
+  font: 300 12.5px/1.6 var(--font-body);
+  color: var(--body);
+}
+
+.dangerActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.dangerQuiet {
+  align-self: flex-start;
+  font: 600 12px var(--font-body);
+  color: var(--faint);
+  border-bottom: 2px dashed var(--border-dashed);
+  padding-bottom: 2px;
+  transition: color var(--t-touch) var(--ease-touch);
+}
+
+.dangerQuiet:hover {
+  color: var(--accent-strong);
+}
+
+.danger {
+  padding: 11px 24px;
+  border-radius: var(--r-pill);
+  background: var(--accent-strong);
+  color: var(--on-accent);
+  font: 600 13px var(--font-body);
+  box-shadow: 0 2px 2px rgb(224 67 71 / 22%), 0 8px 18px var(--accent-shadow);
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+.danger:hover:not(:disabled) {
+  transform: translateY(-3px);
+}
+
 /* ------------------------------------------------------------- step two */
 
 .form {
@@ -518,6 +604,12 @@
 
 @media (min-width: 560px) {
   .typeGrid {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .typeGrid {
+    grid-template-columns: repeat(6, 1fr);
   }
 }

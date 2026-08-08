@@ -40,6 +40,24 @@ db.pragma('busy_timeout = 5000');
 
 db.exec(readFileSync(findSchema(), 'utf8'));
 
+/**
+ * Adds a column only if it is missing.
+ *
+ * `CREATE TABLE IF NOT EXISTS` leaves an existing table alone, so a schema
+ * change has no effect on a database that already holds a family's records.
+ * This closes that gap without needing a migration framework.
+ */
+function ensureColumn(table: string, column: string, definition: string): void {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  if (columns.some((c) => c.name === column)) return;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  console.log(`[shoresh] migrated: added ${table}.${column}`);
+}
+
+// Timeline events became removable after the first release; everything else
+// already carried a tombstone.
+ensureColumn('timeline_events', 'archived_at', 'TEXT');
+
 export function nowIso(): string {
   return new Date().toISOString();
 }

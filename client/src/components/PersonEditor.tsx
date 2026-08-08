@@ -10,9 +10,11 @@ import type {
   UpdatePersonRequest,
 } from '../../../shared/types.ts';
 
+import { mediaUrl } from '../api/client.ts';
 import {
   useAddMilestone,
   useAddRelationship,
+  useArchive,
   useArchivePerson,
   usePerson,
   useRemoveMilestone,
@@ -20,8 +22,9 @@ import {
   useUpdateMilestone,
   useUpdatePerson,
 } from '../api/hooks.ts';
-import { generationVars, givenName } from '../lib/format.ts';
+import { generationVars, givenName, kindColours } from '../lib/format.ts';
 import { NUDGE } from '../lib/placement.ts';
+import { useUi } from '../state/ui.tsx';
 import { InlineError, LoadingDots } from './Feedback.tsx';
 import { PortraitPicker } from './PortraitPicker.tsx';
 import styles from './PersonEditor.module.css';
@@ -97,6 +100,8 @@ export function PersonEditor({
   const addRelationship = useAddRelationship();
   const removeRelationship = useRemoveRelationship();
   const archivePerson = useArchivePerson();
+  const { data: treasures } = useArchive(undefined, personId);
+  const { openAddTreasure, openEditTreasure } = useUi();
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -614,6 +619,59 @@ export function PersonEditor({
           תחנה חדשה
         </button>
       )}
+
+      {/* --------------------------------------------------------- treasures */}
+
+      <h4 className={styles.sectionTitle}>אוצרות של {givenName(record.fullName)}</h4>
+
+      <ul className={styles.treasureList}>
+        {(treasures ?? []).map((item, index) => {
+          const tone = kindColours(item.kind);
+          const src = mediaUrl(item.mediaId);
+          return (
+            <li key={item.id} style={{ '--i': index } as React.CSSProperties}>
+              <button
+                type="button"
+                className={styles.treasure}
+                style={
+                  { '--tone-wash': tone.wash, '--tone-text': tone.text } as React.CSSProperties
+                }
+                onClick={() => openEditTreasure(item)}
+              >
+                <span className={styles.treasureThumb}>
+                  {src && item.kind !== 'קול' ? (
+                    <img src={src} alt="" loading="lazy" />
+                  ) : (
+                    item.kind.charAt(0)
+                  )}
+                </span>
+                <span className={styles.treasureText}>
+                  <span className={styles.treasureTitle}>{item.title}</span>
+                  <span className={styles.treasureMeta}>
+                    {item.kind} · {item.yearLabel}
+                  </span>
+                </span>
+                <span className={styles.treasureEdit} aria-hidden="true">
+                  ✎
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      <button
+        type="button"
+        className={styles.addSlot}
+        onClick={() =>
+          openAddTreasure({ subject: givenName(record.fullName), personId: record.id })
+        }
+      >
+        <span className={styles.addPlus} aria-hidden="true">
+          +
+        </span>
+        תצלום, מכתב או הקלטה של {givenName(record.fullName)}
+      </button>
 
       {/* ------------------------------------------------------------ family */}
 

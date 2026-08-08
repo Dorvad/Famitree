@@ -98,7 +98,7 @@ export function PersonScreen(): React.JSX.Element {
             → חזרה לאילן
           </Link>
           {user && (
-            <Link to={`/edit/${person.id}`} className={styles.editLink}>
+            <Link to={`/edit/people/${person.id}`} className={styles.editLink}>
               עריכת הכרטיס ✎
             </Link>
           )}

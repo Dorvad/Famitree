@@ -16,12 +16,22 @@ import { Avatar } from '../components/Avatar.tsx';
 import { ErrorState, InlineError, LoadingScreen } from '../components/Feedback.tsx';
 import { PersonEditor } from '../components/PersonEditor.tsx';
 import { PortraitPicker } from '../components/PortraitPicker.tsx';
+import { TimelineTab } from '../components/TimelineTab.tsx';
+import { TreasuresTab } from '../components/TreasuresTab.tsx';
 import { Years } from '../components/Years.tsx';
 import { generationVars, restTilt } from '../lib/format.ts';
 import { placeNewPerson, type NewPersonRelation } from '../lib/placement.ts';
 import styles from './EditScreen.module.css';
 
 const CURRENT_YEAR = new Date().getFullYear();
+
+type WorkshopTab = 'people' | 'treasures' | 'timeline';
+
+const TABS: ReadonlyArray<[WorkshopTab, string]> = [
+  ['people', 'אנשים'],
+  ['treasures', 'אוצרות'],
+  ['timeline', 'ציר הזמן'],
+];
 
 type RelationKind = 'spouse' | 'child' | 'parent' | 'none';
 
@@ -42,8 +52,13 @@ const RELATION_LABELS: ReadonlyArray<[RelationKind, string]> = [
  * partner or under their parents instead of at the next free slot.
  */
 export function EditScreen(): React.JSX.Element {
-  const { id: openId } = useParams<{ id: string }>();
+  const { tab: tabParam, id: openId } = useParams<{ tab?: string; id?: string }>();
   const navigate = useNavigate();
+
+  // Everything is edited from here, so the screen is split by what you are
+  // editing rather than by where the data happens to live.
+  const tab: WorkshopTab =
+    tabParam === 'treasures' || tabParam === 'timeline' ? tabParam : 'people';
 
   const { data: session, isPending: sessionPending } = useSession();
   const { data: tree, isPending, error, refetch } = useTree();
@@ -184,7 +199,7 @@ export function EditScreen(): React.JSX.Element {
 
       resetAddForm();
       setAdding(false);
-      navigate(`/edit/${created.id}`);
+      navigate(`/edit/people/${created.id}`);
     } catch (cause) {
       setNotice(cause instanceof Error ? cause.message : 'לא הצלחנו להוסיף. נסו שוב.');
     }
@@ -199,14 +214,31 @@ export function EditScreen(): React.JSX.Element {
       <div className={styles.wrap}>
         <header className={styles.header}>
           <h1 className={styles.title}>סדנת האילן</h1>
-          <p className={styles.subtitle}>
-            {tree.people.length} כרטיסים בקלסר · הוסיפו אנשים, תצלומים וסיפורים
-          </p>
+          <p className={styles.subtitle}>הכול נערך מכאן — אנשים, אוצרות וציר הזמן</p>
           <Link to="/tree" className={styles.headerLink}>
             לצפייה באילן ←
           </Link>
         </header>
 
+        <nav className={styles.tabs} aria-label="מה עורכים">
+          {TABS.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={tab === value ? `${styles.tab} ${styles.tabActive}` : styles.tab}
+              aria-current={tab === value ? 'page' : undefined}
+              onClick={() => navigate(`/edit/${value}`)}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        {tab === 'treasures' && <TreasuresTab user={user} />}
+        {tab === 'timeline' && <TimelineTab user={user} people={tree.people} />}
+
+        {tab === 'people' && (
+          <>
         {/* ------------------------------------------------------ add person */}
 
         {adding ? (
@@ -406,7 +438,7 @@ export function EditScreen(): React.JSX.Element {
                         } as React.CSSProperties
                       }
                       aria-expanded={open}
-                      onClick={() => navigate(open ? '/edit' : `/edit/${person.id}`)}
+                      onClick={() => navigate(open ? '/edit/people' : `/edit/people/${person.id}`)}
                     >
                       <Avatar person={person} generation={generation} size={48} />
                       <span className={styles.cardText}>
@@ -431,7 +463,7 @@ export function EditScreen(): React.JSX.Element {
                         relationships={tree.relationships}
                         generations={tree.generations}
                         user={user}
-                        onClose={() => navigate('/edit')}
+                        onClose={() => navigate('/edit/people')}
                       />
                     )}
                   </li>
@@ -478,9 +510,12 @@ export function EditScreen(): React.JSX.Element {
           </section>
         )}
 
+          </>
+        )}
+
         <p className={styles.footNote}>
-          תצלומים, מכתבים והקלטות של כל המשפחה נוספים דרך{' '}
-          <Link to="/archive">הארכיון</Link>. כאן מוסיפים אנשים והמידע עליהם.
+          כל מה שנוסף כאן מופיע מיד ב<Link to="/tree">אילן</Link>, ב
+          <Link to="/timeline">ציר הזמן</Link> וב<Link to="/archive">ארכיון</Link>.
         </p>
       </div>
     </ScrollArea>

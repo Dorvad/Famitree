@@ -1,0 +1,215 @@
+.wrap {
+  margin-top: 20px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Index tabs on a card file, as on the archive screen. */
+.filter {
+  padding: 7px 15px 6px;
+  border-radius: 12px 12px 4px 4px;
+  background: var(--surface);
+  color: var(--body);
+  font: 600 12px var(--font-body);
+  box-shadow: var(--lift-1);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
+}
+
+.filter:hover {
+  transform: translateY(-3px);
+}
+
+.filterActive {
+  background: var(--accent);
+  color: var(--on-accent);
+  transform: translateY(-4px);
+  box-shadow: 0 2px 2px rgb(224 67 71 / 20%), 0 8px 18px var(--accent-shadow);
+}
+
+.addSlot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 16px 20px;
+  border: 3px dashed var(--border-dashed);
+  border-radius: 4px 4px var(--r-lg) var(--r-lg);
+  text-align: start;
+  transition:
+    border-color var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    transform var(--t-touch) var(--ease-touch);
+}
+
+.addSlot:hover {
+  border-color: var(--accent);
+  background: var(--paper);
+  transform: translateY(-3px);
+}
+
+.addPlus {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--accent-wash);
+  color: var(--accent-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 400 21px var(--font-body);
+  transition: transform var(--t-settle) var(--spring-loose);
+}
+
+.addSlot:hover .addPlus {
+  transform: rotate(90deg) scale(1.12);
+}
+
+.addTitle {
+  display: block;
+  font: 600 15px var(--font-body);
+  color: var(--ink);
+}
+
+.addNote {
+  display: block;
+  font: 400 12px var(--font-body);
+  color: var(--subtle);
+  margin-top: 2px;
+}
+
+/* A contact sheet of prints, laid out evenly so scanning is easy — the
+   archive screen keeps the loose masonry, this is the working view. */
+.grid {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: start;
+  background: var(--paper);
+  border-radius: var(--r-print);
+  padding: 10px 10px 13px;
+  box-shadow: var(--lift-2);
+  transform: rotate(var(--rest-tilt, 0deg));
+  animation: slot 560ms var(--spring-settle) backwards;
+  animation-delay: calc(var(--i, 0) * 34ms);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
+}
+
+.card:hover:not(:disabled) {
+  transform: rotate(0deg) translateY(-6px) scale(1.02);
+  box-shadow: var(--lift-3);
+  z-index: 2;
+}
+
+.card:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 116px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--tone-wash);
+  box-shadow: inset 0 0 0 1px var(--paper-edge);
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.glyph {
+  font: 400 28px var(--font-display);
+  color: var(--tone-text);
+  opacity: 0.55;
+}
+
+.kindBadge {
+  position: absolute;
+  top: 7px;
+  inset-inline-end: 7px;
+  background: rgb(255 255 255 / 88%);
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
+  font: 600 10px var(--font-body);
+  color: var(--tone-text);
+}
+
+/* Flags an entry that still needs its scan or photograph attached. */
+.noFile {
+  position: absolute;
+  bottom: 7px;
+  inset-inline-start: 7px;
+  background: rgb(255 255 255 / 88%);
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
+  font: 600 10px var(--font-body);
+  color: var(--subtle);
+}
+
+.cardTitle {
+  display: block;
+  font: 600 12.5px var(--font-body);
+  color: var(--ink);
+  margin-top: 9px;
+  text-wrap: pretty;
+}
+
+.cardMeta {
+  display: block;
+  font: 400 10.5px var(--font-body);
+  color: var(--subtle);
+  margin-top: 2px;
+}
+
+.editHint {
+  display: block;
+  font: 600 10.5px var(--font-body);
+  color: var(--accent-strong);
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity var(--t-touch) var(--ease-touch);
+}
+
+.card:hover .editHint {
+  opacity: 1;
+}
+
+.empty {
+  margin-top: 24px;
+  font: 300 13.5px var(--font-body);
+  color: var(--subtle);
+}

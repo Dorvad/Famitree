@@ -5,14 +5,18 @@ import { ARCHIVE_KINDS } from '../../../shared/types.ts';
 
 import { ApiError } from '../middleware/errors.ts';
 import { pathParam } from '../lib/http.ts';
-import { requireAuth, requireReadAccess } from '../middleware/session.ts';
+import { requireAuth, requireReadAccess, requireRole } from '../middleware/session.ts';
 import {
   archiveArchiveItem,
+  archiveTimelineEvent,
   createArchiveItem,
   createTimelineEvent,
   getArchiveItem,
+  getTimelineEvent,
   listArchiveItems,
   listTimelineEvents,
+  updateArchiveItem,
+  updateTimelineEvent,
 } from '../repos/archive.ts';
 import { getMedia } from '../repos/media.ts';
 import { getPerson } from '../repos/people.ts';
@@ -57,6 +61,30 @@ archiveRouter.post('/archive', requireAuth, (req, res) => {
   res.status(201).json(createArchiveItem(input, req.user!.id));
 });
 
+/** Same rule as removal: your own contributions, or anything if you are the steward. */
+function assertCanEditItem(req: Parameters<typeof requireAuth>[0], createdBy: string | null): void {
+  if (req.user!.role !== 'steward' && createdBy !== req.user!.id) {
+    throw ApiError.forbidden('אפשר לערוך רק אוצרות שאתם הוספתם.');
+  }
+}
+
+archiveRouter.patch('/archive/:id', requireAuth, (req, res) => {
+  const item = getArchiveItem(pathParam(req, 'id'));
+  if (!item || item.archivedAt) throw ApiError.notFound('לא מצאנו את הפריט הזה.');
+  assertCanEditItem(req, item.createdBy);
+
+  const patch = createBody.partial().parse(req.body);
+  if (patch.personId) {
+    const person = getPerson(patch.personId);
+    if (!person || person.archivedAt) throw ApiError.badRequest('בן המשפחה שנבחר לא קיים.');
+  }
+  if (patch.mediaId && !getMedia(patch.mediaId)) {
+    throw ApiError.badRequest('הקובץ שצורף לא נמצא. נסו להעלות אותו שוב.');
+  }
+
+  res.json(updateArchiveItem(item.id, patch));
+});
+
 archiveRouter.post('/archive/:id/archive', requireAuth, (req, res) => {
   const item = getArchiveItem(pathParam(req, 'id'));
   if (!item || item.archivedAt) throw ApiError.notFound('לא מצאנו את הפריט הזה.');
@@ -86,4 +114,28 @@ archiveRouter.post('/timeline', requireAuth, (req, res) => {
     if (!person || person.archivedAt) throw ApiError.badRequest('בן המשפחה שנבחר לא קיים.');
   }
   res.status(201).json(createTimelineEvent(input));
+});
+
+/*
+ * Timeline events describe the family rather than one contributor, and the
+ * table carries no author, so amending or removing one is steward-only.
+ * Anyone may still add.
+ */
+archiveRouter.patch('/timeline/:id', requireRole('steward'), (req, res) => {
+  const event = getTimelineEvent(pathParam(req, 'id'));
+  if (!event) throw ApiError.notFound('לא מצאנו את האירוע הזה.');
+
+  const patch = eventBody.partial().parse(req.body);
+  if (patch.personId) {
+    const person = getPerson(patch.personId);
+    if (!person || person.archivedAt) throw ApiError.badRequest('בן המשפחה שנבחר לא קיים.');
+  }
+  res.json(updateTimelineEvent(event.id, patch));
+});
+
+archiveRouter.delete('/timeline/:id', requireRole('steward'), (req, res) => {
+  const event = getTimelineEvent(pathParam(req, 'id'));
+  if (!event) throw ApiError.notFound('לא מצאנו את האירוע הזה.');
+  archiveTimelineEvent(event.id);
+  res.status(204).end();
 });

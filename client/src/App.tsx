@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
-import { AddTreasureSheet } from './components/AddTreasureSheet.tsx';
+import { TreasureSheet } from './components/TreasureSheet.tsx';
 import { AppShell } from './components/AppShell.tsx';
 import { LoadingScreen } from './components/Feedback.tsx';
 import { SearchSheet } from './components/SearchSheet.tsx';
@@ -39,7 +39,8 @@ export function App(): React.JSX.Element {
             <Route path="/archive" element={<ArchiveScreen />} />
             <Route path="/person/:id" element={<PersonScreen />} />
             <Route path="/edit" element={<EditScreen />} />
-            <Route path="/edit/:id" element={<EditScreen />} />
+            <Route path="/edit/:tab" element={<EditScreen />} />
+            <Route path="/edit/:tab/:id" element={<EditScreen />} />
             {/* The design called this screen "the map"; keep the old path working. */}
             <Route path="/map" element={<Navigate to="/tree" replace />} />
             <Route path="*" element={<NotFoundScreen />} />
@@ -49,7 +50,7 @@ export function App(): React.JSX.Element {
 
       {/* Mounted once at the root so any screen can open them. */}
       <SearchSheet />
-      <AddTreasureSheet />
+      <TreasureSheet />
     </UiProvider>
   );
 }

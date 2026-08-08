@@ -5,8 +5,8 @@ and heirlooms in one place. Built from a design prototype into a working
 full-stack app: React on the front, an Express + SQLite API behind it.
 
 Seven screens — join, home, the tree, the timeline, the archive, a person's
-page, and an editing workshop — plus a search sheet and a three-step flow for
-adding a photograph, letter, recording, object or story.
+page, and an editing workshop where every record in the app can be created,
+corrected or removed.
 
 ---
 
@@ -65,9 +65,23 @@ client/
 
 ## Editing — `/edit`
 
-The workshop, presented as the card file the rest of the app borrows from: a
-drawer of records, each of which unfolds into its own editor. `/edit/:id` opens
+One place to edit everything, split by what you are editing rather than by
+where the data happens to live:
+
+| Tab | Covers |
+| --- | --- |
+| `/edit/people` | People, their details, portraits, milestones and family links |
+| `/edit/treasures` | Every photograph, letter, recording, document, object and story |
+| `/edit/timeline` | The family's dated events |
+
+Presented as the card file the rest of the app borrows from: a drawer of
+records, each of which unfolds into its own editor. `/edit/people/:id` opens
 one directly, so a card is linkable.
+
+**A treasure is created and edited by one component**, `TreasureSheet`, opened
+from the archive screen, from the treasures tab, or from a person's own card.
+Two entry points that each built their own form would drift; one that only
+knew how to *add* would still leave you hunting for somewhere to fix a typo.
 
 **Adding someone asks how they are related before creating them** — child of,
 spouse of, parent of, or unlinked. That is both how people actually think about
@@ -85,8 +99,15 @@ nudging the node's position, and — for stewards — archive with a two-step
 confirm. Saving is explicit, with an unsaved-changes indicator, rather than a
 PATCH per keystroke.
 
+A person's own treasures are listed inside their card, so adding a photograph
+of someone happens where you are already thinking about them.
+
 Removed records collect in a drawer at the bottom that only stewards see, since
 only stewards can put one back.
+
+Timeline events describe the family rather than one contributor and the table
+carries no author, so anyone may add one but amending or removing is
+steward-only.
 
 Permissions are the same rules as everywhere else: a member can edit the card
 bound to their own account and add people, memories and links. Everyone else's
@@ -226,7 +247,8 @@ Each of these was a deliberate change, not an oversight:
   smoke run over the seven screens plus the join, upload, memory and editing
   flows. Unit tests around `tree-layout.ts`, `placement.ts` and the permission
   checks would be the highest-value place to start.
-- **Archive treasures and person records are edited in different places.**
-  Photographs, letters and recordings belonging to the whole family go through
-  the archive's add flow; `/edit` covers people and the information about them.
-  That split is deliberate but worth revisiting if it turns out to be confusing.
+- **Schema changes need a line in `ensureColumn`.** `CREATE TABLE IF NOT EXISTS`
+  leaves an existing table alone, so a column added to `schema.sql` has no
+  effect on a database that already holds records. `server/src/db/index.ts`
+  applies missing columns idempotently at boot; add to it rather than assuming
+  the schema file is enough.

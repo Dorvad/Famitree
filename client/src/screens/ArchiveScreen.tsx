@@ -36,13 +36,17 @@ function isKind(value: string | null): value is ArchiveKind {
 
 export function ArchiveScreen(): React.JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { openAddTreasure } = useUi();
+  const { openAddTreasure, openEditTreasure } = useUi();
   const { data: session } = useSession();
 
   const kindParam = searchParams.get('kind');
   const activeKind = isKind(kindParam) ? kindParam : undefined;
 
   const { data: items, isPending, error, refetch } = useArchive(activeKind);
+
+  const user = session?.user ?? null;
+  const canEdit = (createdBy: string | null) =>
+    user !== null && (user.role === 'steward' || createdBy === user.id);
 
   const setKind = (kind: ArchiveKind | undefined) => {
     const next = new URLSearchParams(searchParams);
@@ -143,6 +147,19 @@ export function ArchiveScreen(): React.JSX.Element {
                     <span className={styles.kindBadge}>{item.kind}</span>
                     {isNew && <span className={styles.newBadge}>חדש</span>}
                   </div>
+
+                  {/* Opens the same sheet the workshop uses, so a correction can
+                      be made from wherever you happened to spot the mistake. */}
+                  {canEdit(item.createdBy) && (
+                    <button
+                      type="button"
+                      className={styles.editButton}
+                      onClick={() => openEditTreasure(item)}
+                      aria-label={`עריכת ${item.title}`}
+                    >
+                      ✎
+                    </button>
+                  )}
 
                   {isAudio && src && (
                     // eslint-disable-next-line jsx-a11y/media-has-caption

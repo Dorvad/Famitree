@@ -326,6 +326,90 @@
   transform: rotate(90deg) scale(1.12);
 }
 
+/* --------------------------------------------------------------- treasures */
+
+.treasureList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.treasure {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: start;
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 8px 12px;
+  animation: slot 460ms var(--spring-settle) backwards;
+  animation-delay: calc(var(--i, 0) * 34ms);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
+}
+
+.treasure:hover {
+  transform: translateX(-4px);
+  box-shadow: var(--lift-1);
+}
+
+.treasureThumb {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--tone-wash);
+  color: var(--tone-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 400 17px var(--font-display);
+  box-shadow: inset 0 0 0 1px var(--paper-edge);
+}
+
+.treasureThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.treasureText {
+  flex: 1;
+  min-width: 0;
+}
+
+.treasureTitle {
+  display: block;
+  font: 600 12.5px var(--font-body);
+  color: var(--ink);
+}
+
+.treasureMeta {
+  display: block;
+  font: 400 11px var(--font-body);
+  color: var(--subtle);
+  margin-top: 1px;
+}
+
+.treasureEdit {
+  flex: none;
+  color: var(--faint);
+  font: 400 14px var(--font-body);
+  opacity: 0;
+  transition: opacity var(--t-touch) var(--ease-touch);
+}
+
+.treasure:hover .treasureEdit {
+  opacity: 1;
+  color: var(--accent-strong);
+}
+
 /* ------------------------------------------------------------------ family */
 
 .linkList {

@@ -43,6 +43,44 @@
   transform: translateX(-4px);
 }
 
+/* ------------------------------------------------------------------- tabs */
+
+/* Divider tabs across the top of the drawer, one per kind of record. */
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 18px;
+  padding-bottom: 2px;
+  border-bottom: 2px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 10px 22px 9px;
+  border-radius: 14px 14px 0 0;
+  background: var(--surface);
+  color: var(--muted);
+  font: 600 13.5px var(--font-body);
+  box-shadow: var(--lift-1);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
+}
+
+.tab:hover {
+  color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.tabActive,
+.tabActive:hover {
+  background: var(--ink);
+  color: var(--bg);
+  transform: translateY(-3px);
+  box-shadow: 0 2px 2px rgb(43 35 32 / 16%), 0 8px 18px rgb(43 35 32 / 22%);
+}
+
 /* -------------------------------------------------------------- add person */
 
 /* An empty pocket at the front of the file. */

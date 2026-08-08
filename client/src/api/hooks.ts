@@ -13,6 +13,7 @@ import type {
   CreateMilestoneRequest,
   CreatePersonRequest,
   CreateRelationshipRequest,
+  CreateTimelineEventRequest,
   JoinRequest,
   MediaRef,
   Milestone,
@@ -22,8 +23,10 @@ import type {
   SessionResponse,
   TimelineEvent,
   TreeResponse,
+  UpdateArchiveItemRequest,
   UpdateMilestoneRequest,
   UpdatePersonRequest,
+  UpdateTimelineEventRequest,
 } from '../../../shared/types.ts';
 
 import { request } from './client.ts';
@@ -263,6 +266,31 @@ export function useCreateArchiveItem(): UseMutationResult<
   });
 }
 
+export function useUpdateArchiveItem(): UseMutationResult<
+  ArchiveItem,
+  Error,
+  { id: string; patch: UpdateArchiveItemRequest }
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }) =>
+      request<ArchiveItem>(`/archive/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: patch,
+      }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['archive'] }),
+  });
+}
+
+export function useRemoveArchiveItem(): UseMutationResult<void, Error, string> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      request<void>(`/archive/${encodeURIComponent(id)}/archive`, { method: 'POST' }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['archive'] }),
+  });
+}
+
 export function useUploadMedia(): UseMutationResult<MediaRef, Error, File> {
   return useMutation({
     mutationFn: (file: File) => {
@@ -280,5 +308,43 @@ export function useTimeline(): UseQueryResult<TimelineEvent[]> {
     queryKey: queryKeys.timeline,
     queryFn: () => request<TimelineEvent[]>('/timeline'),
     staleTime: 60_000,
+  });
+}
+
+export function useCreateTimelineEvent(): UseMutationResult<
+  TimelineEvent,
+  Error,
+  CreateTimelineEventRequest
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateTimelineEventRequest) =>
+      request<TimelineEvent>('/timeline', { method: 'POST', body }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.timeline }),
+  });
+}
+
+export function useUpdateTimelineEvent(): UseMutationResult<
+  TimelineEvent,
+  Error,
+  { id: string; patch: UpdateTimelineEventRequest }
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }) =>
+      request<TimelineEvent>(`/timeline/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: patch,
+      }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.timeline }),
+  });
+}
+
+export function useRemoveTimelineEvent(): UseMutationResult<void, Error, string> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      request<void>(`/timeline/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.timeline }),
   });
 }
