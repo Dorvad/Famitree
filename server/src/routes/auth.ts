@@ -45,7 +45,7 @@ const joinSchema = z.object({
   inviteCode: z.string().max(200).optional(),
 });
 
-authRouter.get('/session', (req, res) => {
+authRouter.get('/session', async (req, res) => {
   const body: SessionResponse = {
     user: req.user ?? null,
     inviteRequired,
@@ -54,7 +54,7 @@ authRouter.get('/session', (req, res) => {
   res.json(body);
 });
 
-authRouter.post('/join', joinLimiter, (req, res) => {
+authRouter.post('/join', joinLimiter, async (req, res) => {
   const input = joinSchema.parse(req.body);
 
   if (inviteRequired && !inviteCodeMatches(input.inviteCode ?? '')) {
@@ -66,11 +66,11 @@ authRouter.post('/join', joinLimiter, (req, res) => {
   let personId: string | null = null;
 
   if (input.personId) {
-    const person = getPerson(input.personId);
+    const person = await getPerson(input.personId);
     if (!person || person.archivedAt) throw ApiError.notFound('לא מצאנו את בן המשפחה הזה.');
     personId = person.id;
   } else if (input.birthYear != null) {
-    const person = createPerson({
+    const person = await createPerson({
       fullName: input.displayName,
       birthYear: input.birthYear,
       place: '',
@@ -82,7 +82,7 @@ authRouter.post('/join', joinLimiter, (req, res) => {
     personId = person.id;
   }
 
-  const user = createUser({
+  const user = await createUser({
     displayName: input.displayName,
     birthYear: input.birthYear ?? null,
     personId,
@@ -92,7 +92,7 @@ authRouter.post('/join', joinLimiter, (req, res) => {
   res.status(201).json({ user, inviteRequired, publicRead: env.publicRead } satisfies SessionResponse);
 });
 
-authRouter.post('/logout', (_req, res) => {
+authRouter.post('/logout', async (_req, res) => {
   clearSession(res);
   res.status(204).end();
 });
@@ -100,12 +100,12 @@ authRouter.post('/logout', (_req, res) => {
 const bindSchema = z.object({ personId: z.string().trim().min(1).max(64).nullable() });
 
 /** Lets someone who joined as a guest-branch later attach to a real node. */
-authRouter.post('/bind', requireAuth, (req, res) => {
+authRouter.post('/bind', requireAuth, async (req, res) => {
   const { personId } = bindSchema.parse(req.body);
   if (personId) {
-    const person = getPerson(personId);
+    const person = await getPerson(personId);
     if (!person || person.archivedAt) throw ApiError.notFound('לא מצאנו את בן המשפחה הזה.');
   }
-  const user = bindUserToPerson(req.user!.id, personId);
+  const user = await bindUserToPerson(req.user!.id, personId);
   res.json({ user, inviteRequired, publicRead: env.publicRead } satisfies SessionResponse);
 });

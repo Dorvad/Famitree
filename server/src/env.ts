@@ -55,6 +55,28 @@ if (isProduction && sessionSecret.length < 32) {
   );
 }
 
+const databaseUrl = process.env.DATABASE_URL?.trim() ?? '';
+if (!databaseUrl) {
+  throw new Error(
+    'DATABASE_URL is not set. Point it at a Postgres database — a managed one in ' +
+      'production (use the provider\'s *pooled* connection string), or a local ' +
+      'server for development. See .env.example.',
+  );
+}
+
+/**
+ * Where uploads go. `blob` keeps them in Vercel Blob, which is what production
+ * needs because a serverless filesystem does not survive the request that wrote
+ * to it. `disk` is the local-development driver and needs no cloud account, so
+ * `npm run dev` works on a fresh clone with nothing but Postgres.
+ */
+const storageDriver = (process.env.STORAGE_DRIVER ?? (isProduction ? 'blob' : 'disk')) as
+  | 'disk'
+  | 'blob';
+if (storageDriver !== 'disk' && storageDriver !== 'blob') {
+  throw new Error(`STORAGE_DRIVER must be "disk" or "blob", got "${storageDriver}"`);
+}
+
 const dataDir = path.resolve(
   path.join(repoRoot, 'server'),
   process.env.DATA_DIR ?? './data',
@@ -74,8 +96,10 @@ export const env = {
   isProduction,
   port: int('PORT', 4000),
   sessionSecret: sessionSecret || 'insecure-development-secret',
+  databaseUrl,
+  storageDriver,
   dataDir,
-  dbFile: path.join(dataDir, 'shoresh.db'),
+  /** Only used by the `disk` storage driver. */
   uploadDir: path.join(dataDir, 'uploads'),
   /** Empty string means joining is open to anyone who can reach the server. */
   inviteCode: process.env.INVITE_CODE?.trim() ?? '',

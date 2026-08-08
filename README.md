@@ -2,7 +2,7 @@
 
 A Hebrew, right-to-left web application for keeping a family's tree, timeline
 and heirlooms in one place. Built from a design prototype into a working
-full-stack app: React on the front, an Express + SQLite API behind it.
+full-stack app: React on the front, an Express + Postgres API behind it.
 
 **The tree is the app.** It answers at `/`, it is what you land on, and opening
 a person happens inside it rather than by leaving it. Around that: the timeline,
@@ -13,16 +13,20 @@ every record in the app can be created, corrected or removed.
 
 ## Running it
 
+Needs Node 20.11+ and a Postgres you can reach.
+
 ```bash
 npm install
-cp .env.example .env          # adjust as needed; defaults work for local use
+cp .env.example .env          # set DATABASE_URL; the rest works as shipped
+npm run db:migrate            # applies the schema, loads the sample family
 npm run dev                   # API on :4000, client on :5173
 ```
 
-Open <http://localhost:5173>. On first boot the database is created and seeded
-with the sample Leibovitz–Hirsch family so there is something to look at.
+Open <http://localhost:5173>. The sample Leibovitz–Hirsch family is loaded so
+there is something to look at.
 
-For a production run, the API also serves the built client from a single port:
+For a production run on one machine, the API also serves the built client from
+a single port:
 
 ```bash
 npm run build
@@ -30,13 +34,19 @@ SESSION_SECRET="$(node -e "console.log(require('crypto').randomBytes(48).toStrin
   NODE_ENV=production npm start   # everything on :4000
 ```
 
+**`db:migrate` is a step you run, not something that happens at boot.** It used
+to run on startup, which was free when startup meant one process opening one
+file. Against a shared database, on a platform free to start several instances
+at once, it is a race that writes the family in twice.
+
 ### Other commands
 
 | Command | What it does |
 | --- | --- |
 | `npm run typecheck` | TypeScript across both packages |
 | `npm run build` | Bundles the API and builds the client |
-| `npm run db:reset -w server -- --yes` | Rebuilds the database from schema + seed |
+| `npm run db:migrate` | Applies the schema and seeds if the database is empty |
+| `npm run db:reset -- --yes` | Drops every table and rebuilds from schema + seed |
 | `npm run fonts:fetch -w client` | Re-downloads the self-hosted font subsets |
 
 ---
@@ -47,12 +57,16 @@ SESSION_SECRET="$(node -e "console.log(require('crypto').randomBytes(48).toStrin
 shared/types.ts     Domain contract. Types only, so it erases at compile time
                     and neither package needs runtime resolution for it.
 
+api/index.ts        Vercel's function: hands the Express app the request.
+
 server/
-  src/db/           Schema, connection, seed, reset
+  src/app.ts        The Express app, binding nothing
+  src/index.ts      The long-running server: app.listen
+  src/db/           Schema, pool, named-parameter binding, migrate, seed
   src/repos/        Data access — the only place SQL lives
   src/routes/       HTTP surface, one router per area
   src/middleware/   Sessions, roles, error shaping
-  src/lib/          Cohort definitions, ids, request helpers
+  src/lib/          Cohorts, ids, request helpers, upload storage
 
 client/
   src/api/          fetch wrapper + TanStack Query hooks
@@ -63,6 +77,70 @@ client/
 ```
 
 ---
+
+## Deploying to Vercel
+
+`git push` deploys. The pieces:
+
+| | |
+| --- | --- |
+| `vercel.json` | Builds the client, routes `/api/*` to the function and everything else to the SPA |
+| `api/index.ts` | The function. Imports the built Express app and hands it the request |
+| `server/dist/app.js` | The app with no listener — built by `npm run build` |
+
+**Set these in the project's environment variables:**
+
+```
+DATABASE_URL     the provider's *pooled* connection string
+SESSION_SECRET   48 random bytes; the server refuses to boot without it
+STORAGE_DRIVER   blob
+INVITE_CODE      a code you share with relatives (optional but recommended)
+PUBLIC_READ      false, unless you want the archive readable by link
+```
+
+`BLOB_READ_WRITE_TOKEN` is injected automatically once a Blob store is connected
+to the project. `NODE_ENV` is set by the platform.
+
+**Then run the migration once**, from a machine with `DATABASE_URL` set:
+
+```bash
+npm run db:migrate
+```
+
+### Why it is shaped this way
+
+**The database is Postgres because the filesystem is not durable.** A serverless
+function's disk does not survive the request that wrote to it, so a SQLite file
+and a directory of photographs would be lost continually and silently. The
+schema moved across almost unchanged — it was already plain portable SQL, with
+no `AUTOINCREMENT`, no `strftime` and no `INSERT OR REPLACE`. What changed is
+that every read and write is asynchronous.
+
+**Uploads go to a blob store, behind the same permission check.**
+`server/src/lib/storage.ts` has two drivers: `disk` for development, so a fresh
+clone needs nothing but Postgres, and `blob` for production. `GET /api/media/:id`
+still resolves the row first — read access and the tombstone are enforced before
+any URL is handed out — and then redirects. The blob host is added to the CSP
+only when that driver is in use.
+
+**Parameters are bound by name.** `pg` speaks `$1`, and converting several dozen
+statements — one of which sets eighteen columns — to hand-counted positions is
+exactly the edit where a transposed pair goes unnoticed, because the parameter
+*count* still matches. `bind()` in `server/src/db/index.ts` maps `@name` to
+positions, reuses a position for a repeated name, and throws on a name with no
+matching parameter rather than quietly binding null.
+
+**One caveat worth knowing.** `express-rate-limit` keeps its counters in memory,
+so on serverless the limit is per-instance rather than global. It still stops a
+single client hammering one instance, but it is not the ceiling it is on a
+single long-running process. A shared store would fix it if the archive is ever
+opened up more widely.
+
+### Running it somewhere else
+
+Nothing here is Vercel-specific except `vercel.json` and `api/index.ts`. Any host
+that runs Node and gives you a Postgres URL works with `npm run build && npm
+start` — set `STORAGE_DRIVER=disk` with a persistent directory, or keep `blob`.
 
 ## The lens — opening a person
 
@@ -264,7 +342,7 @@ their own card. Editing anyone else's record, or archiving one, is steward-only.
 private link. Set `INVITE_CODE` to gate joining, or `PUBLIC_READ=false` to make
 the whole thing private.
 
-**Uploads.** Stored under a random filename that never derives from the upload,
+**Uploads.** Stored under a random name that never derives from the upload,
 behind a MIME allow-list. SVG is deliberately excluded — it can carry script and
 would be served from the app's own origin. Anything that is not an image or
 audio file is sent as a download rather than rendered inline.
@@ -318,14 +396,20 @@ Each of these was a deliberate change, not an oversight:
   and an attachment fallback that is a reasonable posture for a family-sized,
   invite-gated deployment. Content sniffing would be the next hardening step if
   the archive is ever opened more widely.
-- **`server/data/` holds the database and the uploaded originals** and is
-  git-ignored. It is the only thing worth backing up, and nothing else in the
-  repo is stateful.
+- **State lives in Postgres and in the blob store**, not in the repo.
+  `server/data/` is only used by the `disk` upload driver in development, and is
+  git-ignored. Back up the database and the blob store; nothing in the repo is
+  stateful.
 - **There is no automated test suite yet.** Verification so far is a browser
   smoke run over every screen plus the join, upload, memory, editing and lens
-  flows — including a pass under `prefers-reduced-motion` and one at 390px.
-  Unit tests around `tree-layout.ts`, `placement.ts` and the permission checks
-  would be the highest-value place to start.
+  flows — including a pass under `prefers-reduced-motion` and one at 390px —
+  driven against a real Postgres. Unit tests around `tree-layout.ts`,
+  `placement.ts`, `bind()` and the permission checks would be the highest-value
+  place to start.
+- **The blob upload driver has not been exercised against Vercel Blob.**
+  Everything else here was verified by running it; that one path was verified by
+  reading it. The disk driver, which shares the route, the permission check and
+  the redirect-or-send decision with it, is covered.
 - **Nothing catches a CSS animation that references a keyframe which is not
   there.** It was possible to ship the entire motion vocabulary dead in the
   production bundle for as long as it took to look for it (see `global(name)`

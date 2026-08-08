@@ -1,13 +1,17 @@
 /**
- * Drops the database file and rebuilds it from schema + seed.
+ * Drops every table and rebuilds from schema + seed.
  *
  * Destructive by design, so it refuses to run in production and asks for
- * `--yes` everywhere else. Anything already uploaded to data/uploads is left
- * alone: the point is to reset structure, not to shred originals.
+ * `--yes` everywhere else. Uploaded originals are left alone: the point is to
+ * reset structure, not to shred the photographs.
  */
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { env } from '../env.ts';
+import { applySchema, closePool, exec } from './index.ts';
+import { seedIfEmpty } from './seed.ts';
 
 if (env.isProduction) {
   console.error('Refusing to reset the database with NODE_ENV=production.');
@@ -18,25 +22,32 @@ if (!process.argv.includes('--yes')) {
   console.error(
     [
       'This deletes every person, memory and archive entry in:',
-      `  ${env.dbFile}`,
+      `  ${env.databaseUrl.replace(/:\/\/[^@]*@/, '://***@')}`,
       '',
-      'Uploaded files in data/uploads are NOT touched.',
+      'Uploaded files are NOT touched.',
       'Re-run with --yes if that is what you want.',
     ].join('\n'),
   );
   process.exit(1);
 }
 
-for (const suffix of ['', '-wal', '-shm']) {
-  const file = `${env.dbFile}${suffix}`;
-  if (existsSync(file)) {
-    rmSync(file);
-    console.log(`removed ${file}`);
-  }
-}
+// Order matters only because of the foreign keys; CASCADE handles the rest.
+await exec(`
+  DROP TABLE IF EXISTS
+    meta, users, timeline_events, archive_items, milestones,
+    relationships, people, media, generations
+  CASCADE
+`);
+console.log('tables dropped.');
 
-// Importing these after the delete recreates the file, applies the schema and
-// reloads the sample family.
-const { seedIfEmpty } = await import('./seed.ts');
-const { seeded } = seedIfEmpty();
+const here = path.dirname(fileURLToPath(import.meta.url));
+const schema = [path.join(here, 'schema.sql'), path.join(here, 'db', 'schema.sql')].find(
+  (candidate) => existsSync(candidate),
+);
+if (!schema) throw new Error('schema.sql not found next to the reset script.');
+
+await applySchema(readFileSync(schema, 'utf8'));
+const { seeded } = await seedIfEmpty();
 console.log(seeded ? 'database rebuilt and seeded.' : 'database rebuilt (nothing to seed).');
+
+await closePool();

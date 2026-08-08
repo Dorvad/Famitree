@@ -55,12 +55,12 @@ const personPatch = personBody.partial();
 
 /** Rejects a media reference that does not resolve, rather than storing a
  *  link that would later render as a broken portrait. */
-function assertMediaExists(input: {
+async function assertMediaExists(input: {
   portraitMediaId?: string | null;
   audioMediaId?: string | null;
-}): void {
+}): Promise<void> {
   for (const id of [input.portraitMediaId, input.audioMediaId]) {
-    if (id && !getMedia(id)) {
+    if (id && !(await getMedia(id))) {
       throw ApiError.badRequest('הקובץ שצורף לא נמצא. נסו להעלות אותו שוב.');
     }
   }
@@ -89,23 +89,23 @@ function assertCanEdit(user: SessionUser | undefined, personId: string): void {
   throw ApiError.forbidden('אפשר לערוך רק את הכרטיס שלכם. לשאר הרשומות צריך הרשאת מנהל ארכיון.');
 }
 
-function requirePerson(id: string) {
-  const person = getPerson(id);
+async function requirePerson(id: string) {
+  const person = await getPerson(id);
   if (!person || person.archivedAt) throw ApiError.notFound('לא מצאנו את בן המשפחה הזה.');
   return person;
 }
 
 /* ------------------------------------------------------------------ reads */
 
-treeRouter.get('/generations', requireReadAccess, (_req, res) => {
+treeRouter.get('/generations', requireReadAccess, async (_req, res) => {
   res.json(allGenerations());
 });
 
 /** One round trip for the whole tree — the map screen needs all three sets. */
-treeRouter.get('/tree', requireReadAccess, (_req, res) => {
+treeRouter.get('/tree', requireReadAccess, async (_req, res) => {
   const body: TreeResponse = {
-    people: listPeople(),
-    relationships: listRelationships(),
+    people: await listPeople(),
+    relationships: await listRelationships(),
     generations: allGenerations(),
   };
   res.json(body);
@@ -116,96 +116,96 @@ treeRouter.get('/tree', requireReadAccess, (_req, res) => {
  * because archiving is: a member has no way to put a record back, so showing
  * them the removed ones would only be confusing.
  */
-treeRouter.get('/people', requireReadAccess, (req, res) => {
+treeRouter.get('/people', requireReadAccess, async (req, res) => {
   const wantsArchived = req.query['includeArchived'] === '1' ||
     req.query['includeArchived'] === 'true';
   if (wantsArchived && req.user?.role !== 'steward') {
     throw ApiError.forbidden('רק מי שמופקד על הארכיון רואה רשומות שהוסרו.');
   }
-  res.json(listPeople(wantsArchived));
+  res.json(await listPeople(wantsArchived));
 });
 
-treeRouter.get('/people/:id', requireReadAccess, (req, res) => {
-  const person = requirePerson(pathParam(req, 'id'));
-  const body: PersonDetail = { ...person, milestones: listMilestones(person.id) };
+treeRouter.get('/people/:id', requireReadAccess, async (req, res) => {
+  const person = await requirePerson(pathParam(req, 'id'));
+  const body: PersonDetail = { ...person, milestones: await listMilestones(person.id) };
   res.json(body);
 });
 
 /* ----------------------------------------------------------------- writes */
 
-treeRouter.post('/people', requireAuth, (req, res) => {
+treeRouter.post('/people', requireAuth, async (req, res) => {
   const input = personBody.parse(req.body);
-  assertMediaExists(input);
-  res.status(201).json(createPerson(input));
+  await assertMediaExists(input);
+  res.status(201).json(await createPerson(input));
 });
 
-treeRouter.patch('/people/:id', requireAuth, (req, res) => {
-  const person = requirePerson(pathParam(req, 'id'));
+treeRouter.patch('/people/:id', requireAuth, async (req, res) => {
+  const person = await requirePerson(pathParam(req, 'id'));
   assertCanEdit(req.user, person.id);
   const patch = personPatch.parse(req.body);
-  assertMediaExists(patch);
-  res.json(updatePerson(person.id, patch));
+  await assertMediaExists(patch);
+  res.json(await updatePerson(person.id, patch));
 });
 
 // Archiving a person hides them and their connectors from the tree but keeps
 // every row, so it can always be undone.
-treeRouter.post('/people/:id/archive', requireRole('steward'), (req, res) => {
-  const person = requirePerson(pathParam(req, 'id'));
-  res.json(archivePerson(person.id));
+treeRouter.post('/people/:id/archive', requireRole('steward'), async (req, res) => {
+  const person = await requirePerson(pathParam(req, 'id'));
+  res.json(await archivePerson(person.id));
 });
 
-treeRouter.post('/people/:id/restore', requireRole('steward'), (req, res) => {
-  const person = getPerson(pathParam(req, 'id'));
+treeRouter.post('/people/:id/restore', requireRole('steward'), async (req, res) => {
+  const person = await getPerson(pathParam(req, 'id'));
   if (!person) throw ApiError.notFound('לא מצאנו את בן המשפחה הזה.');
-  res.json(restorePerson(person.id));
+  res.json(await restorePerson(person.id));
 });
 
-treeRouter.post('/people/:id/milestones', requireAuth, (req, res) => {
-  const person = requirePerson(pathParam(req, 'id'));
+treeRouter.post('/people/:id/milestones', requireAuth, async (req, res) => {
+  const person = await requirePerson(pathParam(req, 'id'));
   const input = milestoneBody.parse(req.body);
-  res.status(201).json(addMilestone(person.id, input, req.user!.id));
+  res.status(201).json(await addMilestone(person.id, input, req.user!.id));
 });
 
-treeRouter.patch('/people/:personId/milestones/:id', requireAuth, (req, res) => {
-  const person = requirePerson(pathParam(req, 'personId'));
-  const milestone = listMilestones(person.id).find((m) => m.id === pathParam(req, 'id'));
+treeRouter.patch('/people/:personId/milestones/:id', requireAuth, async (req, res) => {
+  const person = await requirePerson(pathParam(req, 'personId'));
+  const milestone = (await listMilestones(person.id)).find((m) => m.id === pathParam(req, 'id'));
   if (!milestone) throw ApiError.notFound('לא מצאנו את הזיכרון הזה.');
   // Same rule as removal: your own contributions, or anything if you are the steward.
   if (req.user!.role !== 'steward' && milestone.createdBy !== req.user!.id) {
     throw ApiError.forbidden('אפשר לערוך רק זיכרונות שאתם הוספתם.');
   }
-  res.json(updateMilestone(milestone.id, milestoneBody.partial().parse(req.body)));
+  res.json(await updateMilestone(milestone.id, milestoneBody.partial().parse(req.body)));
 });
 
-treeRouter.delete('/people/:personId/milestones/:id', requireAuth, (req, res) => {
-  const person = requirePerson(pathParam(req, 'personId'));
-  const milestone = listMilestones(person.id).find((m) => m.id === pathParam(req, 'id'));
+treeRouter.delete('/people/:personId/milestones/:id', requireAuth, async (req, res) => {
+  const person = await requirePerson(pathParam(req, 'personId'));
+  const milestone = (await listMilestones(person.id)).find((m) => m.id === pathParam(req, 'id'));
   if (!milestone) throw ApiError.notFound('לא מצאנו את הזיכרון הזה.');
   if (req.user!.role !== 'steward' && milestone.createdBy !== req.user!.id) {
     throw ApiError.forbidden('אפשר להסיר רק זיכרונות שאתם הוספתם.');
   }
-  archiveMilestone(milestone.id);
+  await archiveMilestone(milestone.id);
   res.status(204).end();
 });
 
-treeRouter.post('/relationships', requireAuth, (req, res) => {
+treeRouter.post('/relationships', requireAuth, async (req, res) => {
   const input = relationshipBody.parse(req.body);
-  requirePerson(input.personId);
-  requirePerson(input.relatedPersonId);
+  await requirePerson(input.personId);
+  await requirePerson(input.relatedPersonId);
 
   if (input.personId === input.relatedPersonId) {
     throw ApiError.badRequest('אי אפשר לקשר אדם לעצמו.');
   }
   // Without this check a mis-click can make someone their own grandparent and
   // send the connector layout into an infinite walk.
-  if (input.type === 'parent' && wouldCreateCycle(input.personId, input.relatedPersonId)) {
+  if (input.type === 'parent' && await wouldCreateCycle(input.personId, input.relatedPersonId)) {
     throw ApiError.conflict('הקשר הזה יוצר לולאה באילן — בדקו את כיוון ההורות.');
   }
 
-  res.status(201).json(addRelationship(input.personId, input.relatedPersonId, input.type));
+  res.status(201).json(await addRelationship(input.personId, input.relatedPersonId, input.type));
 });
 
-treeRouter.delete('/relationships/:id', requireRole('steward'), (req, res) => {
-  removeRelationship(pathParam(req, 'id'));
+treeRouter.delete('/relationships/:id', requireRole('steward'), async (req, res) => {
+  await removeRelationship(pathParam(req, 'id'));
   res.status(204).end();
 });

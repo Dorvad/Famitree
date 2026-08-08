@@ -4,9 +4,13 @@
 -- `archived_at` tombstone instead: an heirloom archive that can silently lose a
 -- letter or a photograph is worse than one that keeps a little clutter, and a
 -- mistaken removal stays recoverable.
-
-PRAGMA journal_mode = WAL;
-PRAGMA foreign_keys = ON;
+--
+-- Postgres. Timestamps are stored as ISO-8601 TEXT rather than TIMESTAMPTZ:
+-- they are written and read as strings end to end, all the way to the client
+-- contract in shared/types.ts, and converting them here would only add a
+-- serialisation step that has to be undone on the way out. `is_provisional`
+-- stays INTEGER for the same reason — one place decides it is a boolean, and
+-- that place is the repo that maps the row.
 
 CREATE TABLE IF NOT EXISTS generations (
   id           TEXT PRIMARY KEY,

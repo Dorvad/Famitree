@@ -1,6 +1,6 @@
 import type { SessionUser, UserRole } from '../../../shared/types.ts';
 
-import { db, nowIso } from '../db/index.ts';
+import { exec, nowIso, one } from '../db/index.ts';
 import { generationIdForYear } from '../lib/generations.ts';
 import { newId } from '../lib/ids.ts';
 
@@ -23,48 +23,52 @@ function toUser(row: UserRow): SessionUser {
   };
 }
 
-export function getUser(id: string): SessionUser | null {
-  const row = db
-    .prepare('SELECT id, display_name, birth_year, person_id, role FROM users WHERE id = ?')
-    .get(id) as UserRow | undefined;
+export async function getUser(id: string): Promise<SessionUser | null> {
+  const row = await one<UserRow>(
+    'SELECT id, display_name, birth_year, person_id, role FROM users WHERE id = @id',
+    { id },
+  );
   return row ? toUser(row) : null;
 }
 
-export function createUser(input: {
+export async function createUser(input: {
   displayName: string;
   birthYear: number | null;
   personId: string | null;
-}): SessionUser {
+}): Promise<SessionUser> {
   const id = newId('u');
   const at = nowIso();
 
   // The person who sets the archive up looks after it. Everyone who joins
   // afterwards is an ordinary member until a steward promotes them.
-  const { count } = db.prepare('SELECT COUNT(*) AS count FROM users').get() as {
-    count: number;
-  };
-  const role: UserRole = count === 0 ? 'steward' : 'member';
+  // COUNT(*) is int8 and would arrive as a string; ::int keeps the comparison honest.
+  const counted = await one<{ count: number }>('SELECT COUNT(*)::int AS count FROM users');
+  const role: UserRole = (counted?.count ?? 0) === 0 ? 'steward' : 'member';
 
-  db.prepare(
+  await exec(
     `INSERT INTO users (id, display_name, birth_year, person_id, role, created_at, last_seen_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  ).run(id, input.displayName, input.birthYear, input.personId, role, at, at);
+     VALUES (@id, @displayName, @birthYear, @personId, @role, @at, @at)`,
+    { id, displayName: input.displayName, birthYear: input.birthYear, personId: input.personId, role, at },
+  );
 
-  const created = getUser(id);
+  const created = await getUser(id);
   if (!created) throw new Error('user insert did not round-trip');
   return created;
 }
 
-export function touchUser(id: string): void {
-  db.prepare('UPDATE users SET last_seen_at = ? WHERE id = ?').run(nowIso(), id);
+export async function touchUser(id: string): Promise<void> {
+  await exec('UPDATE users SET last_seen_at = @at WHERE id = @id', { at: nowIso(), id });
 }
 
-export function setUserRole(id: string, role: UserRole): SessionUser | null {
-  db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, id);
+export async function setUserRole(id: string, role: UserRole): Promise<SessionUser | null> {
+  await exec('UPDATE users SET role = @role WHERE id = @id', { role, id });
   return getUser(id);
 }
 
-export function bindUserToPerson(id: string, personId: string | null): SessionUser | null {
-  db.prepare('UPDATE users SET person_id = ? WHERE id = ?').run(personId, id);
+export async function bindUserToPerson(
+  id: string,
+  personId: string | null,
+): Promise<SessionUser | null> {
+  await exec('UPDATE users SET person_id = @personId WHERE id = @id', { personId, id });
   return getUser(id);
 }

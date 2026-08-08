@@ -1,6 +1,6 @@
 import type { MediaRef } from '../../../shared/types.ts';
 
-import { db, nowIso } from '../db/index.ts';
+import { exec, nowIso, one } from '../db/index.ts';
 
 interface MediaRow {
   id: string;
@@ -27,40 +27,34 @@ function toStored(row: MediaRow): StoredMedia {
   };
 }
 
-export function recordMedia(input: {
+export async function recordMedia(input: {
   id: string;
+  /** For `disk` the filename; for `blob` the URL the object was stored at. */
   storedName: string;
   originalName: string;
   mimeType: string;
   byteSize: number;
   createdBy: string | null;
-}): MediaRef {
-  db.prepare(
+}): Promise<MediaRef> {
+  const at = nowIso();
+  await exec(
     `INSERT INTO media (id, stored_name, original_name, mime_type, byte_size, created_by, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  ).run(
-    input.id,
-    input.storedName,
-    input.originalName,
-    input.mimeType,
-    input.byteSize,
-    input.createdBy,
-    nowIso(),
+     VALUES (@id, @storedName, @originalName, @mimeType, @byteSize, @createdBy, @at)`,
+    { ...input, at },
   );
   return {
     id: input.id,
     originalName: input.originalName,
     mimeType: input.mimeType,
     byteSize: input.byteSize,
-    createdAt: nowIso(),
+    createdAt: at,
   };
 }
 
-export function getMedia(id: string): StoredMedia | null {
-  const row = db
-    .prepare(
-      'SELECT id, stored_name, original_name, mime_type, byte_size, created_at FROM media WHERE id = ?',
-    )
-    .get(id) as MediaRow | undefined;
+export async function getMedia(id: string): Promise<StoredMedia | null> {
+  const row = await one<MediaRow>(
+    'SELECT id, stored_name, original_name, mime_type, byte_size, created_at FROM media WHERE id = @id',
+    { id },
+  );
   return row ? toStored(row) : null;
 }

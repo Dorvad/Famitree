@@ -44,14 +44,14 @@ export function clearSession(res: Response): void {
  * Resolves the signed cookie to a real user row on every request. A cookie
  * naming a user who no longer exists is cleared rather than trusted.
  */
-export const attachUser: RequestHandler = (req, res, next) => {
+export const attachUser: RequestHandler = async (req, res, next) => {
   const raw = req.signedCookies?.[COOKIE_NAME];
   if (typeof raw !== 'string' || raw.length === 0) {
     next();
     return;
   }
 
-  const user = getUser(raw);
+  const user = await getUser(raw);
   if (!user) {
     clearSession(res);
     next();
@@ -59,7 +59,7 @@ export const attachUser: RequestHandler = (req, res, next) => {
   }
 
   req.user = user;
-  touchUser(user.id);
+  await touchUser(user.id);
   next();
 };
 

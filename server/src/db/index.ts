@@ -1,81 +1,159 @@
-import Database from 'better-sqlite3';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import pg from 'pg';
 
 import { env } from '../env.ts';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-
 /**
- * `src/db/index.ts` sits beside schema.sql; the esbuild bundle collapses to
- * `dist/index.js` with the schema copied to `dist/db/schema.sql`. Probing both
- * keeps dev and production on one code path.
- */
-function findSchema(): string {
-  const candidates = [
-    path.join(here, 'schema.sql'),
-    path.join(here, 'db', 'schema.sql'),
-  ];
-  const found = candidates.find((p) => existsSync(p));
-  if (!found) {
-    throw new Error(`schema.sql not found. Looked in:\n  ${candidates.join('\n  ')}`);
-  }
-  return found;
-}
-
-mkdirSync(env.dataDir, { recursive: true });
-mkdirSync(env.uploadDir, { recursive: true });
-
-export const db = new Database(env.dbFile);
-
-// WAL lets reads proceed during writes, which matters as soon as more than one
-// relative is browsing while somebody uploads. NORMAL synchronous is the
-// standard companion setting: durable across process crashes, and only at risk
-// from an OS-level crash mid-write.
-db.pragma('journal_mode = WAL');
-db.pragma('synchronous = NORMAL');
-db.pragma('foreign_keys = ON');
-db.pragma('busy_timeout = 5000');
-
-db.exec(readFileSync(findSchema(), 'utf8'));
-
-/**
- * Adds a column only if it is missing.
+ * Postgres connection and the thin query layer everything above it uses.
  *
- * `CREATE TABLE IF NOT EXISTS` leaves an existing table alone, so a schema
- * change has no effect on a database that already holds a family's records.
- * This closes that gap without needing a migration framework.
+ * The archive used to run on SQLite, which is a fine fit for a single machine
+ * with a disk and no fit at all for a platform where the filesystem does not
+ * survive a restart. The schema moved across almost untouched — it was already
+ * plain portable SQL — so what changed here is the shape of the calls: every
+ * read and write is asynchronous now, and parameters are bound rather than
+ * interpolated.
  */
-function ensureColumn(table: string, column: string, definition: string): void {
-  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
-  if (columns.some((c) => c.name === column)) return;
-  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-  console.log(`[shoresh] migrated: added ${table}.${column}`);
+
+/**
+ * `pg` hands back a bare number for int4 but a *string* for int8, because a
+ * bigint does not fit a JS number. `COUNT(*)` is int8, so an unguarded count
+ * comes back as "0" and every `count === 0` test silently fails. Rather than
+ * remember that at each call site, the counts in this codebase are cast to int
+ * in SQL — see `COUNT(*)::int`.
+ */
+const pool = new pg.Pool({
+  connectionString: env.databaseUrl,
+  // Serverless runs many short-lived instances, each with its own pool, so a
+  // generous per-instance pool is how a connection limit gets exhausted. The
+  // provider's pooled (PgBouncer) connection string does the real multiplexing.
+  max: env.isProduction ? 3 : 10,
+  idleTimeoutMillis: 10_000,
+  connectionTimeoutMillis: 10_000,
+});
+
+pool.on('error', (error) => {
+  // An idle client dropped by the server is normal on managed Postgres; it must
+  // not take the process down.
+  console.error('[shoresh] idle postgres client error:', error.message);
+});
+
+export interface Queryable {
+  run<T extends object = Record<string, unknown>>(
+    sql: string,
+    params?: Params,
+  ): Promise<T[]>;
 }
 
-// Timeline events became removable after the first release; everything else
-// already carried a tombstone.
-ensureColumn('timeline_events', 'archived_at', 'TEXT');
+export type Params = Record<string, unknown>;
+
+/** `@name`, but not `@>` or a bare `@`. */
+const NAMED = /@([a-zA-Z_][a-zA-Z0-9_]*)/g;
+
+/**
+ * Binds `@name` placeholders to `$1`-style positional parameters.
+ *
+ * `pg` only speaks positional, and converting several dozen statements — one of
+ * which sets eighteen columns — to hand-counted `$n` is exactly the kind of
+ * edit where a transposed pair goes unnoticed because the parameter *count*
+ * still matches. Names cannot be transposed. A name with no matching parameter
+ * throws here rather than binding null, and a name used twice reuses its
+ * position instead of passing the value twice.
+ */
+export function bind(sql: string, params: Params = {}): { text: string; values: unknown[] } {
+  const values: unknown[] = [];
+  const positions = new Map<string, number>();
+
+  const text = sql.replace(NAMED, (_match, name: string) => {
+    let position = positions.get(name);
+    if (position === undefined) {
+      if (!(name in params)) {
+        throw new Error(`missing bind parameter @${name} for: ${sql.trim().slice(0, 90)}…`);
+      }
+      values.push(params[name] ?? null);
+      position = values.length;
+      positions.set(name, position);
+    }
+    return `$${position}`;
+  });
+
+  return { text, values };
+}
+
+/** Every row the statement returned. */
+export async function query<T extends object = Record<string, unknown>>(
+  sql: string,
+  params?: Params,
+): Promise<T[]> {
+  const { text, values } = bind(sql, params);
+  const result = await pool.query(text, values);
+  return result.rows as T[];
+}
+
+/** The first row, or null. */
+export async function one<T extends object = Record<string, unknown>>(
+  sql: string,
+  params?: Params,
+): Promise<T | null> {
+  const rows = await query<T>(sql, params);
+  return rows[0] ?? null;
+}
+
+/** Runs a statement for its effect, returning how many rows it touched. */
+export async function exec(sql: string, params?: Params): Promise<number> {
+  const { text, values } = bind(sql, params);
+  const result = await pool.query(text, values);
+  return result.rowCount ?? 0;
+}
+
+/**
+ * Runs everything inside one transaction on one dedicated connection.
+ *
+ * The callback is handed its own `run`, and must use it — a statement issued
+ * through the module-level `query` during a transaction goes out on a different
+ * pooled connection and is therefore *not* part of it.
+ */
+export async function transact<T>(fn: (tx: Queryable) => Promise<T>): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn({
+      run: async <R extends object>(sql: string, params?: Params) => {
+        const { text, values } = bind(sql, params);
+        const query = await client.query(text, values);
+        return query.rows as R[];
+      },
+    });
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/** Applies schema.sql. Safe to run repeatedly — every statement is IF NOT EXISTS. */
+export async function applySchema(sql: string): Promise<void> {
+  await pool.query(sql);
+}
+
+export async function closePool(): Promise<void> {
+  await pool.end();
+}
 
 export function nowIso(): string {
   return new Date().toISOString();
 }
 
-/** Wraps a function so every statement inside runs in one transaction. */
-export function transact<T>(fn: () => T): T {
-  return db.transaction(fn)();
-}
-
-export function getMeta(key: string): string | null {
-  const row = db.prepare('SELECT value FROM meta WHERE key = ?').get(key) as
-    | { value: string }
-    | undefined;
+export async function getMeta(key: string): Promise<string | null> {
+  const row = await one<{ value: string }>('SELECT value FROM meta WHERE key = @key', { key });
   return row?.value ?? null;
 }
 
-export function setMeta(key: string, value: string): void {
-  db.prepare(
-    'INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value',
-  ).run(key, value);
+export async function setMeta(key: string, value: string): Promise<void> {
+  await exec(
+    `INSERT INTO meta (key, value) VALUES (@key, @value)
+     ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+    { key, value },
+  );
 }

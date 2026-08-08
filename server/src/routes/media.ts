@@ -2,7 +2,6 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import multer, { MulterError } from 'multer';
 import { randomUUID } from 'node:crypto';
-import path from 'node:path';
 
 import { env } from '../env.ts';
 import { ApiError } from '../middleware/errors.ts';
@@ -10,6 +9,7 @@ import { pathParam } from '../lib/http.ts';
 import { requireAuth, requireReadAccess } from '../middleware/session.ts';
 import { getMedia, recordMedia } from '../repos/media.ts';
 import { newId } from '../lib/ids.ts';
+import { storage } from '../lib/storage.ts';
 
 export const mediaRouter = Router();
 
@@ -45,16 +45,15 @@ const INLINE_TYPES = new Set(
   ),
 );
 
+/**
+ * Held in memory, then handed to whichever storage driver is configured.
+ *
+ * Writing to a temporary directory first would mean the serverless driver reads
+ * a file back only to upload it, and the size ceiling below is what keeps a
+ * buffered upload bounded.
+ */
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: (_req, _file, done) => done(null, env.uploadDir),
-    // The stored name is fully random. The client's filename never touches the
-    // filesystem, so path traversal and extension smuggling are both moot.
-    filename: (_req, file, done) => {
-      const ext = ALLOWED_TYPES[file.mimetype] ?? '.bin';
-      done(null, `${randomUUID()}${ext}`);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: env.maxUploadBytes, files: 1 },
   fileFilter: (_req, file, done) => {
     if (!ALLOWED_TYPES[file.mimetype]) {
@@ -81,6 +80,7 @@ const uploadLimiter = rateLimit({
 
 mediaRouter.post('/media', requireAuth, uploadLimiter, (req, res, next) => {
   upload.single('file')(req, res, (err: unknown) => {
+    void (async () => {
     if (err instanceof MulterError) {
       const message =
         err.code === 'LIMIT_FILE_SIZE'
@@ -98,9 +98,18 @@ mediaRouter.post('/media', requireAuth, uploadLimiter, (req, res, next) => {
       return;
     }
 
-    const media = recordMedia({
+    // Fully random, and generated here. The client's filename never reaches
+    // storage, so traversal and extension smuggling are both moot.
+    const name = `${randomUUID()}${ALLOWED_TYPES[req.file.mimetype] ?? '.bin'}`;
+    const { stored } = await storage.put({
+      name,
+      body: req.file.buffer,
+      contentType: req.file.mimetype,
+    });
+
+    const media = await recordMedia({
       id: newId('m'),
-      storedName: req.file.filename,
+      storedName: stored,
       // Kept for display only; never used to build a path.
       originalName: req.file.originalname.slice(0, 200),
       mimeType: req.file.mimetype,
@@ -108,20 +117,17 @@ mediaRouter.post('/media', requireAuth, uploadLimiter, (req, res, next) => {
       createdBy: req.user!.id,
     });
 
-    res.status(201).json(media);
+      res.status(201).json(media);
+    })().catch(next);
   });
 });
 
-mediaRouter.get('/media/:id', requireReadAccess, (req, res) => {
-  const media = getMedia(pathParam(req, 'id'));
+mediaRouter.get('/media/:id', requireReadAccess, async (req, res) => {
+  const media = await getMedia(pathParam(req, 'id'));
   if (!media) throw ApiError.notFound('הקובץ לא נמצא.');
 
-  const absolute = path.join(env.uploadDir, media.storedName);
-  // Belt and braces: storedName is generated server-side, but re-checking that
-  // the resolved path stays inside the upload directory costs nothing.
-  if (path.dirname(path.resolve(absolute)) !== path.resolve(env.uploadDir)) {
-    throw ApiError.notFound('הקובץ לא נמצא.');
-  }
+  const target = storage.serve(media.storedName);
+  if (!target) throw ApiError.notFound('הקובץ לא נמצא.');
 
   const inline = INLINE_TYPES.has(media.mimeType);
   res.setHeader('Content-Type', media.mimeType);
@@ -132,7 +138,14 @@ mediaRouter.get('/media/:id', requireReadAccess, (req, res) => {
     `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(media.originalName)}`,
   );
 
-  res.sendFile(absolute, (err) => {
+  if (target.kind === 'redirect') {
+    // The object store serves the bytes. The row is still checked first, so
+    // read access and the tombstone are enforced before the URL is handed out.
+    res.redirect(302, target.url);
+    return;
+  }
+
+  res.sendFile(target.absolutePath, (err) => {
     if (err && !res.headersSent) {
       res.status(404).json({ error: { code: 'not_found', message: 'הקובץ לא נמצא.' } });
     }

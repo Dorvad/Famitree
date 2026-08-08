@@ -1,6 +1,6 @@
 import type { Generation } from '../../../shared/types.ts';
 
-import { db } from '../db/index.ts';
+import { transact } from '../db/index.ts';
 
 interface GenerationSeed {
   id: string;
@@ -133,8 +133,8 @@ export function generationIdForYear(year: number | null | undefined): string {
   return match?.id ?? 'founders';
 }
 
-export function syncGenerations(): void {
-  const upsert = db.prepare(`
+export async function syncGenerations(): Promise<void> {
+  const UPSERT = `
     INSERT INTO generations
       (id, name, range_label, age_label, color, color_light, color_text, shadow, year_from, year_to, sort_order)
     VALUES
@@ -150,9 +150,11 @@ export function syncGenerations(): void {
       year_from   = excluded.year_from,
       year_to     = excluded.year_to,
       sort_order  = excluded.sort_order
-  `);
-  const run = db.transaction((rows: Generation[]) => {
-    for (const row of rows) upsert.run(row);
+  `;
+
+  await transact(async (tx) => {
+    for (const row of allGenerations()) {
+      await tx.run(UPSERT, { ...row });
+    }
   });
-  run(allGenerations());
 }

@@ -1,6 +1,6 @@
 import type { ArchiveItem, ArchiveKind, TimelineEvent } from '../../../shared/types.ts';
 
-import { db, nowIso } from '../db/index.ts';
+import { exec, nowIso, one, query } from '../db/index.ts';
 import { newId } from '../lib/ids.ts';
 
 interface ArchiveRow {
@@ -40,32 +40,30 @@ const COLUMNS = `
   tile_height, created_by, created_at, archived_at
 `;
 
-export function listArchiveItems(filter: {
-  kind?: ArchiveKind;
-  personId?: string;
-} = {}): ArchiveItem[] {
+export async function listArchiveItems(
+  filter: { kind?: ArchiveKind; personId?: string } = {},
+): Promise<ArchiveItem[]> {
   const where = ['archived_at IS NULL'];
-  const params: unknown[] = [];
+  const params: Record<string, unknown> = {};
   if (filter.kind) {
-    where.push('kind = ?');
-    params.push(filter.kind);
+    where.push('kind = @kind');
+    params['kind'] = filter.kind;
   }
   if (filter.personId) {
-    where.push('person_id = ?');
-    params.push(filter.personId);
+    where.push('person_id = @personId');
+    params['personId'] = filter.personId;
   }
-  const rows = db
-    .prepare(
-      `SELECT ${COLUMNS} FROM archive_items WHERE ${where.join(' AND ')} ORDER BY created_at DESC`,
-    )
-    .all(...params) as ArchiveRow[];
+  const rows = await query<ArchiveRow>(
+    `SELECT ${COLUMNS} FROM archive_items WHERE ${where.join(' AND ')} ORDER BY created_at DESC`,
+    params,
+  );
   return rows.map(toItem);
 }
 
-export function getArchiveItem(id: string): ArchiveItem | null {
-  const row = db.prepare(`SELECT ${COLUMNS} FROM archive_items WHERE id = ?`).get(id) as
-    | ArchiveRow
-    | undefined;
+export async function getArchiveItem(id: string): Promise<ArchiveItem | null> {
+  const row = await one<ArchiveRow>(`SELECT ${COLUMNS} FROM archive_items WHERE id = @id`, {
+    id,
+  });
   return row ? toItem(row) : null;
 }
 
@@ -91,30 +89,31 @@ export interface CreateArchiveInput {
   mediaId?: string | null;
 }
 
-export function createArchiveItem(
+export async function createArchiveItem(
   input: CreateArchiveInput,
   createdBy: string | null,
-): ArchiveItem {
+): Promise<ArchiveItem> {
   const id = newId('it');
-  db.prepare(
+  await exec(
     `INSERT INTO archive_items
        (id, kind, title, year_label, subject, story, person_id, media_id, tile_height, created_by, created_at)
      VALUES (@id, @kind, @title, @yearLabel, @subject, @story, @personId, @mediaId, @tileHeight, @createdBy, @createdAt)`,
-  ).run({
-    id,
-    kind: input.kind,
-    title: input.title,
-    yearLabel: input.yearLabel?.trim() || 'לא ידוע',
-    subject: input.subject?.trim() || 'כל המשפחה',
-    story: input.story ?? '',
-    personId: input.personId ?? null,
-    mediaId: input.mediaId ?? null,
-    tileHeight: tileHeightFor(id),
-    createdBy,
-    createdAt: nowIso(),
-  });
+    {
+      id,
+      kind: input.kind,
+      title: input.title,
+      yearLabel: input.yearLabel?.trim() || 'לא ידוע',
+      subject: input.subject?.trim() || 'כל המשפחה',
+      story: input.story ?? '',
+      personId: input.personId ?? null,
+      mediaId: input.mediaId ?? null,
+      tileHeight: tileHeightFor(id),
+      createdBy,
+      createdAt: nowIso(),
+    },
+  );
 
-  const created = getArchiveItem(id);
+  const created = await getArchiveItem(id);
   if (!created) throw new Error('archive insert did not round-trip');
   return created;
 }
@@ -130,10 +129,10 @@ const ARCHIVE_UPDATABLE: Record<string, string> = {
   mediaId: 'media_id',
 };
 
-export function updateArchiveItem(
+export async function updateArchiveItem(
   id: string,
   patch: Record<string, unknown>,
-): ArchiveItem | null {
+): Promise<ArchiveItem | null> {
   const sets: string[] = [];
   const params: Record<string, unknown> = { id };
 
@@ -146,15 +145,16 @@ export function updateArchiveItem(
   }
 
   if (sets.length > 0) {
-    db.prepare(
+    await exec(
       `UPDATE archive_items SET ${sets.join(', ')} WHERE id = @id AND archived_at IS NULL`,
-    ).run(params);
+      params,
+    );
   }
   return getArchiveItem(id);
 }
 
-export function archiveArchiveItem(id: string): void {
-  db.prepare('UPDATE archive_items SET archived_at = ? WHERE id = ?').run(nowIso(), id);
+export async function archiveArchiveItem(id: string): Promise<void> {
+  await exec('UPDATE archive_items SET archived_at = @at WHERE id = @id', { at: nowIso(), id });
 }
 
 /* ------------------------------------------------------------- timeline */
@@ -166,13 +166,11 @@ interface EventRow {
   person_id: string | null;
 }
 
-export function listTimelineEvents(): TimelineEvent[] {
-  const rows = db
-    .prepare(
-      `SELECT id, year, title, person_id FROM timeline_events
-        WHERE archived_at IS NULL ORDER BY year ASC`,
-    )
-    .all() as EventRow[];
+export async function listTimelineEvents(): Promise<TimelineEvent[]> {
+  const rows = await query<EventRow>(
+    `SELECT id, year, title, person_id FROM timeline_events
+      WHERE archived_at IS NULL ORDER BY year ASC`,
+  );
   return rows.map((r) => ({
     id: r.id,
     year: r.year,
@@ -181,24 +179,25 @@ export function listTimelineEvents(): TimelineEvent[] {
   }));
 }
 
-export function createTimelineEvent(input: {
+export async function createTimelineEvent(input: {
   year: number;
   title: string;
   personId?: string | null;
-}): TimelineEvent {
+}): Promise<TimelineEvent> {
   const id = newId('ev');
-  db.prepare(
-    'INSERT INTO timeline_events (id, year, title, person_id, created_at) VALUES (?, ?, ?, ?, ?)',
-  ).run(id, input.year, input.title, input.personId ?? null, nowIso());
+  await exec(
+    `INSERT INTO timeline_events (id, year, title, person_id, created_at)
+     VALUES (@id, @year, @title, @personId, @at)`,
+    { id, year: input.year, title: input.title, personId: input.personId ?? null, at: nowIso() },
+  );
   return { id, year: input.year, title: input.title, personId: input.personId ?? null };
 }
 
-export function getTimelineEvent(id: string): TimelineEvent | null {
-  const row = db
-    .prepare(
-      'SELECT id, year, title, person_id FROM timeline_events WHERE id = ? AND archived_at IS NULL',
-    )
-    .get(id) as EventRow | undefined;
+export async function getTimelineEvent(id: string): Promise<TimelineEvent | null> {
+  const row = await one<EventRow>(
+    'SELECT id, year, title, person_id FROM timeline_events WHERE id = @id AND archived_at IS NULL',
+    { id },
+  );
   return row
     ? { id: row.id, year: row.year, title: row.title, personId: row.person_id }
     : null;
@@ -210,10 +209,10 @@ const EVENT_UPDATABLE: Record<string, string> = {
   personId: 'person_id',
 };
 
-export function updateTimelineEvent(
+export async function updateTimelineEvent(
   id: string,
   patch: Record<string, unknown>,
-): TimelineEvent | null {
+): Promise<TimelineEvent | null> {
   const sets: string[] = [];
   const params: Record<string, unknown> = { id };
 
@@ -224,14 +223,18 @@ export function updateTimelineEvent(
   }
 
   if (sets.length > 0) {
-    db.prepare(
+    await exec(
       `UPDATE timeline_events SET ${sets.join(', ')} WHERE id = @id AND archived_at IS NULL`,
-    ).run(params);
+      params,
+    );
   }
   return getTimelineEvent(id);
 }
 
 /** Soft delete, matching every other record in the archive. */
-export function archiveTimelineEvent(id: string): void {
-  db.prepare('UPDATE timeline_events SET archived_at = ? WHERE id = ?').run(nowIso(), id);
+export async function archiveTimelineEvent(id: string): Promise<void> {
+  await exec('UPDATE timeline_events SET archived_at = @at WHERE id = @id', {
+    at: nowIso(),
+    id,
+  });
 }

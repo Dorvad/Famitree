@@ -1,19 +1,24 @@
 import { build } from 'esbuild';
 import { cp, mkdir } from 'node:fs/promises';
 
-// better-sqlite3 is a native addon and must stay external; everything else is
-// bundled into a single file so `node dist/index.js` runs with no resolution
-// step at boot.
+// Three entry points: the long-running server, the app on its own for the
+// serverless function to import, and the migration step that applies the
+// schema and loads the sample family.
+//
+// The function imports `dist/app.js` rather than the TypeScript source on
+// purpose. The sources import each other with explicit `.ts` extensions, which
+// needs `allowImportingTsExtensions` and a resolver that honours it; handing
+// the platform one plain, already-bundled ESM file removes that from the list
+// of things that have to be true for a deploy to work.
 await build({
-  entryPoints: ['src/index.ts'],
-  outfile: 'dist/index.js',
+  entryPoints: ['src/index.ts', 'src/app.ts', 'src/db/migrate.ts'],
+  outdir: 'dist',
   bundle: true,
   platform: 'node',
   target: 'node20',
   format: 'esm',
   sourcemap: true,
   minify: false,
-  external: ['better-sqlite3'],
   // esbuild's ESM output does not define these, but bundled CJS deps expect them.
   banner: {
     js: [
@@ -32,4 +37,4 @@ await build({
 await mkdir('dist/db', { recursive: true });
 await cp('src/db/schema.sql', 'dist/db/schema.sql');
 
-console.log('server bundled -> dist/index.js');
+console.log('server bundled -> dist/index.js, dist/app.js, dist/db/migrate.js');

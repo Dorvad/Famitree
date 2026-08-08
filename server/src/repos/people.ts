@@ -5,7 +5,7 @@ import type {
   RelationshipType,
 } from '../../../shared/types.ts';
 
-import { db, nowIso } from '../db/index.ts';
+import { exec, nowIso, one, query } from '../db/index.ts';
 import { generationIdForYear } from '../lib/generations.ts';
 import { newId } from '../lib/ids.ts';
 
@@ -92,41 +92,41 @@ const PERSON_COLUMNS = `
   is_provisional, generation_id, archived_at, created_at, updated_at
 `;
 
-export function listPeople(includeArchived = false): Person[] {
-  const sql = `SELECT ${PERSON_COLUMNS} FROM people ${
-    includeArchived ? '' : 'WHERE archived_at IS NULL'
-  } ORDER BY y ASC, x DESC`;
-  return (db.prepare(sql).all() as PersonRow[]).map(toPerson);
+export async function listPeople(includeArchived = false): Promise<Person[]> {
+  const rows = await query<PersonRow>(
+    `SELECT ${PERSON_COLUMNS} FROM people ${
+      includeArchived ? '' : 'WHERE archived_at IS NULL'
+    } ORDER BY y ASC, x DESC`,
+  );
+  return rows.map(toPerson);
 }
 
-export function getPerson(id: string): Person | null {
-  const row = db
-    .prepare(`SELECT ${PERSON_COLUMNS} FROM people WHERE id = ?`)
-    .get(id) as PersonRow | undefined;
+export async function getPerson(id: string): Promise<Person | null> {
+  const row = await one<PersonRow>(
+    `SELECT ${PERSON_COLUMNS} FROM people WHERE id = @id`,
+    { id },
+  );
   return row ? toPerson(row) : null;
 }
 
-export function listMilestones(personId: string): Milestone[] {
-  const rows = db
-    .prepare(
-      `SELECT id, person_id, year_label, title, body, sort_order, created_by, created_at
-         FROM milestones
-        WHERE person_id = ? AND archived_at IS NULL
-        ORDER BY sort_order ASC, created_at ASC`,
-    )
-    .all(personId) as MilestoneRow[];
+export async function listMilestones(personId: string): Promise<Milestone[]> {
+  const rows = await query<MilestoneRow>(
+    `SELECT id, person_id, year_label, title, body, sort_order, created_by, created_at
+       FROM milestones
+      WHERE person_id = @personId AND archived_at IS NULL
+      ORDER BY sort_order ASC, created_at ASC`,
+    { personId },
+  );
   return rows.map(toMilestone);
 }
 
-export function listRelationships(): Relationship[] {
-  const rows = db
-    .prepare(
-      `SELECT r.id, r.person_id, r.related_person_id, r.type
-         FROM relationships r
-         JOIN people a ON a.id = r.person_id         AND a.archived_at IS NULL
-         JOIN people b ON b.id = r.related_person_id AND b.archived_at IS NULL`,
-    )
-    .all() as RelationshipRow[];
+export async function listRelationships(): Promise<Relationship[]> {
+  const rows = await query<RelationshipRow>(
+    `SELECT r.id, r.person_id, r.related_person_id, r.type
+       FROM relationships r
+       JOIN people a ON a.id = r.person_id         AND a.archived_at IS NULL
+       JOIN people b ON b.id = r.related_person_id AND b.archived_at IS NULL`,
+  );
   return rows.map((r) => ({
     id: r.id,
     personId: r.person_id,
@@ -149,8 +149,10 @@ const CANVAS_CENTRE_X = 910;
  * node lands on a fresh row below everything. Within a row we walk outwards
  * from the centre until a slot is clear.
  */
-export function suggestPosition(birthYear: number | null): { x: number; y: number } {
-  const people = listPeople();
+export async function suggestPosition(
+  birthYear: number | null,
+): Promise<{ x: number; y: number }> {
+  const people = await listPeople();
   if (people.length === 0) return { x: CANVAS_CENTRE_X, y: 140 };
 
   const generationId = generationIdForYear(birthYear);
@@ -191,16 +193,16 @@ export interface CreatePersonInput {
   audioLabel?: string | null;
 }
 
-export function createPerson(input: CreatePersonInput): Person {
+export async function createPerson(input: CreatePersonInput): Promise<Person> {
   const at = nowIso();
   const id = newId('p');
   const birthYear = input.birthYear ?? null;
   const position =
     input.x != null && input.y != null
       ? { x: input.x, y: input.y }
-      : suggestPosition(birthYear);
+      : await suggestPosition(birthYear);
 
-  db.prepare(
+  await exec(
     `INSERT INTO people
        (id, full_name, initial, life_span, place, story, birth_year, death_year,
         branch, x, y, is_provisional, generation_id,
@@ -209,27 +211,28 @@ export function createPerson(input: CreatePersonInput): Person {
        (@id, @fullName, @initial, @lifeSpan, @place, @story, @birthYear, @deathYear,
         @branch, @x, @y, @isProvisional, @generationId,
         @portraitMediaId, @audioMediaId, @audioLabel, @at, @at)`,
-  ).run({
-    id,
-    fullName: input.fullName,
-    initial: input.initial?.slice(0, 2) || [...input.fullName.trim()][0] || '✦',
-    lifeSpan: input.lifeSpan ?? (birthYear ? `נ׳ ${birthYear}` : ''),
-    place: input.place ?? '',
-    story: input.story ?? '',
-    birthYear,
-    deathYear: input.deathYear ?? null,
-    branch: input.branch ?? null,
-    x: position.x,
-    y: position.y,
-    isProvisional: input.isProvisional ? 1 : 0,
-    generationId: generationIdForYear(birthYear),
-    portraitMediaId: input.portraitMediaId ?? null,
-    audioMediaId: input.audioMediaId ?? null,
-    audioLabel: input.audioLabel ?? null,
-    at,
-  });
+    {
+      id,
+      fullName: input.fullName,
+      initial: input.initial?.slice(0, 2) || [...input.fullName.trim()][0] || '✦',
+      lifeSpan: input.lifeSpan ?? (birthYear ? `נ׳ ${birthYear}` : ''),
+      place: input.place ?? '',
+      story: input.story ?? '',
+      birthYear,
+      deathYear: input.deathYear ?? null,
+      branch: input.branch ?? null,
+      x: position.x,
+      y: position.y,
+      isProvisional: input.isProvisional ? 1 : 0,
+      generationId: generationIdForYear(birthYear),
+      portraitMediaId: input.portraitMediaId ?? null,
+      audioMediaId: input.audioMediaId ?? null,
+      audioLabel: input.audioLabel ?? null,
+      at,
+    },
+  );
 
-  const created = getPerson(id);
+  const created = await getPerson(id);
   if (!created) throw new Error('person insert did not round-trip');
   return created;
 }
@@ -251,7 +254,10 @@ const UPDATABLE: Record<string, string> = {
   y: 'y',
 };
 
-export function updatePerson(id: string, patch: Record<string, unknown>): Person | null {
+export async function updatePerson(
+  id: string,
+  patch: Record<string, unknown>,
+): Promise<Person | null> {
   const sets: string[] = [];
   const params: Record<string, unknown> = { id, at: nowIso() };
 
@@ -269,51 +275,58 @@ export function updatePerson(id: string, patch: Record<string, unknown>): Person
 
   if (sets.length === 0) return getPerson(id);
 
-  db.prepare(
+  await exec(
     `UPDATE people SET ${sets.join(', ')}, updated_at = @at WHERE id = @id AND archived_at IS NULL`,
-  ).run(params);
+    params,
+  );
 
   return getPerson(id);
 }
 
 /** Soft delete. The row and everything hanging off it stays recoverable. */
-export function archivePerson(id: string): Person | null {
-  db.prepare('UPDATE people SET archived_at = ?, updated_at = ? WHERE id = ? AND archived_at IS NULL')
-    .run(nowIso(), nowIso(), id);
-  return getPerson(id);
-}
-
-export function restorePerson(id: string): Person | null {
-  db.prepare('UPDATE people SET archived_at = NULL, updated_at = ? WHERE id = ?').run(
-    nowIso(),
-    id,
+export async function archivePerson(id: string): Promise<Person | null> {
+  await exec(
+    'UPDATE people SET archived_at = @at, updated_at = @at WHERE id = @id AND archived_at IS NULL',
+    { at: nowIso(), id },
   );
   return getPerson(id);
 }
 
-export function addMilestone(
+export async function restorePerson(id: string): Promise<Person | null> {
+  await exec('UPDATE people SET archived_at = NULL, updated_at = @at WHERE id = @id', {
+    at: nowIso(),
+    id,
+  });
+  return getPerson(id);
+}
+
+export async function addMilestone(
   personId: string,
   input: { yearLabel: string; title: string; body?: string },
   createdBy: string | null,
-): Milestone {
+): Promise<Milestone> {
   const id = newId('ms');
-  const { next } = db
-    .prepare(
-      'SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM milestones WHERE person_id = ?',
-    )
-    .get(personId) as { next: number };
+  const ordering = await one<{ next: number }>(
+    'SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM milestones WHERE person_id = @personId',
+    { personId },
+  );
 
-  db.prepare(
+  const [row] = await query<MilestoneRow>(
     `INSERT INTO milestones (id, person_id, year_label, title, body, sort_order, created_by, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(id, personId, input.yearLabel, input.title, input.body ?? '', next, createdBy, nowIso());
-
-  const row = db
-    .prepare(
-      `SELECT id, person_id, year_label, title, body, sort_order, created_by, created_at
-         FROM milestones WHERE id = ?`,
-    )
-    .get(id) as MilestoneRow;
+     VALUES (@id, @personId, @yearLabel, @title, @body, @sortOrder, @createdBy, @at)
+     RETURNING id, person_id, year_label, title, body, sort_order, created_by, created_at`,
+    {
+      id,
+      personId,
+      yearLabel: input.yearLabel,
+      title: input.title,
+      body: input.body ?? '',
+      sortOrder: ordering?.next ?? 0,
+      createdBy,
+      at: nowIso(),
+    },
+  );
+  if (!row) throw new Error('milestone insert did not round-trip');
   return toMilestone(row);
 }
 
@@ -324,10 +337,10 @@ const MILESTONE_UPDATABLE: Record<string, string> = {
   body: 'body',
 };
 
-export function updateMilestone(
+export async function updateMilestone(
   id: string,
   patch: Record<string, unknown>,
-): Milestone | null {
+): Promise<Milestone | null> {
   const sets: string[] = [];
   const params: Record<string, unknown> = { id };
 
@@ -338,42 +351,40 @@ export function updateMilestone(
   }
 
   if (sets.length > 0) {
-    db.prepare(
+    await exec(
       `UPDATE milestones SET ${sets.join(', ')} WHERE id = @id AND archived_at IS NULL`,
-    ).run(params);
+      params,
+    );
   }
 
-  const row = db
-    .prepare(
-      `SELECT id, person_id, year_label, title, body, sort_order, created_by, created_at
-         FROM milestones WHERE id = ? AND archived_at IS NULL`,
-    )
-    .get(id) as MilestoneRow | undefined;
+  const row = await one<MilestoneRow>(
+    `SELECT id, person_id, year_label, title, body, sort_order, created_by, created_at
+       FROM milestones WHERE id = @id AND archived_at IS NULL`,
+    { id },
+  );
   return row ? toMilestone(row) : null;
 }
 
-export function archiveMilestone(id: string): void {
-  db.prepare('UPDATE milestones SET archived_at = ? WHERE id = ?').run(nowIso(), id);
+export async function archiveMilestone(id: string): Promise<void> {
+  await exec('UPDATE milestones SET archived_at = @at WHERE id = @id', { at: nowIso(), id });
 }
 
-export function addRelationship(
+export async function addRelationship(
   personId: string,
   relatedPersonId: string,
   type: RelationshipType,
-): Relationship {
+): Promise<Relationship> {
   const id = newId('rel');
   // A spouse link is symmetric; storing it in both directions would double the
   // connectors drawn, so an existing pair in either direction wins.
   if (type === 'spouse') {
-    const existing = db
-      .prepare(
-        `SELECT id, person_id, related_person_id, type FROM relationships
-          WHERE type = 'spouse'
-            AND ((person_id = ? AND related_person_id = ?) OR (person_id = ? AND related_person_id = ?))`,
-      )
-      .get(personId, relatedPersonId, relatedPersonId, personId) as
-      | RelationshipRow
-      | undefined;
+    const existing = await one<RelationshipRow>(
+      `SELECT id, person_id, related_person_id, type FROM relationships
+        WHERE type = 'spouse'
+          AND ((person_id = @personId AND related_person_id = @relatedPersonId)
+            OR (person_id = @relatedPersonId AND related_person_id = @personId))`,
+      { personId, relatedPersonId },
+    );
     if (existing) {
       return {
         id: existing.id,
@@ -384,18 +395,19 @@ export function addRelationship(
     }
   }
 
-  db.prepare(
+  await exec(
     `INSERT INTO relationships (id, person_id, related_person_id, type, created_at)
-     VALUES (?, ?, ?, ?, ?)
+     VALUES (@id, @personId, @relatedPersonId, @type, @at)
      ON CONFLICT (person_id, related_person_id, type) DO NOTHING`,
-  ).run(id, personId, relatedPersonId, type, nowIso());
+    { id, personId, relatedPersonId, type, at: nowIso() },
+  );
 
-  const row = db
-    .prepare(
-      `SELECT id, person_id, related_person_id, type FROM relationships
-        WHERE person_id = ? AND related_person_id = ? AND type = ?`,
-    )
-    .get(personId, relatedPersonId, type) as RelationshipRow;
+  const row = await one<RelationshipRow>(
+    `SELECT id, person_id, related_person_id, type FROM relationships
+      WHERE person_id = @personId AND related_person_id = @relatedPersonId AND type = @type`,
+    { personId, relatedPersonId, type },
+  );
+  if (!row) throw new Error('relationship insert did not round-trip');
 
   return {
     id: row.id,
@@ -405,19 +417,29 @@ export function addRelationship(
   };
 }
 
-export function removeRelationship(id: string): void {
-  db.prepare('DELETE FROM relationships WHERE id = ?').run(id);
+export async function removeRelationship(id: string): Promise<void> {
+  await exec('DELETE FROM relationships WHERE id = @id', { id });
 }
 
 /**
  * True when adding `parentId → childId` would put a person in their own
  * ancestry. Walks up from the prospective parent looking for the child.
  */
-export function wouldCreateCycle(parentId: string, childId: string): boolean {
+export async function wouldCreateCycle(parentId: string, childId: string): Promise<boolean> {
   if (parentId === childId) return true;
-  const parentsOf = db.prepare(
-    "SELECT person_id AS id FROM relationships WHERE related_person_id = ? AND type = 'parent'",
+
+  // One query, then walk in memory. The old version issued a query per node
+  // visited, which was free against a local file and is a network round-trip
+  // per ancestor against managed Postgres.
+  const edges = await query<{ child: string; parent: string }>(
+    `SELECT related_person_id AS child, person_id AS parent
+       FROM relationships WHERE type = 'parent'`,
   );
+  const parentsOf = new Map<string, string[]>();
+  for (const edge of edges) {
+    parentsOf.set(edge.child, [...(parentsOf.get(edge.child) ?? []), edge.parent]);
+  }
+
   const seen = new Set<string>();
   const queue = [parentId];
   while (queue.length > 0) {
@@ -425,9 +447,7 @@ export function wouldCreateCycle(parentId: string, childId: string): boolean {
     if (current === childId) return true;
     if (seen.has(current)) continue;
     seen.add(current);
-    for (const row of parentsOf.all(current) as Array<{ id: string }>) {
-      queue.push(row.id);
-    }
+    queue.push(...(parentsOf.get(current) ?? []));
   }
   return false;
 }

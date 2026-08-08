@@ -2,7 +2,7 @@ import type { ArchiveKind } from '../../../shared/types.ts';
 
 import { generationIdForYear, syncGenerations } from '../lib/generations.ts';
 import { newId } from '../lib/ids.ts';
-import { db, getMeta, nowIso, setMeta, transact } from './index.ts';
+import { getMeta, nowIso, one, setMeta, transact } from './index.ts';
 
 /**
  * The Leibovitz–Hirsch family from the design, loaded as ordinary editable
@@ -288,39 +288,37 @@ const ARCHIVE: readonly ArchiveSeed[] = [
   { kind: 'מסמך', title: 'שטר הבית, רחוב הגפן', yearLabel: '1953', subject: 'דוד', personId: 'david', tileHeight: 100 },
 ];
 
-export function seedIfEmpty(): { seeded: boolean } {
-  syncGenerations();
+export async function seedIfEmpty(): Promise<{ seeded: boolean }> {
+  await syncGenerations();
 
-  if (getMeta('seed_version') === SEED_VERSION) return { seeded: false };
+  if ((await getMeta('seed_version')) === SEED_VERSION) return { seeded: false };
 
-  const { count } = db.prepare('SELECT COUNT(*) AS count FROM people').get() as {
-    count: number;
-  };
-  if (count > 0) {
+  const counted = await one<{ count: number }>('SELECT COUNT(*)::int AS count FROM people');
+  if ((counted?.count ?? 0) > 0) {
     // Someone has already populated this database. Record the version so we
     // stop checking, but never touch their data.
-    setMeta('seed_version', SEED_VERSION);
+    await setMeta('seed_version', SEED_VERSION);
     return { seeded: false };
   }
 
-  transact(() => {
+  await transact(async (tx) => {
     const at = nowIso();
 
-    const insertPerson = db.prepare(`
+    const INSERT_PERSON = `
       INSERT INTO people
         (id, full_name, initial, life_span, place, story, birth_year, death_year,
          branch, audio_label, x, y, is_provisional, generation_id, created_at, updated_at)
       VALUES
         (@id, @fullName, @initial, @lifeSpan, @place, @story, @birthYear, @deathYear,
          @branch, @audioLabel, @x, @y, 0, @generationId, @at, @at)
-    `);
-    const insertMilestone = db.prepare(`
+    `;
+    const INSERT_MILESTONE = `
       INSERT INTO milestones (id, person_id, year_label, title, body, sort_order, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
+      VALUES (@id, @personId, @yearLabel, @title, @body, @sortOrder, @at)
+    `;
 
     for (const p of PEOPLE) {
-      insertPerson.run({
+      await tx.run(INSERT_PERSON, {
         id: p.id,
         fullName: p.fullName,
         initial: p.initial,
@@ -336,49 +334,78 @@ export function seedIfEmpty(): { seeded: boolean } {
         generationId: generationIdForYear(p.birthYear),
         at,
       });
-      p.milestones.forEach((m, i) => {
-        insertMilestone.run(newId('ms'), p.id, m.yearLabel, m.title, m.body, i, at);
+      for (const [i, m] of p.milestones.entries()) {
+        await tx.run(INSERT_MILESTONE, {
+          id: newId('ms'),
+          personId: p.id,
+          yearLabel: m.yearLabel,
+          title: m.title,
+          body: m.body,
+          sortOrder: i,
+          at,
+        });
+      }
+    }
+
+    const INSERT_REL = `
+      INSERT INTO relationships (id, person_id, related_person_id, type, created_at)
+      VALUES (@id, @personId, @relatedPersonId, @type, @at)
+    `;
+    for (const [a, b] of SPOUSES) {
+      await tx.run(INSERT_REL, {
+        id: newId('rel'),
+        personId: a,
+        relatedPersonId: b,
+        type: 'spouse',
+        at,
+      });
+    }
+    for (const [parent, child] of PARENTS) {
+      await tx.run(INSERT_REL, {
+        id: newId('rel'),
+        personId: parent,
+        relatedPersonId: child,
+        type: 'parent',
+        at,
       });
     }
 
-    const insertRel = db.prepare(`
-      INSERT INTO relationships (id, person_id, related_person_id, type, created_at)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    for (const [a, b] of SPOUSES) insertRel.run(newId('rel'), a, b, 'spouse', at);
-    for (const [parent, child] of PARENTS) {
-      insertRel.run(newId('rel'), parent, child, 'parent', at);
-    }
-
-    const insertEvent = db.prepare(`
+    const INSERT_EVENT = `
       INSERT INTO timeline_events (id, year, title, person_id, created_at)
-      VALUES (?, ?, ?, ?, ?)
-    `);
+      VALUES (@id, @year, @title, @personId, @at)
+    `;
     for (const [year, title, personId] of TIMELINE) {
-      insertEvent.run(newId('ev'), year, title, personId, at);
+      await tx.run(INSERT_EVENT, { id: newId('ev'), year, title, personId, at });
     }
 
-    const insertArchive = db.prepare(`
+    const INSERT_ARCHIVE = `
       INSERT INTO archive_items
         (id, kind, title, year_label, subject, story, person_id, tile_height, created_at)
-      VALUES (?, ?, ?, ?, ?, '', ?, ?, ?)
-    `);
+      VALUES (@id, @kind, @title, @yearLabel, @subject, '', @personId, @tileHeight, @at)
+    `;
     // Reversed so the feed's newest-first ordering matches the design's order.
-    [...ARCHIVE].reverse().forEach((item, i) => {
-      const created = new Date(Date.parse(at) + i * 1000).toISOString();
-      insertArchive.run(
-        newId('it'),
-        item.kind,
-        item.title,
-        item.yearLabel,
-        item.subject,
-        item.personId,
-        item.tileHeight,
-        created,
-      );
-    });
+    for (const [i, item] of [...ARCHIVE].reverse().entries()) {
+      await tx.run(INSERT_ARCHIVE, {
+        id: newId('it'),
+        kind: item.kind,
+        title: item.title,
+        yearLabel: item.yearLabel,
+        subject: item.subject,
+        personId: item.personId,
+        tileHeight: item.tileHeight,
+        at: new Date(Date.parse(at) + i * 1000).toISOString(),
+      });
+    }
 
-    setMeta('seed_version', SEED_VERSION);
+    // Through `tx`, not `setMeta`. The module-level helpers take a fresh
+    // connection from the pool and would land outside this transaction — so a
+    // rollback would leave the marker written and the archive permanently
+    // unseeded, with no error to show for it.
+    await tx.run(
+      `INSERT INTO meta (key, value) VALUES ('seed_version', @version)
+       ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+      { version: SEED_VERSION },
+    );
   });
 
   return { seeded: true };
