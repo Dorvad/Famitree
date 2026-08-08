@@ -128,3 +128,14 @@
   text-wrap: pretty;
   animation: global(slot) 480ms var(--spring-settle) both;
 }
+
+/* The failing request, for whoever has to work out why. Quiet enough to ignore
+   when the message above already says everything. */
+.trace {
+  margin-top: -4px;
+  font: 400 11.5px var(--font-body);
+  color: var(--faint);
+  direction: ltr;
+  unicode-bidi: isolate;
+  letter-spacing: 0.02em;
+}

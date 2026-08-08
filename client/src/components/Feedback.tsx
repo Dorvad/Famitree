@@ -62,6 +62,9 @@ export function ErrorState({ error, onRetry, title }: ErrorStateProps): React.JS
     <div className={styles.centre} role="alert">
       <h2 className={styles.title}>{title ?? 'לא הצלחנו לטעון'}</h2>
       <p className={styles.message}>{message}</p>
+      {error instanceof ApiError && error.trace && (
+        <p className={styles.trace}>{error.trace}</p>
+      )}
       {onRetry && (
         <button type="button" className={styles.action} onClick={onRetry}>
           נסו שוב

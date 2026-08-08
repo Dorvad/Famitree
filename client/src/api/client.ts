@@ -14,9 +14,26 @@ export class ApiError extends Error {
     readonly code: string,
     message: string,
     readonly details?: Record<string, string[]>,
+    /**
+     * Which request failed.
+     *
+     * Shown to whoever is running the archive, because that is usually not the
+     * person who wrote it. "הבקשה נכשלה" on its own sends them to a developer;
+     * "GET /tree · 401" is something they can act on, or repeat to somebody who
+     * can. It is the difference between a fault that is diagnosable from the
+     * screen and one that needs a browser's network tab.
+     */
+    readonly request?: { method: string; path: string },
   ) {
     super(message);
     this.name = 'ApiError';
+  }
+
+  /** e.g. "GET /tree · 401". Empty when the request is unknown. */
+  get trace(): string {
+    if (!this.request) return '';
+    const status = this.status === 0 ? 'no response' : String(this.status);
+    return `${this.request.method} ${this.request.path} · ${status}`;
   }
 
   /** True when the caller needs to join before this will succeed. */
@@ -30,7 +47,10 @@ export class ApiError extends Error {
   }
 }
 
-async function toError(response: Response): Promise<ApiError> {
+async function toError(
+  response: Response,
+  request: { method: string; path: string },
+): Promise<ApiError> {
   let body: Partial<ApiErrorBody> = {};
   try {
     body = (await response.json()) as Partial<ApiErrorBody>;
@@ -42,6 +62,7 @@ async function toError(response: Response): Promise<ApiError> {
     body.error?.code ?? 'http_error',
     body.error?.message ?? 'הבקשה נכשלה. בדקו את החיבור ונסו שוב.',
     body.error?.details,
+    request,
   );
 }
 
@@ -75,10 +96,15 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     response = await fetch(`${BASE}/api${path}`, init);
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === 'AbortError') throw cause;
-    throw new ApiError(0, 'network_error', 'אין חיבור לשרת. בדקו את הרשת ונסו שוב.');
+    throw new ApiError(0, 'network_error', 'אין חיבור לשרת. בדקו את הרשת ונסו שוב.', undefined, {
+      method: init.method ?? 'GET',
+      path,
+    });
   }
 
-  if (!response.ok) throw await toError(response);
+  if (!response.ok) {
+    throw await toError(response, { method: init.method ?? 'GET', path });
+  }
   if (response.status === 204) return undefined as T;
 
   return (await response.json()) as T;
