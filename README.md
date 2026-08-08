@@ -88,24 +88,45 @@ client/
 | `api/index.ts` | The function. Hands the Express app the request |
 | `server/src/app.ts` | The app with no listener. Imported from source, so the deploy never depends on a build artifact existing at the moment functions are compiled |
 
-**Set these in the project's environment variables:**
+### First deploy
+
+**Import the repository and deploy before setting anything up.** The build will
+succeed and the API will fail, because there is no database yet — that is the
+expected middle state, and doing it in this order means the storage connections
+can inject their own variables rather than being hunted for in a console.
+
+**Then, in the project's Storage tab, connect a Postgres and a Blob store.**
+That is what sets `DATABASE_URL` and `BLOB_READ_WRITE_TOKEN`; neither should be
+typed in by hand. If the provider offers both a pooled and a direct connection
+string, the integration wires up the pooled one, which is what a deployment of
+many short-lived instances needs.
+
+**Add the four variables that are genuinely yours**, for all environments:
 
 ```
-DATABASE_URL     the provider's *pooled* connection string
 SESSION_SECRET   48 random bytes; the server refuses to boot without it
 STORAGE_DRIVER   blob
 INVITE_CODE      a code you share with relatives (optional but recommended)
 PUBLIC_READ      false, unless you want the archive readable by link
 ```
 
-`BLOB_READ_WRITE_TOKEN` is injected automatically once a Blob store is connected
-to the project. `NODE_ENV` is set by the platform.
+`NODE_ENV` is set by the platform.
 
-**Then run the migration once**, from a machine with `DATABASE_URL` set:
+**Then create the tables, once.** Rather than copying a connection string out of
+a console, pull the project's own environment:
 
 ```bash
+npx vercel link
+npx vercel env pull .env --environment=production
 npm run db:migrate
 ```
+
+`.env` is git-ignored, so the credentials never leave the machine. Redeploy
+afterwards so the function starts against a database that has tables in it.
+
+**Join first, before sharing the link.** The first account to join becomes the
+`steward` — the only role that can edit other people's records or archive
+anything. Everyone after is a member.
 
 ### Why it is shaped this way
 
