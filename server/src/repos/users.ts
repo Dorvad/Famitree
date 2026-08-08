@@ -1,8 +1,8 @@
-import type { SessionUser, UserRole } from '../../../shared/types.ts';
+import type { SessionUser, UserRole } from '../../../shared/types.js';
 
-import { exec, nowIso, one } from '../db/index.ts';
-import { generationIdForYear } from '../lib/generations.ts';
-import { newId } from '../lib/ids.ts';
+import { exec, nowIso, one } from '../db/index.js';
+import { generationIdForYear } from '../lib/generations.js';
+import { newId } from '../lib/ids.js';
 
 interface UserRow {
   id: string;

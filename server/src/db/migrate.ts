@@ -7,7 +7,7 @@
  *
  *   npm run db:migrate
  */
-import { closePool, ensureReady } from './index.ts';
+import { closePool, ensureReady } from './index.js';
 
 await ensureReady();
 console.log('schema applied, sample family loaded if the database was empty.');

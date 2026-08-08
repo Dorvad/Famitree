@@ -1,7 +1,7 @@
-import type { ArchiveItem, ArchiveKind, TimelineEvent } from '../../../shared/types.ts';
+import type { ArchiveItem, ArchiveKind, TimelineEvent } from '../../../shared/types.js';
 
-import { exec, nowIso, one, query } from '../db/index.ts';
-import { newId } from '../lib/ids.ts';
+import { exec, nowIso, one, query } from '../db/index.js';
+import { newId } from '../lib/ids.js';
 
 interface ArchiveRow {
   id: string;

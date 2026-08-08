@@ -1,6 +1,6 @@
-import type { Generation } from '../../../shared/types.ts';
+import type { Generation } from '../../../shared/types.js';
 
-import { transact } from '../db/index.ts';
+import { transact } from '../db/index.js';
 
 interface GenerationSeed {
   id: string;

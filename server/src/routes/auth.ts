@@ -3,13 +3,13 @@ import rateLimit from 'express-rate-limit';
 import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 
-import type { SessionResponse } from '../../../shared/types.ts';
+import type { SessionResponse } from '../../../shared/types.js';
 
-import { env, inviteRequired } from '../env.ts';
-import { ApiError } from '../middleware/errors.ts';
-import { clearSession, issueSession, requireAuth } from '../middleware/session.ts';
-import { createPerson, getPerson } from '../repos/people.ts';
-import { bindUserToPerson, createUser } from '../repos/users.ts';
+import { env, inviteRequired } from '../env.js';
+import { ApiError } from '../middleware/errors.js';
+import { clearSession, issueSession, requireAuth } from '../middleware/session.js';
+import { createPerson, getPerson } from '../repos/people.js';
+import { bindUserToPerson, createUser } from '../repos/users.js';
 
 export const authRouter = Router();
 

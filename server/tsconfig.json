@@ -4,7 +4,6 @@
     "lib": ["ES2023"],
     "types": ["node"],
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
     "noEmit": true
   },
   "include": ["src/**/*.ts", "build.mjs", "../shared/**/*.ts"]

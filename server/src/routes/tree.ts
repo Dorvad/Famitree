@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import type { PersonDetail, SessionUser, TreeResponse } from '../../../shared/types.ts';
+import type { PersonDetail, SessionUser, TreeResponse } from '../../../shared/types.js';
 
-import { allGenerations } from '../lib/generations.ts';
-import { getMedia } from '../repos/media.ts';
-import { ApiError } from '../middleware/errors.ts';
-import { pathParam } from '../lib/http.ts';
-import { requireAuth, requireReadAccess, requireRole } from '../middleware/session.ts';
+import { allGenerations } from '../lib/generations.js';
+import { getMedia } from '../repos/media.js';
+import { ApiError } from '../middleware/errors.js';
+import { pathParam } from '../lib/http.js';
+import { requireAuth, requireReadAccess, requireRole } from '../middleware/session.js';
 import {
   addMilestone,
   addRelationship,
@@ -23,7 +23,7 @@ import {
   updateMilestone,
   updatePerson,
   wouldCreateCycle,
-} from '../repos/people.ts';
+} from '../repos/people.js';
 
 export const treeRouter = Router();
 

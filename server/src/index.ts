@@ -1,5 +1,5 @@
-import { app } from './app.ts';
-import { env, inviteRequired } from './env.ts';
+import { app } from './app.js';
+import { env, inviteRequired } from './env.js';
 
 /**
  * The long-running server: binds a port and serves the built client alongside

@@ -1,6 +1,6 @@
-import type { MediaRef } from '../../../shared/types.ts';
+import type { MediaRef } from '../../../shared/types.js';
 
-import { exec, nowIso, one } from '../db/index.ts';
+import { exec, nowIso, one } from '../db/index.js';
 
 interface MediaRow {
   id: string;

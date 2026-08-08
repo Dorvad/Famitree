@@ -6,14 +6,14 @@ import helmet from 'helmet';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
-import { ensureReady } from './db/index.ts';
-import { configProblems, env, inviteRequired } from './env.ts';
-import { errorHandler, notFoundHandler } from './middleware/errors.ts';
-import { attachUser } from './middleware/session.ts';
-import { archiveRouter } from './routes/archive.ts';
-import { authRouter } from './routes/auth.ts';
-import { mediaRouter } from './routes/media.ts';
-import { treeRouter } from './routes/tree.ts';
+import { ensureReady } from './db/index.js';
+import { configProblems, env, inviteRequired } from './env.js';
+import { errorHandler, notFoundHandler } from './middleware/errors.js';
+import { attachUser } from './middleware/session.js';
+import { archiveRouter } from './routes/archive.js';
+import { authRouter } from './routes/auth.js';
+import { mediaRouter } from './routes/media.js';
+import { treeRouter } from './routes/tree.js';
 
 /**
  * Builds the Express app, and nothing else.

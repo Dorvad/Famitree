@@ -1,10 +1,10 @@
 import type { CookieOptions, NextFunction, Request, RequestHandler, Response } from 'express';
 
-import type { SessionUser, UserRole } from '../../../shared/types.ts';
+import type { SessionUser, UserRole } from '../../../shared/types.js';
 
-import { env } from '../env.ts';
-import { getUser, touchUser } from '../repos/users.ts';
-import { ApiError } from './errors.ts';
+import { env } from '../env.js';
+import { getUser, touchUser } from '../repos/users.js';
+import { ApiError } from './errors.js';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace

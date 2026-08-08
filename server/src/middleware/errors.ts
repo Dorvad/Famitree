@@ -1,9 +1,9 @@
 import type { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
 
-import type { ApiErrorBody } from '../../../shared/types.ts';
+import type { ApiErrorBody } from '../../../shared/types.js';
 
-import { env } from '../env.ts';
+import { env } from '../env.js';
 
 /** An error whose message is safe to show a user. Anything else becomes a 500. */
 export class ApiError extends Error {

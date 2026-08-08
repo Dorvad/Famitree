@@ -1,7 +1,7 @@
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { env } from '../env.ts';
+import { env } from '../env.js';
 
 /**
  * Where uploaded originals live.

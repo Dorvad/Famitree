@@ -5,8 +5,8 @@
  * `--yes` everywhere else. Uploaded originals are left alone: the point is to
  * reset structure, not to shred the photographs.
  */
-import { env } from '../env.ts';
-import { closePool, ensureReady, exec } from './index.ts';
+import { env } from '../env.js';
+import { closePool, ensureReady, exec } from './index.js';
 
 if (env.isProduction) {
   console.error('Refusing to reset the database with NODE_ENV=production.');

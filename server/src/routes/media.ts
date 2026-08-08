@@ -3,13 +3,13 @@ import rateLimit from 'express-rate-limit';
 import multer, { MulterError } from 'multer';
 import { randomUUID } from 'node:crypto';
 
-import { env } from '../env.ts';
-import { ApiError } from '../middleware/errors.ts';
-import { pathParam } from '../lib/http.ts';
-import { requireAuth, requireReadAccess } from '../middleware/session.ts';
-import { getMedia, recordMedia } from '../repos/media.ts';
-import { newId } from '../lib/ids.ts';
-import { storage } from '../lib/storage.ts';
+import { env } from '../env.js';
+import { ApiError } from '../middleware/errors.js';
+import { pathParam } from '../lib/http.js';
+import { requireAuth, requireReadAccess } from '../middleware/session.js';
+import { getMedia, recordMedia } from '../repos/media.js';
+import { newId } from '../lib/ids.js';
+import { storage } from '../lib/storage.js';
 
 export const mediaRouter = Router();
 

@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { ARCHIVE_KINDS } from '../../../shared/types.ts';
+import { ARCHIVE_KINDS } from '../../../shared/types.js';
 
-import { ApiError } from '../middleware/errors.ts';
-import { pathParam } from '../lib/http.ts';
-import { requireAuth, requireReadAccess, requireRole } from '../middleware/session.ts';
+import { ApiError } from '../middleware/errors.js';
+import { pathParam } from '../lib/http.js';
+import { requireAuth, requireReadAccess, requireRole } from '../middleware/session.js';
 import {
   archiveArchiveItem,
   archiveTimelineEvent,
@@ -17,9 +17,9 @@ import {
   listTimelineEvents,
   updateArchiveItem,
   updateTimelineEvent,
-} from '../repos/archive.ts';
-import { getMedia } from '../repos/media.ts';
-import { getPerson } from '../repos/people.ts';
+} from '../repos/archive.js';
+import { getMedia } from '../repos/media.js';
+import { getPerson } from '../repos/people.js';
 
 export const archiveRouter = Router();
 

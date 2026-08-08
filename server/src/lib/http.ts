@@ -1,6 +1,6 @@
 import type { Request } from 'express';
 
-import { ApiError } from '../middleware/errors.ts';
+import { ApiError } from '../middleware/errors.js';
 
 /**
  * Express 5 types route params as `string | string[] | undefined`, which is

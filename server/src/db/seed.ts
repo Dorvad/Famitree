@@ -1,8 +1,8 @@
-import type { ArchiveKind } from '../../../shared/types.ts';
+import type { ArchiveKind } from '../../../shared/types.js';
 
-import { generationIdForYear, syncGenerations } from '../lib/generations.ts';
-import { newId } from '../lib/ids.ts';
-import { getMeta, nowIso, one, setMeta, transact } from './index.ts';
+import { generationIdForYear, syncGenerations } from '../lib/generations.js';
+import { newId } from '../lib/ids.js';
+import { getMeta, nowIso, one, setMeta, transact } from './index.js';
 
 /**
  * The Leibovitz–Hirsch family from the design, loaded as ordinary editable

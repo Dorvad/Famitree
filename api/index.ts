@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import { app } from '../server/src/app.ts';
+import { app } from '../server/src/app.js';
 
 /**
  * Vercel's entry point.

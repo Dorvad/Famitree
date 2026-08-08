@@ -1,7 +1,7 @@
 import pg from 'pg';
 
-import { env } from '../env.ts';
-import { SCHEMA } from './schema.ts';
+import { env } from '../env.js';
+import { SCHEMA } from './schema.js';
 
 /**
  * Postgres connection and the thin query layer everything above it uses.
@@ -169,7 +169,7 @@ export function ensureReady(): Promise<void> {
       await client.query(SCHEMA);
       // Imported here rather than at the top: seed.ts imports this module, and
       // a static cycle would leave one of them half-initialised.
-      const { seedIfEmpty } = await import('./seed.ts');
+      const { seedIfEmpty } = await import('./seed.js');
       await seedIfEmpty();
     } finally {
       await client.query('SELECT pg_advisory_unlock($1)', [MIGRATION_LOCK]);
