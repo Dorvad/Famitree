@@ -47,20 +47,31 @@ function int(name: string, fallback: number): number {
 const nodeEnv = process.env.NODE_ENV ?? 'development';
 const isProduction = nodeEnv === 'production';
 
+/**
+ * Misconfiguration is collected, not thrown.
+ *
+ * Throwing here happens at *import*, which on a serverless platform means the
+ * function dies before it can say anything — the visitor gets an unexplained
+ * 500 and the operator gets to guess which variable is missing. Collecting the
+ * problems instead lets `/api/health` name them and every other route refuse
+ * with a message that says what to fix. The app still serves nothing it should
+ * not: `configProblems` being non-empty is a hard stop on the whole API.
+ */
+const problems: string[] = [];
+
 const sessionSecret = process.env.SESSION_SECRET?.trim() ?? '';
 if (isProduction && sessionSecret.length < 32) {
-  throw new Error(
-    'SESSION_SECRET must be set to at least 32 characters in production. ' +
-      'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))"',
+  problems.push(
+    `SESSION_SECRET is ${sessionSecret ? `only ${sessionSecret.length} characters` : 'not set'}; ` +
+      'it must be at least 32 in production. Any long random string will do.',
   );
 }
 
 const databaseUrl = process.env.DATABASE_URL?.trim() ?? '';
 if (!databaseUrl) {
-  throw new Error(
-    'DATABASE_URL is not set. Point it at a Postgres database — a managed one in ' +
-      'production (use the provider\'s *pooled* connection string), or a local ' +
-      'server for development. See .env.example.',
+  problems.push(
+    'DATABASE_URL is not set. Connect a Postgres database to the project — the ' +
+      'integration sets this variable for you — then redeploy.',
   );
 }
 
@@ -74,7 +85,13 @@ const storageDriver = (process.env.STORAGE_DRIVER ?? (isProduction ? 'blob' : 'd
   | 'disk'
   | 'blob';
 if (storageDriver !== 'disk' && storageDriver !== 'blob') {
-  throw new Error(`STORAGE_DRIVER must be "disk" or "blob", got "${storageDriver}"`);
+  problems.push(`STORAGE_DRIVER must be "disk" or "blob", not "${storageDriver}".`);
+}
+if (storageDriver === 'blob' && !process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
+  problems.push(
+    'STORAGE_DRIVER is "blob" but BLOB_READ_WRITE_TOKEN is not set. Connect a ' +
+      'Blob store to the project, then redeploy.',
+  );
 }
 
 const dataDir = path.resolve(
@@ -112,3 +129,9 @@ export const env = {
 } as const;
 
 export const inviteRequired = env.inviteCode.length > 0;
+
+/**
+ * Everything wrong with the configuration, in plain words. Empty means the app
+ * is safe to serve; anything in it means the API answers 503 and says so.
+ */
+export const configProblems: readonly string[] = problems;

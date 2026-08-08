@@ -7,7 +7,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import { ensureReady } from './db/index.ts';
-import { env, inviteRequired } from './env.ts';
+import { configProblems, env, inviteRequired } from './env.ts';
 import { errorHandler, notFoundHandler } from './middleware/errors.ts';
 import { attachUser } from './middleware/session.ts';
 import { archiveRouter } from './routes/archive.ts';
@@ -112,6 +112,38 @@ app.use(
 );
 
 /**
+ * Answers before anything can stop it — no database, no readiness check, no
+ * configuration required. It is the one endpoint whose job is to explain why
+ * the others are not working, so it must never be able to fail for the same
+ * reason they are.
+ */
+app.get('/api/health', (_req, res) => {
+  res.status(configProblems.length === 0 ? 200 : 503).json({
+    ok: configProblems.length === 0,
+    inviteRequired,
+    publicRead: env.publicRead,
+    storage: env.storageDriver,
+    database: env.databaseUrl ? 'configured' : 'missing',
+    ...(configProblems.length > 0 && { problems: configProblems }),
+  });
+});
+
+/** A misconfigured deployment serves nothing, and says exactly what is wrong. */
+app.use('/api', (_req, res, next) => {
+  if (configProblems.length === 0) {
+    next();
+    return;
+  }
+  res.status(503).json({
+    error: {
+      code: 'not_configured',
+      message: 'השרת עדיין לא הוגדר במלואו. ' + configProblems.join(' '),
+      details: { configuration: configProblems as string[] },
+    },
+  });
+});
+
+/**
  * Nothing reaches a route until the database has its tables and the sample
  * family. Memoised per process and serialised across processes by an advisory
  * lock, so this is one await on a resolved promise after the first request —
@@ -119,10 +151,6 @@ app.use(
  */
 app.use('/api', (_req, _res, next) => {
   ensureReady().then(() => next(), next);
-});
-
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, inviteRequired, publicRead: env.publicRead });
 });
 
 app.use('/api/auth', authRouter);
