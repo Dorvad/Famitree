@@ -81,6 +81,9 @@ const blobStorage: Storage = {
     const result = await put(`uploads/${name}`, body, {
       access: 'public',
       contentType,
+      // Passed rather than left to the library's own lookup, which only ever
+      // reads the unprefixed name — see env.ts.
+      token: env.blobToken,
       // The name already carries a UUID; a second random suffix would only make
       // the stored URL harder to match against the row that points at it.
       addRandomSuffix: false,
@@ -97,7 +100,7 @@ const blobStorage: Storage = {
 
   async remove(stored) {
     const { del } = await import('@vercel/blob');
-    await del(stored).catch(() => undefined);
+    await del(stored, { token: env.blobToken }).catch(() => undefined);
   },
 };
 

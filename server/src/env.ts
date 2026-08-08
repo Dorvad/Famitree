@@ -91,12 +91,27 @@ const storageDriver = (process.env.STORAGE_DRIVER ?? (isProduction ? 'blob' : 'd
 if (storageDriver !== 'disk' && storageDriver !== 'blob') {
   problems.push(`STORAGE_DRIVER must be "disk" or "blob", not "${storageDriver}".`);
 }
-const blobConfigured = Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
-if (storageDriver === 'blob' && !blobConfigured) {
+/**
+ * The blob token, under whatever name it arrived.
+ *
+ * The client library reads exactly `BLOB_READ_WRITE_TOKEN` and nothing else,
+ * but a store connected with a custom prefix sets something like
+ * `ARCHIVE_BLOB_READ_WRITE_TOKEN` — which looks connected in every list you
+ * can see, and is invisible to the library. Accepting any name that ends in
+ * the standard one, and passing it explicitly, makes the two agree.
+ */
+const blobTokenEntry = Object.entries(process.env).find(
+  ([key, value]) => key.endsWith('BLOB_READ_WRITE_TOKEN') && value?.trim(),
+);
+const blobToken = blobTokenEntry?.[1]?.trim() ?? '';
+const blobTokenSource = blobTokenEntry?.[0] ?? null;
+
+if (storageDriver === 'blob' && !blobToken) {
   warnings.push(
-    'STORAGE_DRIVER is "blob" but BLOB_READ_WRITE_TOKEN is not set, so uploads ' +
-      'will be refused. Connect a Blob store to the project, then redeploy. ' +
-      'Everything else works.',
+    'STORAGE_DRIVER is "blob" but no BLOB_READ_WRITE_TOKEN is set, so uploads ' +
+      'will be refused. Connect a Blob store to the project and redeploy — the ' +
+      'variable is baked into a deployment when it is built, so connecting a ' +
+      'store does not change one that is already running. Everything else works.',
   );
 }
 
@@ -122,7 +137,10 @@ export const env = {
   databaseUrl,
   storageDriver,
   /** False when the blob driver is selected but has no token to use. */
-  storageReady: storageDriver !== 'blob' || blobConfigured,
+  storageReady: storageDriver !== 'blob' || Boolean(blobToken),
+  blobToken,
+  /** Which variable supplied the token, so /api/health can say. */
+  blobTokenSource,
   dataDir,
   /** Only used by the `disk` storage driver. */
   uploadDir: path.join(dataDir, 'uploads'),
