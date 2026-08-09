@@ -46,7 +46,7 @@ export interface FamilyCellMap {
 const CELL_CLEARANCE = 240;
 
 /** The family name: last word once nicknames and maiden names are removed. */
-function familyName(fullName: string): string {
+export function familyName(fullName: string): string {
   const cleaned = fullName
     .replace(/["“”„״]+[^"“”„״]*["“”„״]+/g, ' ')
     .replace(/\([^)]*\)/g, ' ')

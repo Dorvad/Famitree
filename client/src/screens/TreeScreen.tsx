@@ -573,14 +573,42 @@ export function TreeScreen(): React.JSX.Element {
   const focusParam = searchParams.get('focus');
 
   // Fit the whole tree on first paint, then leave the view alone so a pan or
-  // zoom is never yanked back by a re-render.
+  // zoom is never yanked back by a re-render. While the overture holds the
+  // screen the camera waits a step further out, so pressing התחלה has
+  // somewhere to arrive from.
   const hasFitted = useRef(false);
   useEffect(() => {
     if (hasFitted.current) return;
     if (viewport.width === 0 || layout.nodes.length === 0) return;
     hasFitted.current = true;
-    setTransform(fitView(layout, viewport, { maxScale: 1 }));
+    const fit = fitView(layout, viewport, { maxScale: 1 });
+    if (!overture) {
+      setTransform(fit);
+      return;
+    }
+    const k = fit.k * 0.86;
+    setTransform({
+      k,
+      x: (viewport.width - layout.width * k) / 2,
+      y: (viewport.height - layout.height * k) / 2,
+    });
+    // The effect must not re-run when the overture ends — beginEntry owns
+    // that camera move — so `overture` stays out of the dependencies and the
+    // hasFitted guard keeps this to a single run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout, setTransform, viewport]);
+
+  /**
+   * Remounting the canvas replays the planting: nodes drop in, wires ink
+   * themselves. Bumped once, when the overture's button is pressed, so the
+   * entrance is an arrival rather than a curtain lifting on a finished scene.
+   */
+  const [entryEpoch, setEntryEpoch] = useState(0);
+  const beginEntry = useCallback(() => {
+    setEntryEpoch(1);
+    glide();
+    setTransform(fitView(layout, viewport, { maxScale: 1 }));
+  }, [glide, layout, setTransform, viewport]);
 
   // A ?focus=<id> link (from search, a person's page, or joining) frames that
   // person — and opens their lens, unless the board is in edit mode, where the
@@ -981,6 +1009,7 @@ export function TreeScreen(): React.JSX.Element {
         )}
 
         <div
+          key={entryEpoch}
           className={
             lens || gliding ? `${styles.canvas} ${styles.canvasGlide}` : styles.canvas
           }
@@ -1029,7 +1058,9 @@ export function TreeScreen(): React.JSX.Element {
               : 'גררו לשוטט · הקשה כפולה לזום · געו באדם לפתיחה'}
         </p>
 
-        {overture && <TreeOverture onDone={() => setOverture(false)} />}
+        {overture && (
+          <TreeOverture onBegin={beginEntry} onDone={() => setOverture(false)} />
+        )}
       </div>
 
       {lens && !editing && (
