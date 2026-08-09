@@ -34,6 +34,11 @@ import {
   type TreeLayout,
   type TreeNode,
 } from '../lib/tree-layout.ts';
+import {
+  buildFamilyCells,
+  type FamilyCell,
+  type FamilyCellMap,
+} from '../lib/family-cells.ts';
 import { tidyPositions } from '../lib/tidy.ts';
 import { usePanZoom } from '../lib/usePanZoom.ts';
 import { useUi } from '../state/ui.tsx';
@@ -41,6 +46,15 @@ import styles from './TreeScreen.module.css';
 
 /** Zoom applied when jumping to a specific person, as in the original. */
 const FOCUS_SCALE = 1.2;
+
+/**
+ * The semantic-zoom boundary. Below it, single circles are too small to read
+ * or tap, so the board switches to family cells; above it, the full tree.
+ * Two thresholds, not one: crossing over must not flutter between modes while
+ * a pinch hovers at the boundary.
+ */
+const CLUSTER_ENTER_K = 0.5;
+const CLUSTER_EXIT_K = 0.58;
 
 /**
  * The opening title belongs to arriving at the app, not to the route. Module
@@ -355,6 +369,86 @@ const CanvasContents = memo(function CanvasContents({
   );
 });
 
+/* ------------------------------------------------------------------ cells */
+
+interface CellsLayerProps {
+  data: FamilyCellMap;
+  width: number;
+  height: number;
+  myPersonId: string | null;
+  consumedDrag: () => boolean;
+  onOpenCell: (cell: FamilyCell) => void;
+}
+
+/**
+ * The zoomed-out board: one tappable card per nuclear family, joined by soft
+ * curves of descent. Far fewer elements than the full tree, so the view that
+ * shows the most family is also the cheapest one to move around.
+ */
+const CellsLayer = memo(function CellsLayer({
+  data,
+  width,
+  height,
+  myPersonId,
+  consumedDrag,
+  onOpenCell,
+}: CellsLayerProps): React.JSX.Element {
+  const myCellId = myPersonId ? data.cellOf.get(myPersonId) : undefined;
+
+  return (
+    <>
+      <svg className={styles.wires} width={width} height={height} aria-hidden="true">
+        {data.links.map((link) => (
+          <path key={link.id} className={styles.cellLink} d={link.d} />
+        ))}
+      </svg>
+
+      {data.cells.map((cell, index) => {
+        const faces = cell.members.slice(0, 3);
+        const rest = cell.members.length - faces.length;
+        return (
+          <button
+            key={cell.id}
+            type="button"
+            className={styles.cell}
+            style={
+              {
+                left: cell.cx,
+                top: cell.cy,
+                '--delay': `${Math.min(index * 0.05, 0.45).toFixed(2)}s`,
+              } as React.CSSProperties
+            }
+            data-no-pan
+            onClick={() => {
+              if (consumedDrag()) return;
+              onOpenCell(cell);
+            }}
+          >
+            <span className={styles.cellFaces} aria-hidden="true">
+              {faces.map((member) => (
+                <Avatar
+                  key={member.person.id}
+                  person={member.person}
+                  generation={member.generation}
+                  size={62}
+                  className={styles.cellFace}
+                />
+              ))}
+              {rest > 0 && <span className={styles.cellMore}>+{rest}</span>}
+            </span>
+            <span className={styles.cellLabel}>{cell.label}</span>
+            <span className={styles.cellCount}>{cell.members.length} בני משפחה</span>
+            {myCellId === cell.id && <span className={styles.cellYou}>אתם כאן</span>}
+            <span className="visually-hidden">
+              {cell.members.map((m) => givenName(m.person.fullName)).join(', ')} — געו לפתיחה
+            </span>
+          </button>
+        );
+      })}
+    </>
+  );
+});
+
 /* ----------------------------------------------------------------- screen */
 
 export function TreeScreen(): React.JSX.Element {
@@ -444,6 +538,20 @@ export function TreeScreen(): React.JSX.Element {
     content: { width: layout.width, height: layout.height },
   });
   const { setTransform, transform, viewport, consumedDrag } = panZoom;
+
+  const cellsData = useMemo(
+    () => buildFamilyCells(layout, tree?.relationships ?? []),
+    [layout, tree],
+  );
+
+  // Semantic zoom, with hysteresis so the boundary never flutters mid-pinch.
+  // Edit mode always shows the full board — a family card cannot be dragged.
+  const wasClustered = useRef(false);
+  const clustered =
+    !editing &&
+    cellsData.cells.length >= 2 &&
+    transform.k < (wasClustered.current ? CLUSTER_EXIT_K : CLUSTER_ENTER_K);
+  wasClustered.current = clustered;
 
   /** Latest zoom factor, for drag math that must not re-render per frame. */
   const scaleRef = useRef(1);
@@ -565,6 +673,28 @@ export function TreeScreen(): React.JSX.Element {
     [persistMove, qc, tree],
   );
 
+  /**
+   * A tap on a family card unfolds it: the camera glides in until the whole
+   * household fills the view — always past the cluster boundary, so the tap
+   * reliably lands in the detailed tree.
+   */
+  const openCell = useCallback(
+    (cell: FamilyCell) => {
+      const pad = 130;
+      const width = cell.bounds.maxX - cell.bounds.minX + pad * 2;
+      const height = cell.bounds.maxY - cell.bounds.minY + pad * 2;
+      const k = Math.min(
+        Math.max(Math.min(viewport.width / width, viewport.height / height), CLUSTER_EXIT_K + 0.07),
+        1.25,
+      );
+      const cx = (cell.bounds.minX + cell.bounds.maxX) / 2;
+      const cy = (cell.bounds.minY + cell.bounds.maxY) / 2;
+      glide();
+      setTransform({ k, x: viewport.width / 2 - cx * k, y: viewport.height / 2 - cy * k });
+    },
+    [glide, setTransform, viewport],
+  );
+
   /* ----------------------------------------------------------- edit mode */
 
   const enterEdit = useCallback(() => {
@@ -572,8 +702,17 @@ export function TreeScreen(): React.JSX.Element {
     setLens(null);
     setClosing(false);
     setPendingLens(null);
+    // Editing needs the full board; from the cells view, step the camera in
+    // first so the circles arrive at a size a finger can actually hold.
+    if (transform.k < CLUSTER_EXIT_K) {
+      const k = 0.75;
+      const cx = (viewport.width / 2 - transform.x) / transform.k;
+      const cy = (viewport.height / 2 - transform.y) / transform.k;
+      glide();
+      setTransform({ k, x: viewport.width / 2 - cx * k, y: viewport.height / 2 - cy * k });
+    }
     setEditing(true);
-  }, [tree]);
+  }, [glide, setTransform, transform, tree, viewport]);
 
   const exitEdit = useCallback(() => {
     // The board re-anchors to its natural origin on exit; shifting the view by
@@ -852,26 +991,42 @@ export function TreeScreen(): React.JSX.Element {
             cursor: panZoom.isDragging ? 'grabbing' : 'grab',
           }}
         >
-          <CanvasContents
-            layout={layout}
-            lensPersonId={lens?.personId ?? null}
-            closing={closing}
-            myPersonId={myPersonId}
-            editing={editing}
-            moveAll={moveAll}
-            scaleRef={scaleRef}
-            consumedDrag={consumedDrag}
-            registerEl={registerEl}
-            onOpen={handleOpen}
-            onMove={handleNodeMove}
-            onDrop={handleNodeDrop}
-          />
+          {clustered ? (
+            <CellsLayer
+              data={cellsData}
+              width={layout.width}
+              height={layout.height}
+              myPersonId={myPersonId}
+              consumedDrag={consumedDrag}
+              onOpenCell={openCell}
+            />
+          ) : (
+            <CanvasContents
+              layout={layout}
+              lensPersonId={lens?.personId ?? null}
+              closing={closing}
+              myPersonId={myPersonId}
+              editing={editing}
+              moveAll={moveAll}
+              scaleRef={scaleRef}
+              consumedDrag={consumedDrag}
+              registerEl={registerEl}
+              onOpen={handleOpen}
+              onMove={handleNodeMove}
+              onDrop={handleNodeDrop}
+            />
+          )}
         </div>
 
-        <p key={editing ? 'editing' : 'viewing'} className={styles.hint}>
+        <p
+          key={editing ? 'editing' : clustered ? 'cells' : 'viewing'}
+          className={styles.hint}
+        >
           {editing
             ? 'גררו עיגול כדי להזיז · ״סידור אוטומטי״ מסדר לפי הקשרים'
-            : 'גררו לשוטט · הקשה כפולה לזום · געו באדם לפתיחה'}
+            : clustered
+              ? 'געו במשפחה כדי לפרוש אותה · צבטו כדי להתקרב'
+              : 'גררו לשוטט · הקשה כפולה לזום · געו באדם לפתיחה'}
         </p>
 
         {overture && <TreeOverture onDone={() => setOverture(false)} />}
