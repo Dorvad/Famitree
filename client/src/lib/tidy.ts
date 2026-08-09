@@ -94,14 +94,19 @@ export function tidyPositions(people: Person[], relationships: Relationship[]): 
    */
   function cluster(person: Person, rowSet: Set<string>): Person[] {
     const members = [person];
-    for (const partnerId of spousesOf.get(person.id) ?? []) {
-      if (rowSet.has(partnerId)) continue;
-      if (parentsOf.has(partnerId)) continue;
-      if (depth.get(partnerId) !== depth.get(person.id)) continue;
-      const partner = byId.get(partnerId);
-      if (partner) {
-        members.push(partner);
-        rowSet.add(partnerId);
+    // Walks the whole spouse chain, parents or none: a couple is one unit and
+    // stands together, whatever each partner's descent. Splitting them across
+    // their two families of origin is what used to strand spouses hundreds of
+    // pixels apart.
+    for (let i = 0; i < members.length; i += 1) {
+      for (const partnerId of spousesOf.get((members[i] as Person).id) ?? []) {
+        if (rowSet.has(partnerId)) continue;
+        if (depth.get(partnerId) !== depth.get(person.id)) continue;
+        const partner = byId.get(partnerId);
+        if (partner) {
+          members.push(partner);
+          rowSet.add(partnerId);
+        }
       }
     }
     return members;
@@ -134,22 +139,30 @@ export function tidyPositions(people: Person[], relationships: Relationship[]): 
     const groupByKey = new Map<string, Group>();
     for (const person of rowPeople) {
       if (rowSet.has(person.id)) continue;
-      const parentIds = parentsOf.get(person.id);
-      if (!parentIds || parentIds.length === 0) {
-        rowSet.add(person.id);
-        loose.push(cluster(person, rowSet));
+      rowSet.add(person.id);
+      const members = cluster(person, rowSet);
+
+      // The cluster's parents are the union over the whole couple, so a pair
+      // whose families both stand in the tree asks to sit midway between
+      // them — the drop from each side arrives at the same household.
+      const clusterParents = [
+        ...new Set(members.flatMap((m) => parentsOf.get(m.id) ?? [])),
+      ].sort();
+
+      if (clusterParents.length === 0) {
+        loose.push(members);
         continue;
       }
-      rowSet.add(person.id);
-      const key = [...parentIds].sort().join('|');
-      const placedParents = parentIds.filter((id) => newX.has(id));
+
+      const key = clusterParents.join('|');
+      const placedParents = clusterParents.filter((id) => newX.has(id));
       const desired =
         placedParents.length > 0
           ? placedParents.reduce((sum, id) => sum + (newX.get(id) ?? 0), 0) /
             placedParents.length
-          : person.x;
+          : (members[0] as Person).x;
       const group = groupByKey.get(key) ?? { desired, clusters: [] };
-      group.clusters.push(cluster(person, rowSet));
+      group.clusters.push(members);
       groupByKey.set(key, group);
       if (!groups.includes(group)) groups.push(group);
     }
