@@ -8,26 +8,16 @@ import { usePanZoom } from '../lib/usePanZoom.ts';
 import { useUi } from '../state/ui.tsx';
 import styles from './TimelineScreen.module.css';
 
-/** Horizontal pixels per year — the density the design was drawn at. */
-const PX_PER_YEAR = 17.5;
+/** Horizontal pixels per year. Wide enough that a busy decade still breathes. */
+const PX_PER_YEAR = 26;
 /** Clearance at each end so the outermost card is never clipped. */
-const EDGE = 150;
-/** Band height and the axis's offset within it. */
-const BAND_HEIGHT = 640;
-const AXIS_Y = 300;
+const EDGE = 200;
 
 const CARD_WIDTH = 164;
-const CARD_GAP = 12;
+const CARD_GAP = 14;
+/** Worst-case card height the lane geometry budgets for. */
+const CARD_ESTIMATE = 132;
 
-/**
- * Rows a card can sit in, as offsets from the band's top.
- *
- * The design alternated strictly above/below the axis, which collides as soon
- * as two events fall within ~9 years of each other — and the sample family has
- * six events between 1933 and 1952. Cards are packed into the first row with
- * room instead, preferring the inner rows so the timeline stays compact.
- */
-const LANES = [130, 380, 0, 510] as const;
 /** Preference order per event, so consecutive events still straddle the axis. */
 const LANE_ORDER = [
   [0, 1, 2, 3],
@@ -35,6 +25,10 @@ const LANE_ORDER = [
 ] as const;
 
 const TONES = ['var(--accent)', 'var(--amber)', 'var(--teal)', 'var(--violet)'] as const;
+
+function clamp(value: number, lower: number, upper: number): number {
+  return Math.min(upper, Math.max(lower, value));
+}
 
 /**
  * Time runs right to left, matching the reading direction: the earliest year
@@ -45,7 +39,10 @@ export function TimelineScreen(): React.JSX.Element {
   const { data: tree } = useTree();
   const { openSearch } = useUi();
 
-  const model = useMemo(() => {
+  // The horizontal scale depends only on the events, so it is computed before
+  // the pan hook (which needs the width) — the vertical arrangement, which
+  // depends on the viewport the hook measures, comes after.
+  const span = useMemo(() => {
     if (!events || events.length === 0) return null;
 
     const years = events.map((e) => e.year);
@@ -59,66 +56,96 @@ export function TimelineScreen(): React.JSX.Element {
       decades.push({ year, x: xOf(year) });
     }
 
-    // x decreases as the year rises, so a row is free when the last card put
+    return { minYear, maxYear, width, decades, xOf };
+  }, [events]);
+
+  const panZoom = usePanZoom({
+    axis: 'x',
+    zoomable: false,
+    content: { width: span?.width ?? 1, height: 1 },
+  });
+  const { setTransform, transform, viewport } = panZoom;
+
+  /**
+   * The vertical arrangement, cut to the screen it is on.
+   *
+   * The band fills the viewport's height; as many lanes as genuinely fit are
+   * opened — two inner ones hugging the axis, two outer ones when there is
+   * room, which is how a phone ends up with two clear rows instead of four
+   * cramped ones. Cards pack into the freest lane, and when a cluster of
+   * same-year events exhausts every lane, the card slides sideways instead of
+   * on top of its neighbour — its dot stays on the true year, and the card's
+   * own year badge keeps the record straight. Overlap is impossible by
+   * construction: a lane only ever accepts a card a full card-width clear of
+   * the one before.
+   */
+  const layout = useMemo(() => {
+    if (!events || events.length === 0 || !span) return null;
+
+    const bandHeight = viewport.height > 0 ? clamp(viewport.height - 30, 440, 720) : 640;
+    const axisY = Math.round(bandHeight * 0.5);
+
+    const laneTops = [axisY - CARD_ESTIMATE - 34, axisY + 66];
+    const outerAbove = axisY - CARD_ESTIMATE * 2 - 52;
+    if (outerAbove >= 6) laneTops.push(outerAbove);
+    const outerBelow = axisY + 66 + CARD_ESTIMATE + 16;
+    if (outerBelow + CARD_ESTIMATE <= bandHeight - 4) laneTops.push(outerBelow);
+
+    // x decreases as the year rises, so a lane is free when the last card put
     // there sits at least a card-width further right.
-    const lastXInLane: number[] = LANES.map(() => Number.POSITIVE_INFINITY);
+    const lastXInLane: number[] = laneTops.map(() => Number.POSITIVE_INFINITY);
 
     const placed = [...events]
       .sort((a, b) => a.year - b.year)
       .map((event, index) => {
-        const x = xOf(event.year);
-        const order = LANE_ORDER[index % 2] as readonly number[];
+        const trueX = span.xOf(event.year);
+        const order = (LANE_ORDER[index % 2] as readonly number[]).filter(
+          (lane) => lane < laneTops.length,
+        );
         const lane =
           order.find(
             (candidate) =>
-              (lastXInLane[candidate] as number) - x >= CARD_WIDTH + CARD_GAP,
+              (lastXInLane[candidate] as number) - trueX >= CARD_WIDTH + CARD_GAP,
           ) ??
-          // Every row is crowded at this point in time; the least-recently used
-          // one still gives the most clearance available.
           (order.reduce((best, candidate) =>
             (lastXInLane[candidate] as number) > (lastXInLane[best] as number)
               ? candidate
               : best,
           ) as number);
 
+        const x = Math.min(trueX, (lastXInLane[lane] as number) - CARD_WIDTH - CARD_GAP);
         lastXInLane[lane] = x;
         return {
           ...event,
           x,
-          top: LANES[lane] as number,
+          dotX: trueX,
+          top: laneTops[lane] as number,
           tone: TONES[index % TONES.length] as string,
         };
       });
 
-    return { minYear, maxYear, width, decades, placed, xOf };
-  }, [events]);
-
-  const panZoom = usePanZoom({
-    axis: 'x',
-    zoomable: false,
-    content: { width: model?.width ?? 1, height: BAND_HEIGHT },
-  });
-  const { setTransform, transform, viewport } = panZoom;
+    return { placed, bandHeight, axisY };
+  }, [events, span, viewport.height]);
 
   // Open on the earliest years, which sit at the right-hand end.
   const hasPositioned = useRef(false);
   useEffect(() => {
-    if (hasPositioned.current || !model || viewport.width === 0) return;
+    if (hasPositioned.current || !span || viewport.width === 0) return;
     hasPositioned.current = true;
-    setTransform({ x: viewport.width - model.width, y: 0, k: 1 });
-  }, [model, setTransform, viewport]);
+    setTransform({ x: viewport.width - span.width, y: 0, k: 1 });
+  }, [span, setTransform, viewport]);
 
   const jumpTo = useCallback(
     (year: number) => {
-      if (!model) return;
-      setTransform({ x: viewport.width / 2 - model.xOf(year), y: 0, k: 1 });
+      if (!span) return;
+      setTransform({ x: viewport.width / 2 - span.xOf(year), y: 0, k: 1 });
     },
-    [model, setTransform, viewport.width],
+    [span, setTransform, viewport.width],
   );
 
   if (isPending) return <LoadingScreen label="מסדרים את ציר הזמן…" />;
   if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
-  if (!model) {
+  if (!span || !layout) {
     return (
       <EmptyState
         title="אין עדיין אירועים בציר"
@@ -136,20 +163,21 @@ export function TimelineScreen(): React.JSX.Element {
     <div className={styles.screen} ref={panZoom.containerRef} {...panZoom.handlers}>
       <h1 className={styles.title}>ציר הזמן של המשפחה</h1>
       <p className={styles.hint}>
-        {model.minYear} מימין → {model.maxYear} משמאל · גררו
+        {span.minYear} מימין → {span.maxYear} משמאל · גררו
       </p>
 
       <div
         className={styles.canvas}
         style={{
-          width: model.width,
-          height: BAND_HEIGHT,
+          width: span.width,
+          height: layout.bandHeight,
           // Centre the axis in the viewport, not the band, so the rows above
           // and below it stay balanced on screen whatever their heights.
-          marginTop: -AXIS_Y,
+          marginTop: -layout.axisY,
+          '--axis-y': `${layout.axisY}px`,
           transform: `translateX(${transform.x}px)`,
           cursor: panZoom.isDragging ? 'grabbing' : 'grab',
-        }}
+        } as React.CSSProperties}
       >
         <span
           className={styles.axis}
@@ -157,13 +185,13 @@ export function TimelineScreen(): React.JSX.Element {
           aria-hidden="true"
         />
 
-        {model.decades.map((decade) => (
+        {span.decades.map((decade) => (
           <span key={decade.year} className={styles.decade} style={{ left: decade.x }}>
             {decade.year}
           </span>
         ))}
 
-        {model.placed.map((event, index) => {
+        {layout.placed.map((event, index) => {
           const linked = event.personIds
             .map((id) => tree?.people.find((p) => p.id === id))
             .filter((p): p is NonNullable<typeof p> => Boolean(p));
@@ -188,7 +216,11 @@ export function TimelineScreen(): React.JSX.Element {
               <span
                 className={styles.dot}
                 style={
-                  { left: event.x, background: event.tone, '--i': index } as React.CSSProperties
+                  {
+                    left: event.dotX,
+                    background: event.tone,
+                    '--i': index,
+                  } as React.CSSProperties
                 }
                 aria-hidden="true"
               />
@@ -234,11 +266,11 @@ export function TimelineScreen(): React.JSX.Element {
       <span className={styles.fadeEnd} aria-hidden="true" />
 
       <div className={styles.jump} data-no-pan>
-        <button type="button" className={styles.jumpButton} onClick={() => jumpTo(model.minYear)}>
-          → להתחלה ({model.minYear})
+        <button type="button" className={styles.jumpButton} onClick={() => jumpTo(span.minYear)}>
+          → להתחלה ({span.minYear})
         </button>
-        <button type="button" className={styles.jumpButton} onClick={() => jumpTo(model.maxYear)}>
-          להיום ({model.maxYear}) ←
+        <button type="button" className={styles.jumpButton} onClick={() => jumpTo(span.maxYear)}>
+          להיום ({span.maxYear}) ←
         </button>
       </div>
     </div>
