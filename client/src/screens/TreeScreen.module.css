@@ -354,6 +354,105 @@
   }
 }
 
+/* ----------------------------------------------------------- family cells */
+
+/*
+ * The zoomed-out board. Sizes here are canvas units — at the zoom levels
+ * where cells appear (k < 0.58) everything reads at roughly half of these
+ * numbers on screen, which is what keeps a card a comfortable thumb target
+ * on a phone while single circles would already be confetti.
+ */
+.cell {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 26px 36px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 30px 30px 30px 10px;
+  box-shadow: var(--lift-2);
+  cursor: pointer;
+  animation: global(plant) 550ms var(--anticipate) backwards;
+  animation-delay: var(--delay, 0s);
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+@media (hover: hover) {
+  .cell:hover {
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+}
+
+.cell:active {
+  transform: translate(-50%, -50%) scale(0.97);
+}
+
+.cellFaces {
+  display: flex;
+  align-items: center;
+}
+
+.cellFace {
+  box-shadow: 0 0 0 5px var(--surface);
+}
+
+.cellFace:not(:first-child) {
+  margin-inline-start: -20px;
+}
+
+.cellMore {
+  width: 62px;
+  height: 62px;
+  margin-inline-start: -20px;
+  border-radius: 50%;
+  background: var(--paper-tint);
+  border: 2px solid var(--border-dashed);
+  color: var(--body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 22px var(--font-body);
+  box-shadow: 0 0 0 5px var(--surface);
+}
+
+.cellLabel {
+  font: 400 30px/1.15 var(--font-display);
+  color: var(--ink);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cellCount {
+  font: 400 19px var(--font-body);
+  color: var(--muted);
+}
+
+.cellYou {
+  position: absolute;
+  top: -16px;
+  inset-inline-end: -12px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 600 17px var(--font-body);
+  box-shadow: 0 4px 12px var(--accent-shadow);
+  rotate: 3deg;
+}
+
+/* Descent between households: the same ink, one soft curve per bond. */
+.cellLink {
+  fill: none;
+  stroke: var(--connector);
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
 /*
  * On touch the fingers *are* the zoom control — pinch and double-tap — so the
  * buttons step aside and only the compass remains, grown to a full-size

@@ -160,6 +160,16 @@ export function tidyPositions(people: Person[], relationships: Relationship[]): 
     // parents and is pushed right exactly as far as earlier groups require.
     let cursor = Number.NEGATIVE_INFINITY;
     for (const group of groups) {
+      // Siblings stand oldest-first in reading order. The interface is
+      // Hebrew, read right-to-left, so the firstborn takes the rightmost
+      // spot — meaning the placement cursor, which sweeps toward +x, lays
+      // the youngest down first. The board's current order breaks ties.
+      group.clusters.sort(
+        (a, b) =>
+          (b[0]?.birthYear ?? Number.MIN_SAFE_INTEGER) -
+            (a[0]?.birthYear ?? Number.MIN_SAFE_INTEGER) ||
+          (a[0]?.x ?? 0) - (b[0]?.x ?? 0),
+      );
       const width = group.clusters.reduce(
         (sum, members, index) =>
           sum + (members.length - 1) * SPOUSE_PITCH + (index > 0 ? SIBLING_PITCH : 0),

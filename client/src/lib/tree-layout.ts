@@ -73,6 +73,52 @@ export const EMPTY_LAYOUT: TreeLayout = {
   height: 1,
 };
 
+/** Corner radius where a wire turns — soft enough to read as hand-drawn. */
+const ELBOW_RADIUS = 18;
+
+/**
+ * One elbow, rounded at both turns: down from the couple's anchor, across the
+ * bus, down into the child. The radius shrinks when the segments are short so
+ * a tight turn never overshoots its own corner.
+ */
+function roundedElbow(
+  ax: number,
+  ay: number,
+  busY: number,
+  cx: number,
+  cy: number,
+): string {
+  if (cx === ax) return `M ${ax} ${ay} V ${cy}`;
+  const dir = cx > ax ? 1 : -1;
+  const r = Math.max(
+    Math.min(ELBOW_RADIUS, Math.abs(busY - ay), Math.abs(cy - busY), Math.abs(cx - ax) / 2),
+    0,
+  );
+  if (r < 2) return `M ${ax} ${ay} V ${busY} H ${cx} V ${cy}`;
+  return (
+    `M ${ax} ${ay} V ${busY - r} Q ${ax} ${busY} ${ax + dir * r} ${busY} ` +
+    `H ${cx - dir * r} Q ${cx} ${busY} ${cx} ${busY + r} V ${cy}`
+  );
+}
+
+/**
+ * An outermost child's drop, curving off the end of the sibling bus. Returns
+ * where the bus itself should stop so the curve continues it seamlessly.
+ */
+function roundedDrop(
+  cx: number,
+  cy: number,
+  busY: number,
+  inwardDir: 1 | -1,
+): { d: string; busEndX: number } {
+  const r = Math.max(Math.min(ELBOW_RADIUS, Math.abs(cy - busY) / 2), 0);
+  if (r < 2) return { d: `M ${cx} ${busY} V ${cy}`, busEndX: cx };
+  return {
+    d: `M ${cx + inwardDir * r} ${busY} Q ${cx} ${busY} ${cx} ${busY + r} V ${cy}`,
+    busEndX: cx + inwardDir * r,
+  };
+}
+
 /** Rough length of an axis-aligned path, good enough to size a dash offset. */
 function pathLength(points: Array<[number, number]>): number {
   let total = 0;
@@ -257,9 +303,7 @@ export function buildTreeLayout(
             Math.min(anchorX, onlyChild.cx),
             Math.max(anchorX, onlyChild.cx),
           );
-      const d = straight
-        ? `M ${anchorX} ${anchorY} V ${onlyChild.cy}`
-        : `M ${anchorX} ${anchorY} V ${busY} H ${onlyChild.cx} V ${onlyChild.cy}`;
+      const d = roundedElbow(anchorX, anchorY, busY, onlyChild.cx, onlyChild.cy);
       connectors.push({
         id: `child-${key}-${onlyChild.person.id}`,
         d,
@@ -286,25 +330,35 @@ export function buildTreeLayout(
       Math.max(rightmost.cx, anchorX),
     );
 
+    // The two outermost drops curve off the ends of the bus; everyone in
+    // between tees straight into it. The bus itself stops where each end
+    // curve takes over, so the whole family reads as one soft bracket.
+    const leftDrop = roundedDrop(leftmost.cx, leftmost.cy, busY, 1);
+    const rightDrop = roundedDrop(rightmost.cx, rightmost.cy, busY, -1);
+    const busFrom = Math.min(leftDrop.busEndX, anchorX);
+    const busTo = Math.max(rightDrop.busEndX, anchorX);
+
     connectors.push({
       id: `trunk-${key}`,
-      d: `M ${anchorX} ${anchorY} V ${busY} M ${leftmost.cx} ${busY} H ${rightmost.cx}`,
+      d: `M ${anchorX} ${anchorY} V ${busY} M ${busFrom} ${busY} H ${busTo}`,
       dashed: false,
       color: 'var(--connector)',
       delaySeconds: delay,
-      length: Math.abs(busY - anchorY) + Math.abs(rightmost.cx - leftmost.cx),
+      length: Math.abs(busY - anchorY) + Math.abs(busTo - busFrom),
     });
 
     for (const child of childNodes) {
+      const isEnd = child === leftmost || child === rightmost;
+      const drop = child === leftmost ? leftDrop : child === rightmost ? rightDrop : null;
       connectors.push({
         id: `child-${key}-${child.person.id}`,
-        d: `M ${child.cx} ${busY} V ${child.cy}`,
+        d: isEnd && drop ? drop.d : `M ${child.cx} ${busY} V ${child.cy}`,
         dashed: child.person.isProvisional,
         color: child.person.isProvisional
           ? (child.generation?.color ?? 'var(--connector)')
           : 'var(--connector)',
         delaySeconds: delay + 0.1,
-        length: Math.abs(child.cy - busY),
+        length: Math.abs(child.cy - busY) + ELBOW_RADIUS,
       });
     }
   }
