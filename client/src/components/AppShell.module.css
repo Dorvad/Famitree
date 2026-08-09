@@ -81,9 +81,11 @@
     transform var(--t-touch) var(--ease-touch);
 }
 
-.tab:hover {
-  color: var(--ink);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .tab:hover {
+    color: var(--ink);
+    transform: translateY(-1px);
+  }
 }
 
 .tabActive,
@@ -118,9 +120,11 @@
   transition: transform var(--t-touch) var(--ease-touch);
 }
 
-.identity:hover {
-  color: var(--ink);
-  transform: translateY(-2px) rotate(-1deg);
+@media (hover: hover) {
+  .identity:hover {
+    color: var(--ink);
+    transform: translateY(-2px) rotate(-1deg);
+  }
 }
 
 .joinLink {
@@ -134,9 +138,11 @@
   transition: transform var(--t-touch) var(--ease-touch);
 }
 
-.joinLink:hover {
-  color: var(--bg);
-  transform: translateY(-3px) rotate(-1.5deg);
+@media (hover: hover) {
+  .joinLink:hover {
+    color: var(--bg);
+    transform: translateY(-3px) rotate(-1.5deg);
+  }
 }
 
 .joinLink:active {
@@ -161,9 +167,11 @@
     box-shadow var(--t-touch) var(--ease-touch);
 }
 
-.menuButton:hover {
-  transform: rotate(-90deg) scale(1.08);
-  box-shadow: var(--lift-3);
+@media (hover: hover) {
+  .menuButton:hover {
+    transform: rotate(-90deg) scale(1.08);
+    box-shadow: var(--lift-3);
+  }
 }
 
 .menuButton:active {
