@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import type { Person } from '../../../shared/types.ts';
@@ -87,6 +87,35 @@ export function EditScreen(): React.JSX.Element {
   const [anchorB, setAnchorB] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+
+  /**
+   * Landing on /edit/people/:id — from the lens's עריכה link, or any deep
+   * link — must put the opened card on screen, not the top of the drawer.
+   * Keyed on the tree as well because on a cold arrival the cards do not
+   * exist yet when the id does; the guard stops the tree's refetches (every
+   * save invalidates it) from yanking the scroll back afterwards.
+   */
+  const openCardRef = useRef<HTMLLIElement | null>(null);
+  const scrolledTo = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openId) {
+      scrolledTo.current = null;
+      return;
+    }
+    if (!tree || scrolledTo.current === openId) return;
+    scrolledTo.current = openId;
+
+    // A beat after render, so the editor panel has unfolded and has a height.
+    const timer = window.setTimeout(() => {
+      openCardRef.current?.scrollIntoView({
+        block: 'start',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+      });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [openId, tree]);
 
   /** People grouped by cohort, oldest cohort first, oldest person first. */
   const groups = useMemo(() => {
@@ -440,7 +469,7 @@ export function EditScreen(): React.JSX.Element {
               {people.map((person, index) => {
                 const open = openId === person.id;
                 return (
-                  <li key={person.id}>
+                  <li key={person.id} ref={open ? openCardRef : null}>
                     <button
                       type="button"
                       className={open ? `${styles.card} ${styles.cardOpen}` : styles.card}

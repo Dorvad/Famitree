@@ -239,6 +239,121 @@
   transform: translateY(0) scale(0.92);
 }
 
+/* Pencil toggle: quiet until pressed, unmistakable while the board is live. */
+.editButton {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px 12px 12px 4px;
+  background: var(--surface);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--lift-2);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
+}
+
+.editButtonOn {
+  background: var(--amber);
+  color: var(--ink);
+  box-shadow: 0 2px 2px rgb(194 138 30 / 24%), 0 10px 22px rgb(255 176 32 / 36%);
+}
+
+@media (hover: hover) {
+  .editButton:hover {
+    transform: translateY(-2px) rotate(-8deg);
+  }
+}
+
+.editButton:active {
+  transform: translateY(0) scale(0.92);
+}
+
+/* ------------------------------------------------------------- edit mode */
+
+.editBar {
+  position: absolute;
+  top: 16px;
+  inset-inline-start: 18px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: min(88vw, 460px);
+  padding: 8px 14px;
+  background: var(--surface);
+  border-radius: var(--r-pill, 999px);
+  box-shadow: var(--lift-2);
+}
+
+.editBarNote {
+  font: 400 12.5px var(--font-body);
+  color: var(--body-soft);
+}
+
+.editBarButton {
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  font: 500 12.5px var(--font-body);
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+.editBarButton:disabled {
+  opacity: 0.55;
+}
+
+.editBarButton:active {
+  transform: scale(0.95);
+}
+
+.editBarPrimary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-accent);
+}
+
+/* A movable circle advertises it, and the one in hand rises above the rest. */
+.stationMovable .node {
+  position: relative;
+  cursor: grab;
+}
+
+.stationMovable .node::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  border: 2px dashed var(--amber);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.stationHeld .node {
+  cursor: grabbing;
+}
+
+.stationHeld .node::after {
+  border-style: solid;
+  opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .editBar {
+    top: auto;
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    inset-inline: 12px;
+    max-width: none;
+    justify-content: center;
+  }
+}
+
 /*
  * On touch the fingers *are* the zoom control — pinch and double-tap — so the
  * buttons step aside and only the compass remains, grown to a full-size

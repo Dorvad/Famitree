@@ -46,7 +46,13 @@ export function Avatar({
       aria-hidden={portrait ? undefined : true}
     >
       {portrait ? (
-        <img className={styles.portrait} src={portrait} alt={person.fullName} loading="lazy" />
+        <img
+          className={styles.portrait}
+          src={portrait}
+          alt={person.fullName}
+          loading="lazy"
+          decoding="async"
+        />
       ) : (
         person.initial
       )}
