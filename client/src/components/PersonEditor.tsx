@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type {
@@ -115,14 +115,46 @@ export function PersonEditor({
   const [linkTargetId, setLinkTargetId] = useState('');
   const [confirmingArchive, setConfirmingArchive] = useState(false);
 
-  // Re-seed whenever a different person is opened, and once their record loads.
+  /**
+   * The record this draft was seeded from, so a refetch can tell "the same
+   * person again" from "a different person".
+   */
+  const seed = useRef<{ id: string; snapshot: string } | null>(null);
+
+  /**
+   * Seed the draft from the record — but do *not* re-seed it on every refetch.
+   *
+   * Removing a memory invalidates this person's query, and the fields above the
+   * memory list are a draft, not the saved record. Re-seeding on the response
+   * therefore threw away everything typed and not yet saved: write two lines of
+   * story, remove a station, and the story was back to what the server had.
+   *
+   * So the server's copy is adopted in the two cases where it is certainly
+   * right — a different person, or nothing typed since the last seed — and the
+   * draft is left alone whenever there is unsaved work in it.
+   */
   useEffect(() => {
-    if (person) setDraft(toDraft(person));
-    setNotice(null);
-    setSaved(false);
-    setConfirmingArchive(false);
-    setComposingMilestone(false);
-    setEditingMilestoneId(null);
+    if (!person) return;
+    const fresh = toDraft(person);
+    const previousSeed = seed.current;
+    const samePerson = previousSeed?.id === person.id;
+    seed.current = { id: person.id, snapshot: JSON.stringify(fresh) };
+
+    setDraft((previous) => {
+      if (!previous || !samePerson) return fresh;
+      return JSON.stringify(previous) === previousSeed?.snapshot ? fresh : previous;
+    });
+
+    // These belong to the person on screen, not to the response, so they are
+    // cleared when the editor changes hands and left alone otherwise. A refetch
+    // used to close a half-written memory the same way it wiped the story.
+    if (!samePerson) {
+      setNotice(null);
+      setSaved(false);
+      setConfirmingArchive(false);
+      setComposingMilestone(false);
+      setEditingMilestoneId(null);
+    }
   }, [person]);
 
   const generation = generations.find((g) => g.id === person?.generationId);
