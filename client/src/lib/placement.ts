@@ -132,5 +132,3 @@ export function placeNewPerson(
   return undefined;
 }
 
-/** One nudge step, used by the editor's position controls. */
-export const NUDGE = { x: SIBLING_PITCH / 2, y: ROW_PITCH / 2 } as const;

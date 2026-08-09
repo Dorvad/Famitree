@@ -123,7 +123,8 @@ export function TreasureSheet(): React.JSX.Element {
   const [type, setType] = useState<TreasureType | null>(null);
   const [title, setTitle] = useState('');
   const [yearLabel, setYearLabel] = useState('');
-  const [subject, setSubject] = useState(EVERYONE);
+  /** Everyone this treasure belongs to; empty means "כל המשפחה". */
+  const [subjectIds, setSubjectIds] = useState<string[]>([]);
   const [story, setStory] = useState('');
   const [file, setFile] = useState<File | null>(null);
   /** Media already attached to the item being edited, kept unless replaced. */
@@ -152,7 +153,9 @@ export function TreasureSheet(): React.JSX.Element {
       setType(typeForKind(treasureItem.kind));
       setTitle(treasureItem.title);
       setYearLabel(treasureItem.yearLabel === 'לא ידוע' ? '' : treasureItem.yearLabel);
-      setSubject(treasureItem.subject || EVERYONE);
+      setSubjectIds(
+        treasureItem.personIds ?? (treasureItem.personId ? [treasureItem.personId] : []),
+      );
       setStory(treasureItem.story);
       setExistingMediaId(treasureItem.mediaId);
       return;
@@ -162,10 +165,10 @@ export function TreasureSheet(): React.JSX.Element {
     setType(null);
     setTitle('');
     setYearLabel('');
-    setSubject(treasurePrefill.subject ?? EVERYONE);
+    setSubjectIds(treasurePrefill.personId ? [treasurePrefill.personId] : []);
     setStory('');
     setExistingMediaId(null);
-  }, [treasureOpen, treasureItem, treasurePrefill.subject]);
+  }, [treasureOpen, treasureItem, treasurePrefill.personId]);
 
   // Object URLs for the local preview must be revoked or they leak the file.
   useEffect(() => {
@@ -188,21 +191,30 @@ export function TreasureSheet(): React.JSX.Element {
     };
   }, [file]);
 
-  const subjectChips = useMemo(
-    () => [EVERYONE, ...(tree?.people ?? []).map((p) => givenName(p.fullName))],
+  const subjectOptions = useMemo(
+    () => (tree?.people ?? []).map((p) => ({ id: p.id, name: givenName(p.fullName) })),
     [tree],
   );
+
+  const toggleSubject = (id: string): void => {
+    setSubjectIds((current) =>
+      current.includes(id) ? current.filter((s) => s !== id) : [...current, id],
+    );
+  };
+
+  /** The display line the archive card shows — names, or the whole family. */
+  const subjectLabel = (ids: string[]): string => {
+    const names = ids
+      .map((id) => subjectOptions.find((o) => o.id === id)?.name)
+      .filter((n): n is string => Boolean(n));
+    return names.length > 0 ? names.join(', ').slice(0, 120) : EVERYONE;
+  };
 
   const busy = upload.isPending || create.isPending || update.isPending;
   const canSave = title.trim().length > 0 && !busy;
 
   const canRemove =
     editing && user && (user.role === 'steward' || treasureItem?.createdBy === user.id);
-
-  const personIdForSubject = (name: string): string | null => {
-    if (name === EVERYONE) return treasurePrefill.personId ?? treasureItem?.personId ?? null;
-    return tree?.people.find((p) => givenName(p.fullName) === name)?.id ?? null;
-  };
 
   async function save(): Promise<void> {
     if (!type || !canSave) return;
@@ -218,9 +230,9 @@ export function TreasureSheet(): React.JSX.Element {
         kind: type.kind,
         title: title.trim(),
         yearLabel: yearLabel.trim(),
-        subject,
+        subject: subjectLabel(subjectIds),
         story: story.trim(),
-        personId: personIdForSubject(subject),
+        personIds: subjectIds,
         mediaId,
       };
 
@@ -372,22 +384,36 @@ export function TreasureSheet(): React.JSX.Element {
 
             <div>
               <p className={styles.fieldLabel} id="subject-label">
-                של מי הרגע הזה?
+                של מי הרגע הזה? אפשר לבחור כמה
               </p>
               <div className={styles.chips} role="group" aria-labelledby="subject-label">
-                {subjectChips.map((name) => (
-                  <button
-                    key={name}
-                    type="button"
-                    className={
-                      subject === name ? `${styles.chip} ${styles.chipActive}` : styles.chip
-                    }
-                    aria-pressed={subject === name}
-                    onClick={() => setSubject(name)}
-                  >
-                    {name}
-                  </button>
-                ))}
+                <button
+                  type="button"
+                  className={
+                    subjectIds.length === 0
+                      ? `${styles.chip} ${styles.chipActive}`
+                      : styles.chip
+                  }
+                  aria-pressed={subjectIds.length === 0}
+                  onClick={() => setSubjectIds([])}
+                >
+                  {EVERYONE}
+                </button>
+                {subjectOptions.map((option) => {
+                  const active = subjectIds.includes(option.id);
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className={active ? `${styles.chip} ${styles.chipActive}` : styles.chip}
+                      aria-pressed={active}
+                      onClick={() => toggleSubject(option.id)}
+                    >
+                      {active && '✓ '}
+                      {option.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

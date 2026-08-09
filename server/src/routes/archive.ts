@@ -29,15 +29,41 @@ const listQuery = z.object({
   personId: z.string().trim().min(1).max(64).optional(),
 });
 
+const idField = z.string().trim().min(1).max(64);
+
 const createBody = z.object({
   kind: kindEnum,
   title: z.string().trim().min(1, 'צריך כותרת').max(160, 'הכותרת ארוכה מדי'),
   yearLabel: z.string().trim().max(40).optional(),
   subject: z.string().trim().max(120).optional(),
   story: z.string().trim().max(4000).optional(),
-  personId: z.string().trim().min(1).max(64).nullable().optional(),
-  mediaId: z.string().trim().min(1).max(64).nullable().optional(),
+  personId: idField.nullable().optional(),
+  personIds: z.array(idField).max(64).optional(),
+  mediaId: idField.nullable().optional(),
 });
+
+/**
+ * One link list from either request shape: `personIds` when the caller speaks
+ * multi-link, the old single `personId` otherwise. Returns undefined when the
+ * request said nothing about people at all — a patch must not clear links it
+ * never mentioned.
+ */
+function requestedPeople(input: {
+  personId?: string | null;
+  personIds?: string[];
+}): string[] | undefined {
+  if (input.personIds) return [...new Set(input.personIds)];
+  if ('personId' in input) return input.personId ? [input.personId] : [];
+  return undefined;
+}
+
+/** Every linked person must exist and be on the board. */
+async function assertPeopleExist(personIds: string[]): Promise<void> {
+  for (const personId of personIds) {
+    const person = await getPerson(personId);
+    if (!person || person.archivedAt) throw ApiError.badRequest('בן המשפחה שנבחר לא קיים.');
+  }
+}
 
 archiveRouter.get('/archive', requireReadAccess, async (req, res) => {
   const query = listQuery.parse(req.query);
@@ -49,15 +75,13 @@ archiveRouter.post('/archive', requireAuth, async (req, res) => {
 
   // Reject dangling references up front rather than storing a link that will
   // silently render as a missing tile later.
-  if (input.personId) {
-    const person = await getPerson(input.personId);
-    if (!person || person.archivedAt) throw ApiError.badRequest('בן המשפחה שנבחר לא קיים.');
-  }
+  const personIds = requestedPeople(input) ?? [];
+  await assertPeopleExist(personIds);
   if (input.mediaId && !await getMedia(input.mediaId)) {
     throw ApiError.badRequest('הקובץ שצורף לא נמצא. נסו להעלות אותו שוב.');
   }
 
-  res.status(201).json(await createArchiveItem(input, req.user!.id));
+  res.status(201).json(await createArchiveItem({ ...input, personIds }, req.user!.id));
 });
 
 /** Same rule as removal: your own contributions, or anything if you are the steward. */
@@ -73,15 +97,13 @@ archiveRouter.patch('/archive/:id', requireAuth, async (req, res) => {
   assertCanEditItem(req, item.createdBy);
 
   const patch = createBody.partial().parse(req.body);
-  if (patch.personId) {
-    const person = await getPerson(patch.personId);
-    if (!person || person.archivedAt) throw ApiError.badRequest('בן המשפחה שנבחר לא קיים.');
-  }
+  const personIds = requestedPeople(patch);
+  if (personIds) await assertPeopleExist(personIds);
   if (patch.mediaId && !await getMedia(patch.mediaId)) {
     throw ApiError.badRequest('הקובץ שצורף לא נמצא. נסו להעלות אותו שוב.');
   }
 
-  res.json(await updateArchiveItem(item.id, patch));
+  res.json(await updateArchiveItem(item.id, { ...patch, personIds }));
 });
 
 archiveRouter.post('/archive/:id/archive', requireAuth, async (req, res) => {
@@ -99,7 +121,8 @@ archiveRouter.post('/archive/:id/archive', requireAuth, async (req, res) => {
 const eventBody = z.object({
   year: z.number().int().min(1500).max(new Date().getFullYear() + 1),
   title: z.string().trim().min(1, 'צריך תיאור').max(160),
-  personId: z.string().trim().min(1).max(64).nullable().optional(),
+  personId: idField.nullable().optional(),
+  personIds: z.array(idField).max(64).optional(),
 });
 
 archiveRouter.get('/timeline', requireReadAccess, async (_req, res) => {
@@ -108,11 +131,9 @@ archiveRouter.get('/timeline', requireReadAccess, async (_req, res) => {
 
 archiveRouter.post('/timeline', requireAuth, async (req, res) => {
   const input = eventBody.parse(req.body);
-  if (input.personId) {
-    const person = await getPerson(input.personId);
-    if (!person || person.archivedAt) throw ApiError.badRequest('בן המשפחה שנבחר לא קיים.');
-  }
-  res.status(201).json(await createTimelineEvent(input));
+  const personIds = requestedPeople(input) ?? [];
+  await assertPeopleExist(personIds);
+  res.status(201).json(await createTimelineEvent({ ...input, personIds }));
 });
 
 /*
@@ -125,11 +146,9 @@ archiveRouter.patch('/timeline/:id', requireRole('steward'), async (req, res) =>
   if (!event) throw ApiError.notFound('לא מצאנו את האירוע הזה.');
 
   const patch = eventBody.partial().parse(req.body);
-  if (patch.personId) {
-    const person = await getPerson(patch.personId);
-    if (!person || person.archivedAt) throw ApiError.badRequest('בן המשפחה שנבחר לא קיים.');
-  }
-  res.json(await updateTimelineEvent(event.id, patch));
+  const personIds = requestedPeople(patch);
+  if (personIds) await assertPeopleExist(personIds);
+  res.json(await updateTimelineEvent(event.id, { ...patch, personIds }));
 });
 
 archiveRouter.delete('/timeline/:id', requireRole('steward'), async (req, res) => {

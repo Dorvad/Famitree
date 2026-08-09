@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { useTimeline, useTree } from '../api/hooks.ts';
 import { EmptyState, ErrorState, LoadingScreen } from '../components/Feedback.tsx';
-import { restTilt } from '../lib/format.ts';
+import { givenName, restTilt } from '../lib/format.ts';
 import { usePanZoom } from '../lib/usePanZoom.ts';
 import { useUi } from '../state/ui.tsx';
 import styles from './TimelineScreen.module.css';
@@ -164,14 +164,22 @@ export function TimelineScreen(): React.JSX.Element {
         ))}
 
         {model.placed.map((event, index) => {
-          const person = event.personId
-            ? tree?.people.find((p) => p.id === event.personId)
-            : undefined;
+          const linked = event.personIds
+            .map((id) => tree?.people.find((p) => p.id === id))
+            .filter((p): p is NonNullable<typeof p> => Boolean(p));
+          // The card still opens one page — the first person carries the tap;
+          // everyone involved is named on the card itself.
+          const person = linked[0];
 
           const card = (
             <>
               <span className={styles.eventYear}>{event.year}</span>
               <p className={styles.eventTitle}>{event.title}</p>
+              {linked.length > 1 && (
+                <span className={styles.eventPeople}>
+                  {linked.map((p) => givenName(p.fullName)).join(' · ')}
+                </span>
+              )}
             </>
           );
 

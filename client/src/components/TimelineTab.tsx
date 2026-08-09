@@ -8,6 +8,7 @@ import {
   useTimeline,
   useUpdateTimelineEvent,
 } from '../api/hooks.ts';
+import { givenName } from '../lib/format.ts';
 import { ErrorState, InlineError, LoadingScreen } from './Feedback.tsx';
 import styles from './TimelineTab.module.css';
 
@@ -16,16 +17,17 @@ const CURRENT_YEAR = new Date().getFullYear();
 interface Draft {
   year: string;
   title: string;
-  personId: string;
+  /** Everyone the event involves; empty means the whole family. */
+  personIds: string[];
 }
 
-const EMPTY: Draft = { year: '', title: '', personId: '' };
+const EMPTY: Draft = { year: '', title: '', personIds: [] };
 
 function draftFrom(event: TimelineEvent): Draft {
   return {
     year: String(event.year),
     title: event.title,
-    personId: event.personId ?? '',
+    personIds: event.personIds ?? (event.personId ? [event.personId] : []),
   };
 }
 
@@ -89,19 +91,40 @@ export function TimelineTab({
           maxLength={160}
         />
       </div>
-      <select
-        className={styles.select}
-        value={draft.personId}
-        onChange={(event) => setDraft((d) => ({ ...d, personId: event.target.value }))}
-        aria-label="קישור לבן משפחה"
-      >
-        <option value="">בלי קישור לאדם מסוים</option>
-        {people.map((person) => (
-          <option key={person.id} value={person.id}>
-            {person.fullName}
-          </option>
-        ))}
-      </select>
+      <div className={styles.chips} role="group" aria-label="קישור לבני משפחה">
+        <button
+          type="button"
+          className={
+            draft.personIds.length === 0 ? `${styles.chip} ${styles.chipActive}` : styles.chip
+          }
+          aria-pressed={draft.personIds.length === 0}
+          onClick={() => setDraft((d) => ({ ...d, personIds: [] }))}
+        >
+          כל המשפחה
+        </button>
+        {people.map((person) => {
+          const active = draft.personIds.includes(person.id);
+          return (
+            <button
+              key={person.id}
+              type="button"
+              className={active ? `${styles.chip} ${styles.chipActive}` : styles.chip}
+              aria-pressed={active}
+              onClick={() =>
+                setDraft((d) => ({
+                  ...d,
+                  personIds: active
+                    ? d.personIds.filter((id) => id !== person.id)
+                    : [...d.personIds, person.id],
+                }))
+              }
+            >
+              {active && '✓ '}
+              {givenName(person.fullName)}
+            </button>
+          );
+        })}
+      </div>
     </>
   );
 
@@ -137,7 +160,7 @@ export function TimelineTab({
                   {
                     year: Number(draft.year),
                     title: draft.title.trim(),
-                    personId: draft.personId || null,
+                    personIds: draft.personIds,
                   },
                   {
                     onSuccess: () => {
@@ -197,7 +220,7 @@ export function TimelineTab({
                         patch: {
                           year: Number(draft.year),
                           title: draft.title.trim(),
-                          personId: draft.personId || null,
+                          personIds: draft.personIds,
                         },
                       },
                       {
@@ -223,9 +246,11 @@ export function TimelineTab({
               <span className={styles.year}>{event.year}</span>
               <span className={styles.text}>
                 <span className={styles.title}>{event.title}</span>
-                {event.personId && (
+                {event.personIds.length > 0 && (
                   <span className={styles.person}>
-                    {people.find((p) => p.id === event.personId)?.fullName ?? '—'}
+                    {event.personIds
+                      .map((id) => people.find((p) => p.id === id)?.fullName ?? '—')
+                      .join(', ')}
                   </span>
                 )}
               </span>
