@@ -61,7 +61,9 @@ it happened before a deploy goes live than on the first visitor's request.
 shared/types.ts     Domain contract. Types only, so it erases at compile time
                     and neither package needs runtime resolution for it.
 
-api/index.ts        Vercel's function: hands the Express app the request.
+api/                Vercel's functions. Every file hands the request to the
+                    same handler (server/src/vercel.ts); the bracket names
+                    spell out the path depths the API uses — see "Deploying".
 
 server/
   src/app.ts        The Express app, binding nothing
@@ -89,8 +91,20 @@ client/
 | | |
 | --- | --- |
 | `vercel.json` | Builds the client, routes `/api/*` to the function and everything else to the SPA |
-| `api/index.ts` | The function. Hands the Express app the request |
+| `api/*` | The functions. Each one hands the request to `server/src/vercel.ts` |
 | `server/src/app.ts` | The app with no listener. Imported from source, so the deploy never depends on a build artifact existing at the moment functions are compiled |
+
+**Why several files under `api/` rather than one catch-all.** A catch-all
+(`api/[...path].ts`) is meant to match `/api/` and everything under it. In this
+deployment it was observed to match a single segment only: `/api/tree` reached
+the app while `/api/auth/session` came back as the platform's own HTML 404 —
+which the client could only report as "the request failed", because it never
+reached the API to get a real message. The session endpoint is two segments
+deep, so the whole app looked signed-out and the workshop offered to let its
+owner "join". `api/[a].ts`, `api/[b]/[c].ts`, `api/[d]/[e]/[f].ts` and
+`api/[g]/[h]/[i]/[j].ts` name the four depths the API actually routes, so
+nothing depends on that behaviour. The catch-all stays for anything deeper.
+Add a route five segments deep and add the matching file.
 
 ### First deploy
 
@@ -169,7 +183,7 @@ opened up more widely.
 
 ### Running it somewhere else
 
-Nothing here is Vercel-specific except `vercel.json` and `api/index.ts`. Any host
+Nothing here is Vercel-specific except `vercel.json` and `api/`. Any host
 that runs Node and gives you a Postgres URL works with `npm run build && npm
 start` — set `STORAGE_DRIVER=disk` with a persistent directory, or keep `blob`.
 

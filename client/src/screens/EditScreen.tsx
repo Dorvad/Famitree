@@ -60,7 +60,12 @@ export function EditScreen(): React.JSX.Element {
   const tab: WorkshopTab =
     tabParam === 'treasures' || tabParam === 'timeline' ? tabParam : 'people';
 
-  const { data: session, isPending: sessionPending } = useSession();
+  const {
+    data: session,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchSession,
+  } = useSession();
   const { data: tree, isPending, error, refetch } = useTree();
 
   const user = session?.user ?? null;
@@ -112,6 +117,14 @@ export function EditScreen(): React.JSX.Element {
   );
 
   if (sessionPending || isPending) return <LoadingScreen label="פותחים את הסדנה…" />;
+
+  // A session that could not be *fetched* is not the same as no session. Both
+  // leave `user` empty, but showing the join gate to someone the server never
+  // answered about points them at a door that will not open either — and hides
+  // the fault. Say what failed instead; the trace line names the request.
+  if (sessionError) {
+    return <ErrorState error={sessionError} onRetry={() => void refetchSession()} />;
+  }
   if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
 
   if (!user) {
