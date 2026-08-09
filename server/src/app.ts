@@ -123,6 +123,7 @@ app.get('/api/health', (_req, res) => {
     inviteRequired,
     publicRead: env.publicRead,
     storage: env.storageDriver,
+    access: env.accessMode,
     uploads: env.storageReady ? 'ready' : 'unavailable',
     ...(env.blobTokenSource && { blobTokenFrom: env.blobTokenSource }),
     database: env.databaseUrl ? 'configured' : 'missing',

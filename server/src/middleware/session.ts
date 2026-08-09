@@ -17,6 +17,26 @@ declare global {
 }
 
 const COOKIE_NAME = 'shoresh_session';
+
+/**
+ * Who a visitor is when the archive is open and nobody has joined.
+ *
+ * Giving them an identity, rather than special-casing every guard, is what
+ * keeps the permission code intact: the routes, the ownership checks and the
+ * `created_by` columns all carry on unchanged, and setting ACCESS=invite
+ * restores the real rules without a line of them having been touched.
+ *
+ * The id is stable, so what is contributed this way is attributed to one hand
+ * rather than to nobody.
+ */
+const GUEST: SessionUser = {
+  id: 'guest',
+  displayName: 'אורח',
+  birthYear: null,
+  personId: null,
+  role: 'steward',
+  generationId: null,
+};
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 function cookieOptions(): CookieOptions {
@@ -43,10 +63,14 @@ export function clearSession(res: Response): void {
 /**
  * Resolves the signed cookie to a real user row on every request. A cookie
  * naming a user who no longer exists is cleared rather than trusted.
+ *
+ * On an open archive a visitor with no session is the guest rather than
+ * nobody, which is what lets every guard below stay exactly as written.
  */
 export const attachUser: RequestHandler = async (req, res, next) => {
   const raw = req.signedCookies?.[COOKIE_NAME];
   if (typeof raw !== 'string' || raw.length === 0) {
+    if (env.isOpen) req.user = GUEST;
     next();
     return;
   }
@@ -54,11 +78,16 @@ export const attachUser: RequestHandler = async (req, res, next) => {
   const user = await getUser(raw);
   if (!user) {
     clearSession(res);
+    if (env.isOpen) req.user = GUEST;
     next();
     return;
   }
 
-  req.user = user;
+  // On an open archive everyone can do everything, including someone who has
+  // joined. Without this, joining would *cost* you rights — a member has fewer
+  // than the guest above — which is nonsense in a mode whose whole point is
+  // that there are no roles yet.
+  req.user = env.isOpen ? { ...user, role: 'steward' } : user;
   await touchUser(user.id);
   next();
 };

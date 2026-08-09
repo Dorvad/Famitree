@@ -115,6 +115,25 @@ if (storageDriver === 'blob' && !blobToken) {
   );
 }
 
+/**
+ * Who may use the archive.
+ *
+ *   open   — anyone who has the link can read and contribute. No joining, no
+ *            code, no roles. The default, because an archive still being built
+ *            should not cost its author a login to look at.
+ *   invite — the full arrangement: INVITE_CODE gates joining, PUBLIC_READ gates
+ *            reading, and the first account to join becomes the steward.
+ *
+ * `open` is a real decision and is reported by /api/health rather than assumed:
+ * it means the URL is the only thing standing between a stranger and the
+ * family's records. Nothing is deleted to get it — switching to `invite`
+ * restores every check exactly as it was.
+ */
+const accessMode = (process.env.ACCESS ?? 'open').trim() as 'open' | 'invite';
+if (accessMode !== 'open' && accessMode !== 'invite') {
+  problems.push(`ACCESS must be "open" or "invite", not "${accessMode}".`);
+}
+
 const dataDir = path.resolve(
   path.join(repoRoot, 'server'),
   process.env.DATA_DIR ?? './data',
@@ -134,6 +153,8 @@ export const env = {
   isProduction,
   port: int('PORT', 4000),
   sessionSecret: sessionSecret || 'insecure-development-secret',
+  accessMode,
+  isOpen: accessMode === 'open',
   databaseUrl,
   storageDriver,
   /** False when the blob driver is selected but has no token to use. */
@@ -154,7 +175,8 @@ export const env = {
   repoRoot,
 } as const;
 
-export const inviteRequired = env.inviteCode.length > 0;
+/** Only ever true in invite mode; an open archive asks for nothing. */
+export const inviteRequired = !env.isOpen && env.inviteCode.length > 0;
 
 /**
  * Faults that stop the API. Empty means it is safe to serve; anything in it

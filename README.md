@@ -105,13 +105,11 @@ typed in by hand. If the provider offers both a pooled and a direct connection
 string, the integration wires up the pooled one, which is what a deployment of
 many short-lived instances needs.
 
-**Add the four variables that are genuinely yours**, for all environments:
+**Add the two variables that are genuinely yours**, for all environments:
 
 ```
-SESSION_SECRET   48 random bytes; the server refuses to boot without it
+SESSION_SECRET   48 random bytes
 STORAGE_DRIVER   blob
-INVITE_CODE      a code you share with relatives (optional but recommended)
-PUBLIC_READ      false, unless you want the archive readable by link
 ```
 
 `NODE_ENV` is set by the platform.
@@ -126,9 +124,19 @@ API comes back as `problems`; one that only costs uploads comes back as a
 `warning`, because an archive should not refuse to show the family tree over a
 photograph store that has not been connected yet.
 
-**Join first, before sharing the link.** The first account to join becomes the
-`steward` — the only role that can edit other people's records or archive
-anything. Everyone after is a member.
+**The archive is open by default.** Anyone with the link reads it and
+contributes to it — no account, no code, no roles. That is deliberate for an
+archive still being built: the alternative is that its author cannot look at
+their own work without logging in, and every relative needs onboarding before
+they can add a photograph. The URL is the only thing between a stranger and the
+family's records, so treat the link as the secret.
+
+**When you want that to change, set `ACCESS=invite`.** Nothing was removed to
+make the archive open. That one variable restores the whole arrangement:
+`INVITE_CODE` gates joining, `PUBLIC_READ` gates reading, the first account to
+join becomes the `steward` — the only role that can edit other people's records
+or archive anything — and everyone after is a member. `/api/health` reports
+which mode is in force.
 
 ### Why it is shaped this way
 
