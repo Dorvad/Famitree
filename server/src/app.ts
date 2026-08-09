@@ -36,6 +36,19 @@ const app = express();
 const BLOB_HOST = 'https://*.public.blob.vercel-storage.com';
 const mediaOrigins = env.storageDriver === 'blob' ? [BLOB_HOST] : [];
 
+/**
+ * Uploads with the blob driver go straight from the browser to the store —
+ * the platform caps a function's request body well below the size of a phone
+ * photograph, so routing the bytes through the API is not an option. That
+ * makes the store's upload endpoints a connect-src concern, not just img-src:
+ * the SDK PUTs to Vercel's blob API and can be redirected within the storage
+ * host family, so all of them are allowed only when that driver is in use.
+ */
+const uploadOrigins =
+  env.storageDriver === 'blob'
+    ? ['https://vercel.com', 'https://blob.vercel-storage.com', 'https://*.blob.vercel-storage.com']
+    : [];
+
 // Behind a reverse proxy the client IP arrives in X-Forwarded-For; the rate
 // limiter needs it, and `secure` cookies need to know the request was HTTPS.
 if (env.isProduction) app.set('trust proxy', 1);
@@ -54,7 +67,11 @@ app.use(
         imgSrc: ["'self'", 'data:', 'blob:', ...mediaOrigins],
         mediaSrc: ["'self'", 'blob:', ...mediaOrigins],
         scriptSrc: ["'self'"],
-        connectSrc: ["'self'", ...(env.isProduction ? [] : ['ws:', 'http://localhost:*'])],
+        connectSrc: [
+          "'self'",
+          ...uploadOrigins,
+          ...(env.isProduction ? [] : ['ws:', 'http://localhost:*']),
+        ],
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"],
         baseUri: ["'self'"],
@@ -125,6 +142,9 @@ app.get('/api/health', (_req, res) => {
     storage: env.storageDriver,
     access: env.accessMode,
     uploads: env.storageReady ? 'ready' : 'unavailable',
+    // The client reads these two before uploading: which path the file takes
+    // (through the API, or straight to the blob store) and how big it may be.
+    maxUploadMb: Math.round(env.maxUploadBytes / (1024 * 1024)),
     ...(env.blobTokenSource && { blobTokenFrom: env.blobTokenSource }),
     database: env.databaseUrl ? 'configured' : 'missing',
     ...(configProblems.length > 0 && { problems: configProblems }),

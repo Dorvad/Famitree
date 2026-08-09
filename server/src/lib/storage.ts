@@ -73,6 +73,15 @@ const diskStorage: Storage = {
 
 /* ------------------------------------------------------------------- blob */
 
+/**
+ * True for a URL the blob driver could have written: an object on this app's
+ * public store host. Anything else — another host, a relative path, a row
+ * written by the disk driver — is not this driver's to serve.
+ */
+export function isBlobStoreUrl(stored: string): boolean {
+  return /^https:\/\/[^/]+\.public\.blob\.vercel-storage\.com\//.test(stored);
+}
+
 const blobStorage: Storage = {
   driver: 'blob',
 
@@ -94,7 +103,7 @@ const blobStorage: Storage = {
   serve(stored) {
     // Only ever a URL this driver wrote. Anything else is a row from a
     // different driver and must not become an open redirect.
-    if (!/^https:\/\/[^/]+\.public\.blob\.vercel-storage\.com\//.test(stored)) return null;
+    if (!isBlobStoreUrl(stored)) return null;
     return { kind: 'redirect', url: stored };
   },
 
