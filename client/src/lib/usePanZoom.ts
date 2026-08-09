@@ -194,7 +194,13 @@ export function usePanZoom(options: PanZoomOptions = {}): PanZoom {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
     // Let interactive children (buttons, links, cards) handle their own input.
-    if ((event.target as HTMLElement).closest('[data-no-pan]')) return;
+    // The stale gesture must be dropped, not just skipped: click handlers ask
+    // consumedDrag() *after* this, and the drag that ended minutes ago would
+    // otherwise classify every future tap on a node as a pan and swallow it.
+    if ((event.target as HTMLElement).closest('[data-no-pan]')) {
+      gesture.current = null;
+      return;
+    }
 
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     try {
