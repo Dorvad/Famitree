@@ -94,17 +94,21 @@ client/
 | `api/*` | The functions. Each one hands the request to `server/src/vercel.ts` |
 | `server/src/app.ts` | The app with no listener. Imported from source, so the deploy never depends on a build artifact existing at the moment functions are compiled |
 
-**Why several files under `api/` rather than one catch-all.** A catch-all
-(`api/[...path].ts`) is meant to match `/api/` and everything under it. In this
-deployment it was observed to match a single segment only: `/api/tree` reached
-the app while `/api/auth/session` came back as the platform's own HTML 404 —
-which the client could only report as "the request failed", because it never
-reached the API to get a real message. The session endpoint is two segments
-deep, so the whole app looked signed-out and the workshop offered to let its
-owner "join". `api/[a].ts`, `api/[b]/[c].ts`, `api/[d]/[e]/[f].ts` and
-`api/[g]/[h]/[i]/[j].ts` name the four depths the API actually routes, so
-nothing depends on that behaviour. The catch-all stays for anything deeper.
-Add a route five segments deep and add the matching file.
+**Why four files under `api/` rather than one catch-all.** The `api` directory
+convention has no catch-all. Vercel reads any `[name]` segment — `[...path]`
+included, because the brackets are all it looks at — and compiles it to
+`([^/]+)`, which is one segment. `api/[...path].ts` therefore served `/api/tree`
+and left `/api/auth/session` to the platform's own HTML 404. The client could
+only report that as "the request failed": it never reached the API to be given
+a real message, and since the session endpoint is what says who you are, the
+whole archive read as signed-out and the workshop offered its own owner a
+"join" button.
+
+So each depth gets a file — `api/[a].ts` through `api/[a]/[b]/[c]/[d].ts` — and
+every dynamic segment at the same position must carry the *same* name. Two
+files that disagree about a position's name are rejected at build time as
+conflicting paths. A route five segments deep needs
+`api/[a]/[b]/[c]/[d]/[e].ts` beside them.
 
 ### First deploy
 
