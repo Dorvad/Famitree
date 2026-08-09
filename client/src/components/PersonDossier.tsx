@@ -241,6 +241,10 @@ export function PersonDossier({
       onAnimationEnd={handleAnimationEnd}
       onClick={onClose}
     >
+      {/* The blur lives on its own layer so the opening circle never has to
+          re-resolve a backdrop-filter mid-animation. */}
+      <span className={styles.veil} aria-hidden="true" />
+
       <span className={styles.monogramWrap} aria-hidden="true">
         <span className={styles.monogram}>{person.initial}</span>
       </span>
@@ -258,12 +262,20 @@ export function PersonDossier({
               style={{ ...flip, width: portraitSize, height: portraitSize }}
               ref={portraitRef}
             >
-              <Avatar
-                person={person}
-                generation={generation}
-                size={portraitSize}
-                filled={isMe}
-              />
+              {/* The portrait is itself the way into the full story — touching
+                  the person, not a labelled control. */}
+              <Link
+                to={`/person/${person.id}`}
+                className={styles.portraitLink}
+                aria-label={`לסיפור המלא של ${givenName(person.fullName)}`}
+              >
+                <Avatar
+                  person={person}
+                  generation={generation}
+                  size={portraitSize}
+                  filled={isMe}
+                />
+              </Link>
             </div>
 
             <p className={styles.cohort} style={{ '--l': 0 } as React.CSSProperties}>
@@ -285,8 +297,22 @@ export function PersonDossier({
                 לסיפור המלא ←
               </Link>
               {user && (
-                <Link to={`/edit/people/${person.id}`} className={styles.ghostAction}>
-                  עריכה ✎
+                <Link
+                  to={`/edit/people/${person.id}`}
+                  className={styles.iconAction}
+                  aria-label={`עריכת הפרטים של ${givenName(person.fullName)}`}
+                  title="עריכה"
+                >
+                  <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+                    <path
+                      d="M4 20l1.2-4.2L15.8 5.2a2.1 2.1 0 0 1 3 3L8.2 18.8 4 20z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </Link>
               )}
             </div>

@@ -229,11 +229,12 @@
 /**
  * recede — what the tree does while the lens is open.
  *
- * Not a fade: the canvas pulls back and loses its colour, the way a lens throws
- * a background out of focus. The tree stays visible as context, which is the
- * point — you are looking *into* it, not away from it. The blur is left to the
- * lens's own backdrop-filter so it irises outward with the circle rather than
- * being applied to a canvas several thousand pixels wide.
+ * Not a fade: the canvas pulls back, the way a camera racks focus to the
+ * foreground. The tree stays visible as context, which is the point — you are
+ * looking *into* it, not away from it. The desaturation and blur belong to the
+ * lens's own veil, so they iris outward with the circle rather than being a
+ * filter re-rendered every frame over a canvas several thousand pixels wide —
+ * which is exactly what made the opening stutter.
  *
  * Uses the independent `scale` property rather than `transform: scale()`: the
  * canvas carries its pan and zoom as an inline transform, and an animation on
@@ -242,7 +243,6 @@
 @keyframes recede {
   to {
     scale: 0.945;
-    filter: saturate(0.4) brightness(0.99);
   }
 }
 
@@ -417,6 +417,14 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+/** fadeOut — used to retire hints and veils; visibility so they stop painting. */
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    visibility: hidden;
   }
 }
 

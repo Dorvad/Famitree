@@ -37,12 +37,13 @@
 }
 
 /*
- * Only while the lens is open. Pointer events are on the overlay by then, so
- * this can never make a drag feel laggy — it exists so that walking from one
- * relative to the next glides the camera behind the lens instead of cutting.
+ * While the lens is open, and briefly after a double-tap zoom or a recentre.
+ * The screen clears it the moment a pointer comes down, so a drag never fights
+ * the transition — it exists so that camera moves glide instead of cutting.
  */
 .canvasGlide {
   transition: transform 820ms var(--spring-firm);
+  will-change: transform;
 }
 
 .wires {
@@ -113,8 +114,10 @@
   transition: transform var(--t-touch) var(--ease-touch);
 }
 
-.node:hover {
-  transform: scale(1.12) rotate(-3deg);
+@media (hover: hover) {
+  .node:hover {
+    transform: scale(1.12) rotate(-3deg);
+  }
 }
 
 .node:active {
@@ -200,35 +203,57 @@
     background var(--t-touch) var(--ease-touch);
 }
 
-.zoomButton:hover {
-  background: var(--surface-hover);
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .zoomButton:hover {
+    background: var(--surface-hover);
+    transform: translateY(-2px);
+  }
 }
 
 .zoomButton:active {
   transform: translateY(0) scale(0.92);
 }
 
-.resetButton {
+/* A compass rather than a labelled command: one glyph that means "take me
+   home". The words live in its accessible name and tooltip. */
+.homeButton {
+  width: 38px;
   height: 38px;
-  padding: 0 18px;
-  border-radius: var(--r-pill);
+  border-radius: 12px 12px 12px 4px;
   background: var(--violet);
   color: var(--on-accent);
   display: flex;
   align-items: center;
-  font: 600 12.5px var(--font-body);
+  justify-content: center;
   box-shadow: 0 2px 2px rgb(106 85 194 / 24%), 0 10px 22px rgb(124 92 255 / 34%);
-  white-space: nowrap;
   transition: transform var(--t-touch) var(--ease-touch);
 }
 
-.resetButton:hover {
-  transform: translateY(-3px) rotate(-1deg);
+@media (hover: hover) {
+  .homeButton:hover {
+    transform: translateY(-2px) rotate(-8deg);
+  }
 }
 
-.resetButton:active {
-  transform: translateY(0) scale(0.97);
+.homeButton:active {
+  transform: translateY(0) scale(0.92);
+}
+
+/*
+ * On touch the fingers *are* the zoom control — pinch and double-tap — so the
+ * buttons step aside and only the compass remains, grown to a full-size
+ * touch target.
+ */
+@media (pointer: coarse) {
+  .zoomButton {
+    display: none;
+  }
+
+  .homeButton {
+    width: 46px;
+    height: 46px;
+    border-radius: 15px 15px 15px 5px;
+  }
 }
 
 .title {
@@ -242,11 +267,20 @@
   animation: global(focusIn) 800ms var(--spring-firm) both;
 }
 
+/*
+ * Whispers once, then leaves the canvas clean — a guide, not a caption.
+ *
+ * Centred with auto margins rather than a translateX: the entry and exit
+ * animations own the `transform` property, and their fill would silently
+ * cancel a transform-based centring the moment they finish.
+ */
 .hint {
   position: absolute;
   bottom: max(14px, env(safe-area-inset-bottom));
-  inset-inline-start: 50%;
-  transform: translateX(50%);
+  inset-inline: 0;
+  margin-inline: auto;
+  width: max-content;
+  max-width: 84vw;
   font: 400 11.5px var(--font-body);
   color: var(--faint);
   background: rgb(255 247 238 / 86%);
@@ -254,5 +288,15 @@
   border-radius: var(--r-pill);
   pointer-events: none;
   white-space: nowrap;
-  animation: global(focusIn) 900ms var(--spring-firm) 1.4s both;
+  animation:
+    global(focusIn) 900ms var(--spring-firm) 1.4s both,
+    global(fadeOut) 800ms ease 8.5s forwards;
+}
+
+/* A phone is narrower than the sentence — let it fold instead of clipping. */
+@media (max-width: 480px) {
+  .hint {
+    white-space: normal;
+    text-align: center;
+  }
 }

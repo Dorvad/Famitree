@@ -28,13 +28,33 @@
       transparent 68%
     ),
     color-mix(in srgb, var(--gen-wash, var(--accent-wash)) 88%, transparent);
-  backdrop-filter: blur(7px) saturate(0.34) brightness(1.04);
 
-  animation: global(lensOpen) 780ms var(--spring-firm) both;
+  /* The circle is the only thing animating on this element — no filters here.
+     A backdrop-filter on the clipped element itself would be re-resolved on
+     every frame of the growing circle, which is what made the opening judder. */
+  will-change: clip-path;
+  animation: global(lensOpen) 720ms var(--spring-firm) both;
 }
 
 .lensClosing {
-  animation: global(lensClose) 420ms var(--ease-exit) both;
+  animation: global(lensClose) 380ms var(--ease-exit) both;
+}
+
+/*
+ * The depth of field, on its own static layer. It fades up once the circle is
+ * already most of the way open, so the expensive blur is never sampled while
+ * the clip is moving — the eye reads it as the glass settling into focus.
+ */
+.veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backdrop-filter: blur(7px) saturate(0.34) brightness(1.04);
+  animation: global(fadeIn) 460ms ease 300ms backwards;
+}
+
+.lensClosing .veil {
+  animation: global(fadeOut) 140ms ease forwards;
 }
 
 /*
@@ -87,9 +107,11 @@
     box-shadow var(--t-touch) var(--ease-touch);
 }
 
-.close:hover {
-  transform: rotate(-90deg) scale(1.1);
-  box-shadow: var(--lift-4);
+@media (hover: hover) {
+  .close:hover {
+    transform: rotate(-90deg) scale(1.1);
+    box-shadow: var(--lift-4);
+  }
 }
 
 .close:active {
@@ -147,8 +169,28 @@
   filter: drop-shadow(0 20px 38px var(--gen-shadow, var(--accent-shadow)));
 }
 
+/* The portrait doubles as the way into the full story. */
+.portraitLink {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+@media (hover: hover) {
+  .portraitLink:hover {
+    transform: scale(1.035) rotate(-1deg);
+  }
+}
+
+.portraitLink:active {
+  transform: scale(0.97);
+}
+
 .portraitLanding {
-  animation: global(land) 880ms var(--spring-settle) backwards;
+  will-change: transform;
+  animation: global(land) 820ms var(--spring-settle) backwards;
 }
 
 .cohort {
@@ -229,29 +271,43 @@
   transition: transform var(--t-touch) var(--ease-touch);
 }
 
-.primaryAction:hover {
-  color: var(--bg);
-  transform: translateY(-3px) rotate(-1deg);
+@media (hover: hover) {
+  .primaryAction:hover {
+    color: var(--bg);
+    transform: translateY(-3px) rotate(-1deg);
+  }
 }
 
 .primaryAction:active {
   transform: translateY(0) scale(0.97);
 }
 
-.ghostAction {
-  padding: 11px 22px;
-  border-radius: var(--r-pill);
+/* Editing is a quiet tool, not a headline: a pencil in the app's own
+   three-round-one-square shape, labelled for readers and hover alike. */
+.iconAction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50% 50% 50% 8px;
   background: var(--paper);
   color: var(--body);
-  font: 600 13.5px var(--font-body);
-  white-space: nowrap;
   box-shadow: var(--lift-1);
-  transition: transform var(--t-touch) var(--ease-touch);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
 }
 
-.ghostAction:hover {
-  color: var(--ink);
-  transform: translateY(-3px) rotate(1deg);
+@media (hover: hover) {
+  .iconAction:hover {
+    color: var(--ink);
+    transform: translateY(-3px) rotate(8deg);
+  }
+}
+
+.iconAction:active {
+  transform: translateY(0) scale(0.94);
 }
 
 /* -------------------------------------------------------------------- kin */
@@ -301,8 +357,10 @@
   transition: transform var(--t-touch) var(--ease-touch);
 }
 
-.satellite:hover {
-  transform: translateY(-5px) scale(1.06);
+@media (hover: hover) {
+  .satellite:hover {
+    transform: translateY(-5px) scale(1.06);
+  }
 }
 
 .satellite:active {
@@ -383,9 +441,11 @@
     box-shadow var(--t-touch) var(--ease-touch);
 }
 
-.milestone:hover {
-  transform: rotate(0deg) translateY(-4px);
-  box-shadow: var(--lift-3);
+@media (hover: hover) {
+  .milestone:hover {
+    transform: rotate(0deg) translateY(-4px);
+    box-shadow: var(--lift-3);
+  }
 }
 
 .milestoneYear {
@@ -428,9 +488,11 @@
     box-shadow var(--t-touch) var(--ease-touch);
 }
 
-.relic:hover {
-  transform: rotate(0deg) translateY(-6px) scale(1.03);
-  box-shadow: var(--lift-3);
+@media (hover: hover) {
+  .relic:hover {
+    transform: rotate(0deg) translateY(-6px) scale(1.03);
+    box-shadow: var(--lift-3);
+  }
 }
 
 .relicThumb {
@@ -462,6 +524,32 @@
 }
 
 /* ----------------------------------------------------------------- layout */
+
+@media (max-width: 560px) {
+  .monogram {
+    font-size: clamp(170px, 38vh, 300px);
+  }
+
+  /* On a phone the family reads as one swipeable strip — a flick along it is
+     the natural gesture, and nothing gets pushed below the fold. */
+  .kinRow {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding-block: 4px;
+    margin-inline: -18px;
+    padding-inline: 18px;
+  }
+
+  .kinRow::-webkit-scrollbar {
+    display: none;
+  }
+
+  .satellite {
+    flex: none;
+  }
+}
 
 @media (min-width: 900px) {
   .stage {
