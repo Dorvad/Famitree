@@ -85,10 +85,30 @@ function pathLength(points: Array<[number, number]>): number {
   return Math.max(total, 1);
 }
 
+/**
+ * The canvas normally re-anchors itself to the leftmost/topmost node. While a
+ * node is being dragged that is exactly wrong — pulling the outermost person
+ * left would shift the whole board under the finger. The tree screen captures
+ * the anchor when edit mode opens and passes it here so only the dragged node
+ * moves.
+ */
+export interface LayoutAnchor {
+  minX: number;
+  minY: number;
+}
+
+export function layoutAnchor(people: Person[]): LayoutAnchor {
+  return {
+    minX: Math.min(...people.map((p) => p.x)),
+    minY: Math.min(...people.map((p) => p.y)),
+  };
+}
+
 export function buildTreeLayout(
   people: Person[],
   relationships: Relationship[],
   generations: Generation[],
+  anchor?: LayoutAnchor,
 ): TreeLayout {
   if (people.length === 0) return EMPTY_LAYOUT;
 
@@ -96,8 +116,8 @@ export function buildTreeLayout(
 
   // Shift everything so the leftmost/topmost node sits one padding in. Stored
   // coordinates can be negative once people start dragging nodes around.
-  const minX = Math.min(...people.map((p) => p.x));
-  const minY = Math.min(...people.map((p) => p.y));
+  const minX = anchor?.minX ?? Math.min(...people.map((p) => p.x));
+  const minY = anchor?.minY ?? Math.min(...people.map((p) => p.y));
   const offsetX = PADDING - minX;
   const offsetY = PADDING - minY;
 
@@ -168,6 +188,22 @@ export function buildTreeLayout(
     groups.set(key, group);
   }
 
+  /**
+   * Two families whose parents sit on the same row used to get their sibling
+   * buses at the same height; where their spans overlapped horizontally the
+   * lines merged into one confusing rail. Each bus now checks the ones already
+   * placed and steps down until it has clear air.
+   */
+  const placedBuses: Array<{ y: number; x1: number; x2: number }> = [];
+  function clearBusY(preferred: number, x1: number, x2: number): number {
+    let y = preferred;
+    const collides = (bus: { y: number; x1: number; x2: number }) =>
+      Math.abs(bus.y - y) < 12 && x1 - 24 < bus.x2 && x2 + 24 > bus.x1;
+    while (placedBuses.some(collides)) y += 16;
+    placedBuses.push({ y, x1, x2 });
+    return y;
+  }
+
   for (const [key, group] of groups) {
     const parentNodes = group.parentIds
       .map((id) => byId.get(id))
@@ -207,16 +243,23 @@ export function buildTreeLayout(
       continue;
     }
 
-    const busY = Math.round(anchorY + (topChildY - anchorY) * BUS_FRACTION);
+    const preferredBusY = Math.round(anchorY + (topChildY - anchorY) * BUS_FRACTION);
 
     const onlyChild = childNodes.length === 1 ? childNodes[0] : undefined;
     if (onlyChild) {
       // Straight drop when the child sits directly below the couple's midpoint,
       // otherwise a single elbow through the bus line.
-      const d =
-        onlyChild.cx === anchorX
-          ? `M ${anchorX} ${anchorY} V ${onlyChild.cy}`
-          : `M ${anchorX} ${anchorY} V ${busY} H ${onlyChild.cx} V ${onlyChild.cy}`;
+      const straight = onlyChild.cx === anchorX;
+      const busY = straight
+        ? preferredBusY
+        : clearBusY(
+            preferredBusY,
+            Math.min(anchorX, onlyChild.cx),
+            Math.max(anchorX, onlyChild.cx),
+          );
+      const d = straight
+        ? `M ${anchorX} ${anchorY} V ${onlyChild.cy}`
+        : `M ${anchorX} ${anchorY} V ${busY} H ${onlyChild.cx} V ${onlyChild.cy}`;
       connectors.push({
         id: `child-${key}-${onlyChild.person.id}`,
         d,
@@ -237,6 +280,11 @@ export function buildTreeLayout(
 
     const leftmost = childNodes[0] as TreeNode;
     const rightmost = childNodes[childNodes.length - 1] as TreeNode;
+    const busY = clearBusY(
+      preferredBusY,
+      Math.min(leftmost.cx, anchorX),
+      Math.max(rightmost.cx, anchorX),
+    );
 
     connectors.push({
       id: `trunk-${key}`,

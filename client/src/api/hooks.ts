@@ -113,6 +113,29 @@ export function useCreatePerson(): UseMutationResult<Person, Error, CreatePerson
   });
 }
 
+/**
+ * Persists a node's position after a drag on the tree.
+ *
+ * The drop handler has already written the new coordinates straight into the
+ * tree cache — the node is visually where the finger left it — so success only
+ * refreshes that person's own record. Failure means the board no longer
+ * matches the server, and the honest fix is to refetch the truth.
+ */
+export function useMovePerson(): UseMutationResult<
+  Person,
+  Error,
+  { id: string; x: number; y: number }
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, x, y }) =>
+      request<Person>(`/people/${encodeURIComponent(id)}`, { method: 'PATCH', body: { x, y } }),
+    onError: () => void qc.invalidateQueries({ queryKey: queryKeys.tree }),
+    onSuccess: (_person, { id }) =>
+      void qc.invalidateQueries({ queryKey: queryKeys.person(id) }),
+  });
+}
+
 export function useUpdatePerson(
   id: string,
 ): UseMutationResult<Person, Error, UpdatePersonRequest> {
