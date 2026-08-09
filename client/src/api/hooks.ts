@@ -30,6 +30,7 @@ import type {
 } from '../../../shared/types.ts';
 
 import { request } from './client.ts';
+import { uploadMedia } from './uploads.ts';
 
 export const queryKeys = {
   session: ['session'] as const,
@@ -292,13 +293,9 @@ export function useRemoveArchiveItem(): UseMutationResult<void, Error, string> {
 }
 
 export function useUploadMedia(): UseMutationResult<MediaRef, Error, File> {
-  return useMutation({
-    mutationFn: (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      return request<MediaRef>('/media', { method: 'POST', formData });
-    },
-  });
+  // The route the bytes take — through the API, or straight to the blob
+  // store — is uploadMedia's decision; see api/uploads.ts.
+  return useMutation({ mutationFn: uploadMedia });
 }
 
 /* ------------------------------------------------------------- timeline */

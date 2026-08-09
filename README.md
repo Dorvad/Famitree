@@ -172,6 +172,18 @@ still resolves the row first — read access and the tombstone are enforced befo
 any URL is handed out — and then redirects. The blob host is added to the CSP
 only when that driver is in use.
 
+**With the blob driver, the bytes never pass through the API.** The platform
+caps a function's request body at about 4.5MB, which a phone photograph
+exceeds — an upload routed through the server dies at the platform's edge, as a
+413 the server never sees. So the client asks `/api/health` which driver is in
+play and, on `blob`, uploads straight to the store: `POST
+/api/media/client-upload` authenticates the uploader and mints a short-lived
+token carrying the same type and size limits the multipart route enforces, the
+browser PUTs the file with it, and `POST /api/media/record` verifies the
+claimed URL against the store itself — `head()` with this store's own token —
+before the media row is written. The disk driver keeps the original one-request
+multipart path; `MAX_UPLOAD_MB` governs both.
+
 **Parameters are bound by name.** `pg` speaks `$1`, and converting several dozen
 statements — one of which sets eighteen columns — to hand-counted positions is
 exactly the edit where a transposed pair goes unnoticed, because the parameter
@@ -455,10 +467,13 @@ Each of these was a deliberate change, not an oversight:
   driven against a real Postgres. Unit tests around `tree-layout.ts`,
   `placement.ts`, `bind()` and the permission checks would be the highest-value
   place to start.
-- **The blob upload driver has not been exercised against Vercel Blob.**
-  Everything else here was verified by running it; that one path was verified by
-  reading it. The disk driver, which shares the route, the permission check and
-  the redirect-or-send decision with it, is covered.
+- **The blob driver's token handshake is verified locally; the store round-trip
+  is not.** Minting the client-upload token is local HMAC work and is exercised
+  against the real routes (limits, pathname guard, refusal paths, and the token's
+  embedded constraints were all checked by calling them); the PUT to Vercel Blob
+  itself and the `head()` verification behind `/api/media/record` still need one
+  pass against a connected store. The disk driver's multipart path is covered
+  end to end, through the browser.
 - **Nothing catches a CSS animation that references a keyframe which is not
   there.** It was possible to ship the entire motion vocabulary dead in the
   production bundle for as long as it took to look for it (see `global(name)`

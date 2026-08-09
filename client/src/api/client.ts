@@ -114,3 +114,11 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 export function mediaUrl(mediaId: string | null | undefined): string | null {
   return mediaId ? `${BASE}/api/media/${encodeURIComponent(mediaId)}` : null;
 }
+
+/**
+ * Full URL for an API route, for libraries that make their own requests
+ * rather than going through `request` above.
+ */
+export function apiUrl(path: string): string {
+  return `${BASE}/api${path}`;
+}
