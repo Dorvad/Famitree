@@ -300,3 +300,12 @@
     text-align: center;
   }
 }
+
+/* The global reduced-motion rule collapses every animation to an instant —
+   which would run the fade-out immediately and hide the hint before it was
+   ever read. With motion off, it simply stays. */
+@media (prefers-reduced-motion: reduce) {
+  .hint {
+    animation: none !important;
+  }
+}

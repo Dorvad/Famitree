@@ -250,9 +250,10 @@ export function PersonDossier({
           '--r0': `${Math.round(origin.r0)}px`,
           '--r1': `${Math.ceil(origin.r1)}px`,
           // The disc's starting scale: the touched circle over the covering
-          // circle. Scaling a real element is the one reveal every engine
-          // runs on the GPU.
-          '--s0': Math.max(origin.r0 / origin.r1, 0.001).toFixed(5),
+          // circle (whose radius is 1.25 × r1, matching the CSS headroom).
+          // Scaling a real element is the one reveal every engine runs on
+          // the GPU.
+          '--s0': Math.max(origin.r0 / (origin.r1 * 1.25), 0.001).toFixed(5),
         } as React.CSSProperties
       }
       role="dialog"

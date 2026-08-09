@@ -188,6 +188,11 @@ export function usePanZoom(options: PanZoomOptions = {}): PanZoom {
   );
 
   const onPointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    // Only the primary button drags. A right-click opens the context menu on
+    // top of a drag that would never get its pointerup, leaving the canvas
+    // glued to the cursor.
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+
     // Let interactive children (buttons, links, cards) handle their own input.
     if ((event.target as HTMLElement).closest('[data-no-pan]')) return;
 
@@ -275,6 +280,32 @@ export function usePanZoom(options: PanZoomOptions = {}): PanZoom {
     } catch {
       // Capture may already have been released by the browser.
     }
+
+    /*
+     * A finger lifted while another is still down — the way every pinch ends.
+     * The surviving finger falls back to panning, but the pan origin recorded
+     * at touch-down predates everything the pinch just did to the transform:
+     * panning from it snaps the canvas sideways by the whole difference. So
+     * the gesture is re-anchored where the surviving finger is now, against
+     * the transform as it now stands.
+     */
+    const state = gesture.current;
+    const survivor = [...pointers.current.values()][0];
+    if (state && survivor) {
+      setTransformState((current) => {
+        gesture.current = {
+          startX: survivor.x,
+          startY: survivor.y,
+          originX: current.x,
+          originY: current.y,
+          pinchDistance: 0,
+          pinchScale: current.k,
+          moved: state.moved,
+        };
+        return current;
+      });
+    }
+
     if (pointers.current.size === 0) setIsDragging(false);
   }, []);
 

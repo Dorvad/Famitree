@@ -27,16 +27,17 @@
  * everything else here ran on the main thread somewhere (clip-path everywhere
  * but new Chrome, backdrop blur everywhere), and that was the stutter.
  *
- * Sized so that at scale(1) its radius is `--r1` — the distance from the node
- * to the furthest viewport corner — and centred on the node itself. `--s0`
- * scales it back down to exactly the circle that was touched.
+ * Sized so that at scale(1) its radius is 1.25 × `--r1` — the distance from
+ * the node to the furthest viewport corner, plus headroom so a phone rotated
+ * while the file is open stays covered — and centred on the node itself.
+ * `--s0` scales it back down to exactly the circle that was touched.
  */
 .disc {
   position: absolute;
-  left: calc(var(--ox, 50vw) - var(--r1, 120vmax));
-  top: calc(var(--oy, 50vh) - var(--r1, 120vmax));
-  width: calc(var(--r1, 120vmax) * 2);
-  height: calc(var(--r1, 120vmax) * 2);
+  left: calc(var(--ox, 50vw) - var(--r1, 120vmax) * 1.25);
+  top: calc(var(--oy, 50vh) - var(--r1, 120vmax) * 1.25);
+  width: calc(var(--r1, 120vmax) * 2.5);
+  height: calc(var(--r1, 120vmax) * 2.5);
   border-radius: 50%;
   pointer-events: none;
 
@@ -45,7 +46,7 @@
      blooms from the point of contact. */
   background:
     radial-gradient(
-      26% 22% at 50% 50%,
+      21% 18% at 50% 50%,
       rgb(255 255 255 / 55%) 0%,
       rgb(255 255 255 / 12%) 42%,
       transparent 68%
