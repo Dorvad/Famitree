@@ -26,6 +26,22 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * A deployment replaces every fingerprinted chunk, so a tab that stayed open
+ * across one fails the moment it lazy-loads its next screen — the file it
+ * asks for no longer exists. To the person holding the tab that reads as
+ * "העריכה לא נפתחת". Reloading fetches the new index.html and its chunks and
+ * the click just works; the timestamp keeps a genuinely broken network from
+ * spinning the page in a reload loop.
+ */
+window.addEventListener('vite:preloadError', (event) => {
+  const lastReload = Number(sessionStorage.getItem('shoresh-chunk-reload') ?? 0);
+  if (Date.now() - lastReload < 10_000) return;
+  event.preventDefault();
+  sessionStorage.setItem('shoresh-chunk-reload', String(Date.now()));
+  window.location.reload();
+});
+
 const container = document.getElementById('root');
 if (!container) throw new Error('#root is missing from index.html');
 
