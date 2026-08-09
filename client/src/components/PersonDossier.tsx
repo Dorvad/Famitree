@@ -199,12 +199,28 @@ export function PersonDossier({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [onClose]);
 
+  /*
+   * The disc's flight gets the main thread to itself. Mounting the family,
+   * the story and the milestone cards costs a couple of hundred milliseconds
+   * on a mid-range phone, and doing it on the tap froze the animation's first
+   * frames — so only the hero rides along, and the rest of the file mounts
+   * the moment the disc lands. Their entrance delays already placed them
+   * after that moment visually; now the work happens there too.
+   */
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    // Fallback in case the animationend event is ever lost.
+    const timer = window.setTimeout(() => setSettled(true), 900);
+    return () => window.clearTimeout(timer);
+  }, [personId]);
+
   const handleAnimationEnd = useCallback(
-    (event: React.AnimationEvent<HTMLDivElement>) => {
-      // Content layers bubble their own animationend; only the lens itself
-      // decides when the overlay is finished.
+    (event: React.AnimationEvent<HTMLElement>) => {
+      // Content layers bubble their own animationend; only the disc — the
+      // circle itself — decides when the overlay is finished.
       if (event.target !== event.currentTarget) return;
       if (closing) onClosed();
+      else setSettled(true);
     },
     [closing, onClosed],
   );
@@ -233,17 +249,22 @@ export function PersonDossier({
           '--oy': `${Math.round(origin.y)}px`,
           '--r0': `${Math.round(origin.r0)}px`,
           '--r1': `${Math.ceil(origin.r1)}px`,
+          // The disc's starting scale: the touched circle over the covering
+          // circle. Scaling a real element is the one reveal every engine
+          // runs on the GPU.
+          '--s0': Math.max(origin.r0 / origin.r1, 0.001).toFixed(5),
         } as React.CSSProperties
       }
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      onAnimationEnd={handleAnimationEnd}
       onClick={onClose}
     >
-      {/* The blur lives on its own layer so the opening circle never has to
-          re-resolve a backdrop-filter mid-animation. */}
-      <span className={styles.veil} aria-hidden="true" />
+      <span
+        className={styles.disc}
+        aria-hidden="true"
+        onAnimationEnd={handleAnimationEnd}
+      />
 
       <span className={styles.monogramWrap} aria-hidden="true">
         <span className={styles.monogram}>{person.initial}</span>
@@ -324,7 +345,7 @@ export function PersonDossier({
             where the file becomes one column — the family lands after the story
             and the milestones instead of pushing them below the fold.
           */}
-          {kin.length > 0 && (
+          {settled && kin.length > 0 && (
             <div className={styles.kin} style={{ '--l': 4 } as React.CSSProperties}>
               <p className={styles.kinHint}>המשיכו במשפחה</p>
               {kin.map((group, groupIndex) => (
@@ -363,13 +384,13 @@ export function PersonDossier({
           )}
 
           <div className={styles.body}>
-            {person.story && (
+            {settled && person.story && (
               <p className={styles.story} style={{ '--l': 2 } as React.CSSProperties}>
                 {person.story}
               </p>
             )}
 
-            {milestones.length > 0 && (
+            {settled && milestones.length > 0 && (
               <section className={styles.track} style={{ '--l': 3 } as React.CSSProperties}>
                 <h3 className={styles.sectionTitle}>התחנות של {firstName}</h3>
                 <div className={styles.trackRail}>
@@ -395,7 +416,7 @@ export function PersonDossier({
               </section>
             )}
 
-            {relics.length > 0 && (
+            {settled && relics.length > 0 && (
               <section className={styles.relics} style={{ '--l': 4 } as React.CSSProperties}>
                 <h3 className={styles.sectionTitle}>אוצרות של {firstName}</h3>
                 <div className={styles.relicRow}>

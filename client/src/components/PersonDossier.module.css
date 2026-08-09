@@ -18,43 +18,54 @@
   overflow: hidden;
   isolation: isolate;
   cursor: zoom-out;
+}
 
-  background: var(--gen-wash, var(--accent-wash));
+/*
+ * The growing circle is a real disc, scaled up with a transform — not an
+ * animated clip-path, and not a backdrop-filter in sight. Transform and
+ * opacity are the only properties every engine animates on the compositor;
+ * everything else here ran on the main thread somewhere (clip-path everywhere
+ * but new Chrome, backdrop blur everywhere), and that was the stutter.
+ *
+ * Sized so that at scale(1) its radius is `--r1` — the distance from the node
+ * to the furthest viewport corner — and centred on the node itself. `--s0`
+ * scales it back down to exactly the circle that was touched.
+ */
+.disc {
+  position: absolute;
+  left: calc(var(--ox, 50vw) - var(--r1, 120vmax));
+  top: calc(var(--oy, 50vh) - var(--r1, 120vmax));
+  width: calc(var(--r1, 120vmax) * 2);
+  height: calc(var(--r1, 120vmax) * 2);
+  border-radius: 50%;
+  pointer-events: none;
+
+  /* Near-opaque: the tree reads softly through it as context. The bloom sits
+     at the disc's own centre, which *is* the touched node, so the light still
+     blooms from the point of contact. */
   background:
     radial-gradient(
-      54% 46% at var(--ox, 50%) var(--oy, 50%),
+      26% 22% at 50% 50%,
       rgb(255 255 255 / 55%) 0%,
       rgb(255 255 255 / 12%) 42%,
       transparent 68%
     ),
-    color-mix(in srgb, var(--gen-wash, var(--accent-wash)) 88%, transparent);
+    color-mix(in srgb, var(--gen-wash, var(--accent-wash)) 94%, transparent);
 
-  /* The circle is the only thing animating on this element — no filters here.
-     A backdrop-filter on the clipped element itself would be re-resolved on
-     every frame of the growing circle, which is what made the opening judder. */
-  will-change: clip-path;
-  animation: global(lensOpen) 720ms var(--spring-firm) both;
+  will-change: transform;
+  animation: global(irisOpen) 640ms var(--spring-firm) both;
 }
 
-.lensClosing {
-  animation: global(lensClose) 380ms var(--ease-exit) both;
+.lensClosing .disc {
+  animation: global(irisClose) 360ms var(--ease-exit) both;
 }
 
-/*
- * The depth of field, on its own static layer. It fades up once the circle is
- * already most of the way open, so the expensive blur is never sampled while
- * the clip is moving — the eye reads it as the glass settling into focus.
- */
-.veil {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  backdrop-filter: blur(7px) saturate(0.34) brightness(1.04);
-  animation: global(fadeIn) 460ms ease 300ms backwards;
-}
-
-.lensClosing .veil {
-  animation: global(fadeOut) 140ms ease forwards;
+/* On the way out the file fades ahead of the shrinking disc, so the circle
+   never cuts through half-visible text. */
+.lensClosing .monogramWrap,
+.lensClosing .close,
+.lensClosing .sheet {
+  animation: global(fadeOut) 150ms ease forwards;
 }
 
 /*
@@ -79,7 +90,9 @@
   color: var(--gen, var(--accent));
   opacity: 0.085;
   user-select: none;
-  animation: global(focusIn) 1400ms var(--spring-firm) 220ms backwards;
+  /* rise, not focusIn: animating a blur over a glyph this size repaints
+     hundreds of thousands of pixels per frame, right when the disc opens. */
+  animation: global(rise) 1100ms var(--spring-firm) 300ms backwards;
 }
 
 .close {
@@ -317,11 +330,13 @@
  * not close this file and open another: the lens re-forms from that satellite's
  * own circle, so walking the tree is one continuous movement.
  */
+/* The kin and body sections mount when the disc lands, so their delays are
+   measured from that moment — not from the tap. */
 .kin {
   grid-area: kin;
   padding-top: 20px;
   border-top: 1px dashed var(--paper-edge);
-  animation: global(rise) 620ms var(--spring-settle) calc(220ms + var(--l, 0) * 80ms) backwards;
+  animation: global(rise) 620ms var(--spring-settle) 40ms backwards;
 }
 
 .kinHint {
@@ -353,7 +368,7 @@
   gap: 5px;
   width: 66px;
   cursor: pointer;
-  animation: global(orbit) 640ms var(--spring-settle) calc(620ms + var(--o, 0) * 70ms) backwards;
+  animation: global(orbit) 640ms var(--spring-settle) calc(140ms + var(--o, 0) * 70ms) backwards;
   transition: transform var(--t-touch) var(--ease-touch);
 }
 
@@ -401,13 +416,13 @@
   /* A rule down the bound edge, the way a quoted passage is marked. */
   padding-inline-start: 18px;
   border-inline-start: 3px solid var(--gen, var(--accent));
-  animation: global(rise) 620ms var(--spring-settle) calc(220ms + var(--l, 0) * 80ms) backwards;
+  animation: global(rise) 620ms var(--spring-settle) 20ms backwards;
 }
 
 .track,
 .relics {
   margin-top: 30px;
-  animation: global(rise) 620ms var(--spring-settle) calc(220ms + var(--l, 0) * 80ms) backwards;
+  animation: global(rise) 620ms var(--spring-settle) 80ms backwards;
 }
 
 .sectionTitle {
@@ -435,7 +450,7 @@
   border-start-end-radius: 16px;
   border-end-end-radius: 16px;
   transform: rotate(var(--rest-tilt, 0deg));
-  animation: global(deal) 720ms var(--spring-settle) calc(560ms + var(--i, 0) * 85ms) backwards;
+  animation: global(deal) 720ms var(--spring-settle) calc(160ms + var(--i, 0) * 85ms) backwards;
   transition:
     transform var(--t-touch) var(--ease-touch),
     box-shadow var(--t-touch) var(--ease-touch);
@@ -482,7 +497,7 @@
   padding: 8px 8px 10px;
   box-shadow: var(--lift-2);
   transform: rotate(var(--rest-tilt, 0deg));
-  animation: global(slot) 640ms var(--spring-settle) calc(640ms + var(--i, 0) * 60ms) backwards;
+  animation: global(slot) 640ms var(--spring-settle) calc(220ms + var(--i, 0) * 60ms) backwards;
   transition:
     transform var(--t-touch) var(--ease-touch),
     box-shadow var(--t-touch) var(--ease-touch);
