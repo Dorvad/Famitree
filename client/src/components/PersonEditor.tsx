@@ -23,7 +23,6 @@ import {
   useUpdatePerson,
 } from '../api/hooks.ts';
 import { generationVars, givenName, kindColours } from '../lib/format.ts';
-import { NUDGE } from '../lib/placement.ts';
 import { useUi } from '../state/ui.tsx';
 import { InlineError, LoadingDots } from './Feedback.tsx';
 import { PortraitPicker } from './PortraitPicker.tsx';
@@ -269,13 +268,6 @@ export function PersonEditor({
       onSuccess: () => setLinkTargetId(''),
       onError: (cause) => setNotice(cause.message),
     });
-  }
-
-  function nudge(dx: number, dy: number): void {
-    update.mutate(
-      { x: record.x + dx, y: record.y + dy },
-      { onError: (cause) => setNotice(cause.message) },
-    );
   }
 
   const linkRow = (
@@ -776,21 +768,13 @@ export function PersonEditor({
       {canEdit && (
         <>
           <h4 className={styles.sectionTitle}>מקום באילן</h4>
-          <div className={styles.positionRow}>
-            <div className={styles.pad}>
-              <button type="button" className={styles.padUp} onClick={() => nudge(0, -NUDGE.y)} aria-label="הזיזו למעלה">↑</button>
-              <button type="button" className={styles.padStart} onClick={() => nudge(NUDGE.x, 0)} aria-label="הזיזו ימינה">→</button>
-              <button type="button" className={styles.padEnd} onClick={() => nudge(-NUDGE.x, 0)} aria-label="הזיזו שמאלה">←</button>
-              <button type="button" className={styles.padDown} onClick={() => nudge(0, NUDGE.y)} aria-label="הזיזו למטה">↓</button>
-            </div>
-            <p className={styles.positionNote}>
-              הקווים בין האנשים נגזרים מהקשרים, לא מהמקום — ההזזה משפיעה רק על הסידור על
-              הלוח. הכי נוח לגרור ישירות:{' '}
-              <Link to={`/?edit=1&focus=${encodeURIComponent(personId)}`}>
-                גררו אותם באילן ←
-              </Link>
-            </p>
-          </div>
+          <p className={styles.positionNote}>
+            הקווים בין האנשים נגזרים מהקשרים, לא מהמקום. כדי לשנות את הסידור על הלוח,
+            גררו את העיגול במצב העריכה של האילן:{' '}
+            <Link to={`/?edit=1&focus=${encodeURIComponent(personId)}`}>
+              גררו אותם באילן ←
+            </Link>
+          </p>
         </>
       )}
 

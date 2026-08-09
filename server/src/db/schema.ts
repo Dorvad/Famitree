@@ -120,6 +120,22 @@ CREATE TABLE IF NOT EXISTS archive_items (
 CREATE INDEX IF NOT EXISTS idx_archive_kind ON archive_items (kind, archived_at);
 CREATE INDEX IF NOT EXISTS idx_archive_created ON archive_items (created_at DESC);
 
+-- A treasure can belong to a whole scene, not one sitter. \`person_id\` above
+-- survives as "the first linked person" for old callers; these rows are the
+-- truth. The backfill below copies the single-link era across and is a no-op
+-- on every later boot.
+CREATE TABLE IF NOT EXISTS archive_item_people (
+  item_id   TEXT NOT NULL REFERENCES archive_items (id) ON DELETE CASCADE,
+  person_id TEXT NOT NULL REFERENCES people (id) ON DELETE CASCADE,
+  PRIMARY KEY (item_id, person_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_archive_people_person ON archive_item_people (person_id);
+
+INSERT INTO archive_item_people (item_id, person_id)
+  SELECT id, person_id FROM archive_items WHERE person_id IS NOT NULL
+  ON CONFLICT DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS timeline_events (
   id          TEXT    PRIMARY KEY,
   year        INTEGER NOT NULL,
@@ -130,6 +146,20 @@ CREATE TABLE IF NOT EXISTS timeline_events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_timeline_year ON timeline_events (year);
+
+-- Same arrangement as archive_item_people: a wedding involves two people at
+-- the very least.
+CREATE TABLE IF NOT EXISTS timeline_event_people (
+  event_id  TEXT NOT NULL REFERENCES timeline_events (id) ON DELETE CASCADE,
+  person_id TEXT NOT NULL REFERENCES people (id) ON DELETE CASCADE,
+  PRIMARY KEY (event_id, person_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_timeline_people_person ON timeline_event_people (person_id);
+
+INSERT INTO timeline_event_people (event_id, person_id)
+  SELECT id, person_id FROM timeline_events WHERE person_id IS NOT NULL
+  ON CONFLICT DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS users (
   id           TEXT PRIMARY KEY,

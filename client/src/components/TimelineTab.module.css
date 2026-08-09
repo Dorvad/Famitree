@@ -241,3 +241,34 @@
   background: var(--accent-wash);
   color: var(--accent-strong);
 }
+
+/* People links — the same chips the treasure sheet uses, several may be on. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 7px 16px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--body);
+  font: 600 12.5px var(--font-body);
+  white-space: nowrap;
+  box-shadow: var(--lift-1);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
+}
+
+.chip:hover {
+  transform: translateY(-1px);
+}
+
+.chipActive {
+  background: var(--ink);
+  color: var(--bg);
+  transform: translateY(-2px);
+}

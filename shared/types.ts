@@ -95,11 +95,16 @@ export interface ArchiveItem {
   title: string;
   /** Free text so "סביב 1900" and "לא ידוע" are valid. */
   yearLabel: string;
-  /** Who the item is about — a person's given name, or "כל המשפחה". */
+  /** Who the item is about — given names, or "כל המשפחה". Display text only. */
   subject: string;
   story: string;
-  /** Optional link to the person this item belongs to. */
+  /**
+   * First linked person, kept for callers that predate multi-linking.
+   * Always `personIds[0] ?? null`.
+   */
   personId: string | null;
+  /** Everyone this item is linked to; a treasure can belong to a whole scene. */
+  personIds: string[];
   mediaId: string | null;
   /** Masonry tile height in px; kept server-side so the feed is stable across reloads. */
   tileHeight: number;
@@ -112,7 +117,10 @@ export interface TimelineEvent {
   id: string;
   year: number;
   title: string;
+  /** First linked person — see ArchiveItem.personId. */
   personId: string | null;
+  /** Everyone the event involves. */
+  personIds: string[];
 }
 
 export interface MediaRef {
@@ -188,7 +196,9 @@ export interface CreateArchiveItemRequest {
   yearLabel?: string;
   subject?: string;
   story?: string;
+  /** Single-link form, honoured when `personIds` is absent. */
   personId?: string | null;
+  personIds?: string[];
   mediaId?: string | null;
 }
 
@@ -197,7 +207,9 @@ export type UpdateArchiveItemRequest = Partial<CreateArchiveItemRequest>;
 export interface CreateTimelineEventRequest {
   year: number;
   title: string;
+  /** Single-link form, honoured when `personIds` is absent. */
   personId?: string | null;
+  personIds?: string[];
 }
 
 export type UpdateTimelineEventRequest = Partial<CreateTimelineEventRequest>;

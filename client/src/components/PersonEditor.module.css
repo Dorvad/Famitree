@@ -531,75 +531,9 @@
 
 /* ---------------------------------------------------------------- position */
 
-.positionRow {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-}
-
-/* A small D-pad, which is a clearer way to say "move this" than two number
-   fields holding canvas coordinates. */
-.pad {
-  flex: none;
-  display: grid;
-  grid-template-columns: repeat(3, 34px);
-  grid-template-rows: repeat(3, 34px);
-  gap: 4px;
-}
-
-.padUp,
-.padDown,
-.padStart,
-.padEnd {
-  border-radius: 10px;
-  background: var(--bg);
-  box-shadow: var(--lift-1);
-  color: var(--ink);
-  font: 400 15px var(--font-body);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    transform var(--t-touch) var(--ease-touch),
-    background var(--t-touch) var(--ease-touch);
-}
-
-.padUp:hover,
-.padDown:hover,
-.padStart:hover,
-.padEnd:hover {
-  background: var(--surface-hover);
-  transform: scale(1.08);
-}
-
-.padUp:active,
-.padDown:active,
-.padStart:active,
-.padEnd:active {
-  transform: scale(0.9);
-}
-
-.padUp {
-  grid-column: 2;
-  grid-row: 1;
-}
-.padStart {
-  grid-column: 1;
-  grid-row: 2;
-}
-.padEnd {
-  grid-column: 3;
-  grid-row: 2;
-}
-.padDown {
-  grid-column: 2;
-  grid-row: 3;
-}
-
+/* The arrows that used to live here are gone: dragging the circle in the
+   tree's edit mode says "move this" better than any button could. */
 .positionNote {
-  flex: 1;
-  min-width: 200px;
   font: 300 12px/1.6 var(--font-body);
   color: var(--muted);
   text-wrap: pretty;
