@@ -56,8 +56,13 @@
   color: var(--ink);
 }
 
-/* Desktop tab bar. On narrow screens navigation lives in the sheet instead,
-   which is where the design put it. */
+/*
+ * The tab bar. Below the breakpoint navigation moves into the sheet, behind the
+ * dot-grid button — which is fine on a phone and wrong on a tablet, where there
+ * is room for the tabs and no reason to hide the way to the workshop behind an
+ * unlabelled control. The breakpoint sits below portrait-tablet width for that
+ * reason.
+ */
 .tabs {
   display: none;
   gap: 4px;
@@ -205,11 +210,13 @@
   padding-bottom: max(24px, env(safe-area-inset-bottom));
 }
 
-@media (min-width: 860px) {
+@media (min-width: 720px) {
   .tabs {
     display: flex;
   }
+}
 
+@media (min-width: 860px) {
   .identity {
     display: inline-flex;
   }
