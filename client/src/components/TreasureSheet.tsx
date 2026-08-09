@@ -363,6 +363,7 @@ export function TreasureSheet(): React.JSX.Element {
             <input
               className={styles.field}
               value={yearLabel}
+              dir="auto"
               onChange={(event) => setYearLabel(event.target.value)}
               placeholder="שנה — בערך זה בסדר"
               aria-label="שנה"

@@ -361,6 +361,7 @@ export function PersonEditor({
               <input
                 className={styles.input}
                 value={draft.lifeSpan}
+                dir="auto"
                 onChange={(event) => set('lifeSpan', event.target.value)}
                 placeholder="למשל: 1928–2015"
                 disabled={!canEdit}
@@ -426,6 +427,7 @@ export function PersonEditor({
                 <input
                   className={styles.input}
                   value={milestoneDraft.yearLabel}
+                  dir="auto"
                   onChange={(event) =>
                     setMilestoneDraft((d) => ({ ...d, yearLabel: event.target.value }))
                   }
@@ -541,6 +543,7 @@ export function PersonEditor({
             <input
               className={styles.input}
               value={milestoneDraft.yearLabel}
+              dir="auto"
               onChange={(event) =>
                 setMilestoneDraft((d) => ({ ...d, yearLabel: event.target.value }))
               }
