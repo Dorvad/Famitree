@@ -199,30 +199,36 @@
 }
 
 /**
- * lensOpen — the app's signature moment.
+ * irisOpen — the app's signature moment.
  *
- * A circle grows from the exact screen position of the node that was clicked
+ * A disc grows from the exact screen position of the node that was clicked
  * until it covers the viewport. Because the origin is the thing you touched
  * rather than the centre of the screen, the panel reads as *coming out of* that
- * person rather than appearing on top of them. `--r0` is the node's radius and
- * `--r1` is the distance to the furthest viewport corner, both measured in JS
- * at the moment of the click.
+ * person rather than appearing on top of them.
+ *
+ * Deliberately a `transform: scale()` on a real circular element, NOT an
+ * animated `clip-path`. A clip-path animation runs on the main thread in
+ * Safari and on anything but recent Chrome, which is exactly the platform-wide
+ * stutter this replaced: transform and opacity are the only two properties
+ * every engine promotes to the compositor. `--s0` is the node's radius over
+ * the covering radius, measured in JS at the moment of the click, so the disc
+ * starts life exactly the size of the circle that was touched.
  */
-@keyframes lensOpen {
+@keyframes irisOpen {
   from {
-    clip-path: circle(var(--r0, 42px) at var(--ox, 50%) var(--oy, 50%));
+    transform: scale(var(--s0, 0.04));
   }
   to {
-    clip-path: circle(var(--r1, 150vmax) at var(--ox, 50%) var(--oy, 50%));
+    transform: scale(1);
   }
 }
 
-@keyframes lensClose {
+@keyframes irisClose {
   from {
-    clip-path: circle(var(--r1, 150vmax) at var(--ox, 50%) var(--oy, 50%));
+    transform: scale(1);
   }
   to {
-    clip-path: circle(var(--r0, 42px) at var(--ox, 50%) var(--oy, 50%));
+    transform: scale(var(--s0, 0.04));
   }
 }
 
@@ -231,10 +237,10 @@
  *
  * Not a fade: the canvas pulls back, the way a camera racks focus to the
  * foreground. The tree stays visible as context, which is the point — you are
- * looking *into* it, not away from it. The desaturation and blur belong to the
- * lens's own veil, so they iris outward with the circle rather than being a
- * filter re-rendered every frame over a canvas several thousand pixels wide —
- * which is exactly what made the opening stutter.
+ * looking *into* it, not away from it. The softening is done by the lens
+ * disc's own near-opaque wash — no filter is ever re-rendered over a canvas
+ * several thousand pixels wide, which is exactly what made the opening
+ * stutter.
  *
  * Uses the independent `scale` property rather than `transform: scale()`: the
  * canvas carries its pan and zoom as an inline transform, and an animation on
