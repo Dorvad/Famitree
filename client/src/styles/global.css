@@ -15,6 +15,19 @@ body,
   height: 100%;
 }
 
+/*
+ * On phones the browser chrome collapses and expands as it pleases; `dvh`
+ * follows it, so the tree canvas and the bottom hint are never cropped behind
+ * the URL bar the way a static 100% can be.
+ */
+@supports (height: 100dvh) {
+  html,
+  body,
+  #root {
+    height: 100dvh;
+  }
+}
+
 body {
   margin: 0;
   background: var(--bg);

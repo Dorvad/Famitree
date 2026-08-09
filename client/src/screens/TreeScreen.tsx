@@ -51,6 +51,21 @@ export function TreeScreen(): React.JSX.Element {
   /** A person to open once the camera move that frames them has been painted. */
   const [pendingLens, setPendingLens] = useState<string | null>(null);
 
+  /**
+   * True while a double-tap zoom or a recentre is gliding the camera. It puts
+   * the same transition on the canvas that walking between relatives uses, so
+   * the jump reads as a camera move rather than a cut — and it is switched off
+   * the moment a finger comes back down, so dragging never fights a transition.
+   */
+  const [gliding, setGliding] = useState(false);
+  const glideTimer = useRef(0);
+  const glide = useCallback(() => {
+    window.clearTimeout(glideTimer.current);
+    setGliding(true);
+    glideTimer.current = window.setTimeout(() => setGliding(false), 900);
+  }, []);
+  useEffect(() => () => window.clearTimeout(glideTimer.current), []);
+
   // Node elements, so a lens can be measured from the circle it grows out of
   // even when the opening was not a click — a deep link, or a relative.
   const nodeEls = useRef(new Map<string, HTMLButtonElement>());
@@ -162,8 +177,20 @@ export function TreeScreen(): React.JSX.Element {
 
   const recentre = useCallback(() => {
     const mine = myPersonId ? layout.byId.get(myPersonId) : undefined;
+    glide();
     setTransform(mine ? centreOn(mine, viewport, FOCUS_SCALE) : fitView(layout, viewport));
-  }, [layout, myPersonId, setTransform, viewport]);
+  }, [glide, layout, myPersonId, setTransform, viewport]);
+
+  /** Double-tap (or double-click) zooms into that spot; deep in, it zooms back out. */
+  const handleDoubleTap = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if ((event.target as HTMLElement).closest('[data-no-pan]')) return;
+      if (consumedDrag()) return;
+      glide();
+      panZoom.zoomAtClient(transform.k > 1.6 ? 0.5 : 1.7, event.clientX, event.clientY);
+    },
+    [consumedDrag, glide, panZoom, transform.k],
+  );
 
   if (isPending) return <LoadingScreen label="פורשים את האילן…" />;
   if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
@@ -187,7 +214,18 @@ export function TreeScreen(): React.JSX.Element {
 
   return (
     <>
-      <div className={screenClass} ref={panZoom.containerRef} {...panZoom.handlers}>
+      <div
+        className={screenClass}
+        ref={panZoom.containerRef}
+        {...panZoom.handlers}
+        onPointerDown={(event) => {
+          // A finger down takes the camera back immediately — a drag must never
+          // fight the glide transition.
+          setGliding(false);
+          panZoom.handlers.onPointerDown(event);
+        }}
+        onDoubleClick={handleDoubleTap}
+      >
         <h1 className={styles.title}>אילן היוחסין</h1>
 
         <div className={styles.controls} data-no-pan>
@@ -207,13 +245,37 @@ export function TreeScreen(): React.JSX.Element {
           >
             −
           </button>
-          <button type="button" className={styles.resetButton} onClick={recentre}>
-            {myPersonId ? 'קחו אותי אליי' : 'מרכזו הכל'}
+          <button
+            type="button"
+            className={styles.homeButton}
+            onClick={recentre}
+            aria-label={myPersonId ? 'קחו אותי אל העיגול שלי' : 'מרכזו את האילן'}
+            title={myPersonId ? 'קחו אותי אליי' : 'מרכזו הכל'}
+          >
+            <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+              <circle
+                cx="12"
+                cy="12"
+                r="6.2"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+              />
+              <circle cx="12" cy="12" r="1.9" fill="currentColor" />
+              <path
+                d="M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+              />
+            </svg>
           </button>
         </div>
 
         <div
-          className={lens ? `${styles.canvas} ${styles.canvasGlide}` : styles.canvas}
+          className={
+            lens || gliding ? `${styles.canvas} ${styles.canvasGlide}` : styles.canvas
+          }
           style={{
             width: layout.width,
             height: layout.height,
@@ -292,7 +354,13 @@ export function TreeScreen(): React.JSX.Element {
                   className={[styles.node, isMe && styles.nodeMe, lifted && styles.nodeLifted]
                     .filter(Boolean)
                     .join(' ')}
-                  style={{ '--delay': `${(index * 0.06).toFixed(2)}s` } as React.CSSProperties}
+                  style={
+                    {
+                      // Capped so a large family still finishes planting itself
+                      // in about a second instead of trickling in.
+                      '--delay': `${Math.min(index * 0.055, 1.1).toFixed(2)}s`,
+                    } as React.CSSProperties
+                  }
                   aria-expanded={isOpen}
                   onClick={(event) => {
                     if (consumedDrag()) return;
@@ -325,7 +393,7 @@ export function TreeScreen(): React.JSX.Element {
           })}
         </div>
 
-        <p className={styles.hint}>גררו להזזה · גלגלת או צביטה לזום · לחצו על אדם</p>
+        <p className={styles.hint}>גררו לשוטט · הקשה כפולה לזום · געו באדם לפתיחה</p>
 
         {overture && <TreeOverture onDone={() => setOverture(false)} />}
       </div>

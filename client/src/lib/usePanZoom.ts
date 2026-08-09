@@ -34,6 +34,8 @@ export interface PanZoom {
   /** True when the current gesture moved far enough to count as a drag. */
   consumedDrag: () => boolean;
   zoomBy: (factor: number) => void;
+  /** Zoom about a point given in viewport (client) coordinates — double-tap. */
+  zoomAtClient: (factor: number, clientX: number, clientY: number) => void;
   handlers: {
     onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
     onPointerMove: (event: React.PointerEvent<HTMLElement>) => void;
@@ -177,6 +179,14 @@ export function usePanZoom(options: PanZoomOptions = {}): PanZoom {
     [viewport.height, viewport.width, zoomAt],
   );
 
+  const zoomAtClient = useCallback(
+    (factor: number, clientX: number, clientY: number) => {
+      const rect = nodeRef.current?.getBoundingClientRect();
+      zoomAt(factor, clientX - (rect?.left ?? 0), clientY - (rect?.top ?? 0));
+    },
+    [zoomAt],
+  );
+
   const onPointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
     // Let interactive children (buttons, links, cards) handle their own input.
     if ((event.target as HTMLElement).closest('[data-no-pan]')) return;
@@ -306,6 +316,7 @@ export function usePanZoom(options: PanZoomOptions = {}): PanZoom {
     isDragging,
     consumedDrag,
     zoomBy,
+    zoomAtClient,
     handlers: {
       onPointerDown,
       onPointerMove,
