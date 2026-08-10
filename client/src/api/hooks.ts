@@ -101,6 +101,9 @@ export function usePerson(id: string | undefined): UseQueryResult<PersonDetail> 
     queryKey: queryKeys.person(id ?? ''),
     queryFn: () => request<PersonDetail>(`/people/${encodeURIComponent(id as string)}`),
     enabled: Boolean(id),
+    // Reopening the same card within half a minute serves the cached record;
+    // every save invalidates this key, so edits still refetch immediately.
+    staleTime: 30_000,
   });
 }
 
