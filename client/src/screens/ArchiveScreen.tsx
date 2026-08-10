@@ -36,7 +36,7 @@ function isKind(value: string | null): value is ArchiveKind {
 
 export function ArchiveScreen(): React.JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { openAddTreasure, openEditTreasure } = useUi();
+  const { openAddTreasure, openEditTreasure, openViewTreasure } = useUi();
   const { data: session } = useSession();
 
   const kindParam = searchParams.get('kind');
@@ -136,9 +136,19 @@ export function ArchiveScreen(): React.JSX.Element {
                     } as React.CSSProperties
                   }
                 >
+                  {/* Stretched over the whole card: tap anywhere to open the
+                      viewer. The edit button, player and download link sit
+                      above it, so they keep their own taps. */}
+                  <button
+                    type="button"
+                    className={styles.openOverlay}
+                    onClick={() => openViewTreasure(item)}
+                    aria-label={`פתיחת ${item.title}`}
+                  />
+
                   <div className={styles.thumb} style={{ height: item.tileHeight }}>
                     {isImage && src ? (
-                      <img src={src} alt={item.title} loading="lazy" />
+                      <img src={src} alt={item.title} loading="lazy" decoding="async" />
                     ) : (
                       <span className={styles.placeholderGlyph} aria-hidden="true">
                         {KIND_GLYPHS[item.kind] ?? '◇'}

@@ -1,6 +1,6 @@
 import type { ArchiveItem, ArchiveKind, TimelineEvent } from '../../../shared/types.js';
 
-import { exec, nowIso, one, query } from '../db/index.js';
+import { exec, nowIso, one, query, transact } from '../db/index.js';
 import { newId } from '../lib/ids.js';
 
 interface ArchiveRow {
@@ -51,55 +51,68 @@ const COLUMNS = `
   tile_height, created_by, created_at, archived_at
 `;
 
-/** All live item→person links, grouped. One query serves a whole listing. */
-async function itemLinks(): Promise<Map<string, string[]>> {
-  const rows = await query<LinkRow>(
-    'SELECT item_id, person_id FROM archive_item_people ORDER BY item_id',
-  );
-  const map = new Map<string, string[]>();
-  for (const row of rows) {
-    map.set(row.item_id, [...(map.get(row.item_id) ?? []), row.person_id]);
-  }
-  return map;
-}
-
-/** Replaces an item's people links wholesale, mirroring the first into person_id. */
+/**
+ * Replaces an item's people links wholesale, mirroring the first into person_id.
+ *
+ * One transaction, one multi-row insert. The first version deleted and then
+ * inserted row by row outside any transaction — a wedding photograph of twenty
+ * people cost twenty-two round trips, and a failure halfway left the links
+ * half-written. Now a crash mid-way rolls back to the links it had before.
+ */
 async function setItemPeople(itemId: string, personIds: string[]): Promise<void> {
-  await exec('DELETE FROM archive_item_people WHERE item_id = @itemId', { itemId });
-  for (const personId of personIds) {
-    await exec(
-      `INSERT INTO archive_item_people (item_id, person_id)
-       VALUES (@itemId, @personId) ON CONFLICT DO NOTHING`,
-      { itemId, personId },
-    );
-  }
-  await exec('UPDATE archive_items SET person_id = @first WHERE id = @itemId', {
-    itemId,
-    first: personIds[0] ?? null,
+  await transact(async (tx) => {
+    await tx.run('DELETE FROM archive_item_people WHERE item_id = @itemId', { itemId });
+    if (personIds.length > 0) {
+      await tx.run(
+        `INSERT INTO archive_item_people (item_id, person_id)
+         SELECT @itemId, unnest(@personIds::text[]) ON CONFLICT DO NOTHING`,
+        { itemId, personIds },
+      );
+    }
+    await tx.run('UPDATE archive_items SET person_id = @first WHERE id = @itemId', {
+      itemId,
+      first: personIds[0] ?? null,
+    });
   });
 }
+
+/** Rows as the aggregate query returns them: links folded in as an array. */
+type ArchiveRowWithPeople = ArchiveRow & { person_ids: string[] };
 
 export async function listArchiveItems(
   filter: { kind?: ArchiveKind; personId?: string } = {},
 ): Promise<ArchiveItem[]> {
-  const where = ['archived_at IS NULL'];
+  const where = ['i.archived_at IS NULL'];
   const params: Record<string, unknown> = {};
   if (filter.kind) {
-    where.push('kind = @kind');
+    where.push('i.kind = @kind');
     params['kind'] = filter.kind;
   }
   if (filter.personId) {
     where.push(
-      'id IN (SELECT item_id FROM archive_item_people WHERE person_id = @personId)',
+      'i.id IN (SELECT item_id FROM archive_item_people WHERE person_id = @personId)',
     );
     params['personId'] = filter.personId;
   }
-  const rows = await query<ArchiveRow>(
-    `SELECT ${COLUMNS} FROM archive_items WHERE ${where.join(' AND ')} ORDER BY created_at DESC`,
+  // Links come back folded into each row. The old shape fetched *every* link
+  // in the table on every listing — even a single person's four keepsakes
+  // paid for the whole archive's junction rows, and paid it again per filter.
+  const rows = await query<ArchiveRowWithPeople>(
+    `SELECT i.id, i.kind, i.title, i.year_label, i.subject, i.story, i.person_id,
+            i.media_id, i.tile_height, i.created_by, i.created_at, i.archived_at,
+            COALESCE(
+              array_agg(l.person_id ORDER BY (l.person_id <> i.person_id), l.person_id)
+                FILTER (WHERE l.person_id IS NOT NULL),
+              '{}'
+            ) AS person_ids
+       FROM archive_items i
+       LEFT JOIN archive_item_people l ON l.item_id = i.id
+      WHERE ${where.join(' AND ')}
+      GROUP BY i.id
+      ORDER BY i.created_at DESC`,
     params,
   );
-  const links = await itemLinks();
-  return rows.map((row) => toItem(row, links.get(row.id) ?? []));
+  return rows.map((row) => toItem(row, row.person_ids));
 }
 
 export async function getArchiveItem(id: string): Promise<ArchiveItem | null> {
@@ -230,34 +243,40 @@ function toEvent(row: EventRow, personIds: string[]): TimelineEvent {
   };
 }
 
+/** Same shape as setItemPeople: one transaction, one multi-row insert. */
 async function setEventPeople(eventId: string, personIds: string[]): Promise<void> {
-  await exec('DELETE FROM timeline_event_people WHERE event_id = @eventId', { eventId });
-  for (const personId of personIds) {
-    await exec(
-      `INSERT INTO timeline_event_people (event_id, person_id)
-       VALUES (@eventId, @personId) ON CONFLICT DO NOTHING`,
-      { eventId, personId },
-    );
-  }
-  await exec('UPDATE timeline_events SET person_id = @first WHERE id = @eventId', {
-    eventId,
-    first: personIds[0] ?? null,
+  await transact(async (tx) => {
+    await tx.run('DELETE FROM timeline_event_people WHERE event_id = @eventId', { eventId });
+    if (personIds.length > 0) {
+      await tx.run(
+        `INSERT INTO timeline_event_people (event_id, person_id)
+         SELECT @eventId, unnest(@personIds::text[]) ON CONFLICT DO NOTHING`,
+        { eventId, personIds },
+      );
+    }
+    await tx.run('UPDATE timeline_events SET person_id = @first WHERE id = @eventId', {
+      eventId,
+      first: personIds[0] ?? null,
+    });
   });
 }
 
 export async function listTimelineEvents(): Promise<TimelineEvent[]> {
-  const rows = await query<EventRow>(
-    `SELECT id, year, title, person_id FROM timeline_events
-      WHERE archived_at IS NULL ORDER BY year ASC`,
+  // Links folded in per row, exactly as the archive listing does it.
+  const rows = await query<EventRow & { person_ids: string[] }>(
+    `SELECT e.id, e.year, e.title, e.person_id,
+            COALESCE(
+              array_agg(l.person_id ORDER BY (l.person_id <> e.person_id), l.person_id)
+                FILTER (WHERE l.person_id IS NOT NULL),
+              '{}'
+            ) AS person_ids
+       FROM timeline_events e
+       LEFT JOIN timeline_event_people l ON l.event_id = e.id
+      WHERE e.archived_at IS NULL
+      GROUP BY e.id
+      ORDER BY e.year ASC`,
   );
-  const links = await query<EventLinkRow>(
-    'SELECT event_id, person_id FROM timeline_event_people',
-  );
-  const byEvent = new Map<string, string[]>();
-  for (const link of links) {
-    byEvent.set(link.event_id, [...(byEvent.get(link.event_id) ?? []), link.person_id]);
-  }
-  return rows.map((row) => toEvent(row, byEvent.get(row.id) ?? []));
+  return rows.map((row) => toEvent(row, row.person_ids));
 }
 
 export async function createTimelineEvent(input: {

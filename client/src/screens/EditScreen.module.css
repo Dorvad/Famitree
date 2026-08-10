@@ -139,6 +139,9 @@
 }
 
 .addPanel {
+  /* Above the tilted cards below, so the picker's dropdown overhangs them. */
+  position: relative;
+  z-index: 5;
   margin-top: 18px;
   background: var(--paper);
   border-radius: 4px 4px var(--r-lg) var(--r-lg);
@@ -219,11 +222,6 @@
 
 .input::placeholder {
   color: var(--placeholder);
-}
-
-.select {
-  composes: input;
-  padding-block: 12px;
 }
 
 .chips {

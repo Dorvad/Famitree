@@ -30,6 +30,12 @@ interface UiState {
   /** Opens the same sheet in "edit" mode, pre-filled from an existing item. */
   openEditTreasure: (item: ArchiveItem) => void;
   closeTreasure: () => void;
+
+  /** The item being read in the full-size viewer, or null when closed. */
+  viewerItem: ArchiveItem | null;
+  /** Opens the read-only viewer: the image large, the story in full. */
+  openViewTreasure: (item: ArchiveItem) => void;
+  closeViewer: () => void;
 }
 
 const UiContext = createContext<UiState | null>(null);
@@ -43,10 +49,13 @@ export function UiProvider({ children }: { children: ReactNode }): React.JSX.Ele
   const openSearch = useCallback(() => setSearchOpen(true), []);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
 
+  const [viewerItem, setViewerItem] = useState<ArchiveItem | null>(null);
+
   const openAddTreasure = useCallback((prefill: TreasurePrefill = {}) => {
     setTreasurePrefill(prefill);
     setTreasureItem(null);
     setSearchOpen(false);
+    setViewerItem(null);
     setTreasureOpen(true);
   }, []);
 
@@ -54,10 +63,19 @@ export function UiProvider({ children }: { children: ReactNode }): React.JSX.Ele
     setTreasurePrefill({});
     setTreasureItem(item);
     setSearchOpen(false);
+    setViewerItem(null);
     setTreasureOpen(true);
   }, []);
 
   const closeTreasure = useCallback(() => setTreasureOpen(false), []);
+
+  const openViewTreasure = useCallback((item: ArchiveItem) => {
+    setSearchOpen(false);
+    setTreasureOpen(false);
+    setViewerItem(item);
+  }, []);
+
+  const closeViewer = useCallback(() => setViewerItem(null), []);
 
   const value = useMemo<UiState>(
     () => ({
@@ -70,17 +88,23 @@ export function UiProvider({ children }: { children: ReactNode }): React.JSX.Ele
       openAddTreasure,
       openEditTreasure,
       closeTreasure,
+      viewerItem,
+      openViewTreasure,
+      closeViewer,
     }),
     [
       closeSearch,
       closeTreasure,
+      closeViewer,
       openAddTreasure,
       openEditTreasure,
       openSearch,
+      openViewTreasure,
       searchOpen,
       treasureItem,
       treasureOpen,
       treasurePrefill,
+      viewerItem,
     ],
   );
 

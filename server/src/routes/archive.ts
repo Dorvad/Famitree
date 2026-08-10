@@ -18,7 +18,7 @@ import {
   updateTimelineEvent,
 } from '../repos/archive.js';
 import { getMedia } from '../repos/media.js';
-import { getPerson } from '../repos/people.js';
+import { countLivingPeople } from '../repos/people.js';
 
 export const archiveRouter = Router();
 
@@ -57,11 +57,12 @@ function requestedPeople(input: {
   return undefined;
 }
 
-/** Every linked person must exist and be on the board. */
+/** Every linked person must exist and be on the board. One query for the lot. */
 async function assertPeopleExist(personIds: string[]): Promise<void> {
-  for (const personId of personIds) {
-    const person = await getPerson(personId);
-    if (!person || person.archivedAt) throw ApiError.badRequest('בן המשפחה שנבחר לא קיים.');
+  const unique = [...new Set(personIds)];
+  if (unique.length === 0) return;
+  if (await countLivingPeople(unique) !== unique.length) {
+    throw ApiError.badRequest('בן המשפחה שנבחר לא קיים.');
   }
 }
 

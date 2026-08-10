@@ -3,6 +3,10 @@
  * thing reads as one record being unfolded rather than a form appearing.
  */
 .panel {
+  /* Above the sibling cards below it: their resting-tilt transforms create
+     stacking contexts, and the picker's dropdown must overhang them. */
+  position: relative;
+  z-index: 5;
   background: var(--paper);
   border-start-start-radius: 3px;
   border-end-start-radius: 3px;
@@ -511,22 +515,12 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: flex-start;
 }
 
-.select {
+.linkPicker {
   flex: 1;
-  min-width: 180px;
-  padding: 11px 16px;
-  border-radius: var(--r-pill);
-  border: 3px solid var(--border);
-  background: var(--bg);
-  font: 400 13.5px var(--font-body);
-  color: var(--ink);
-  outline: none;
-}
-
-.select:focus {
-  border-color: var(--gen, var(--accent));
+  min-width: 200px;
 }
 
 /* ---------------------------------------------------------------- position */

@@ -73,6 +73,12 @@ CREATE TABLE IF NOT EXISTS people (
 
 CREATE INDEX IF NOT EXISTS idx_people_active ON people (archived_at);
 
+-- The tree listing reads every living person ordered by board position; a
+-- partial index in that exact order lets a large family come back without a
+-- sort step.
+CREATE INDEX IF NOT EXISTS idx_people_live_board
+  ON people (y ASC, x DESC) WHERE archived_at IS NULL;
+
 CREATE TABLE IF NOT EXISTS relationships (
   id                TEXT PRIMARY KEY,
   person_id         TEXT NOT NULL REFERENCES people (id) ON DELETE CASCADE,
@@ -120,6 +126,11 @@ CREATE TABLE IF NOT EXISTS archive_items (
 CREATE INDEX IF NOT EXISTS idx_archive_kind ON archive_items (kind, archived_at);
 CREATE INDEX IF NOT EXISTS idx_archive_created ON archive_items (created_at DESC);
 
+-- The feed's exact shape: live items, newest first. Partial, so archived rows
+-- neither bloat it nor slow it.
+CREATE INDEX IF NOT EXISTS idx_archive_live_created
+  ON archive_items (created_at DESC) WHERE archived_at IS NULL;
+
 -- A treasure can belong to a whole scene, not one sitter. \`person_id\` above
 -- survives as "the first linked person" for old callers; these rows are the
 -- truth. The backfill below copies the single-link era across and is a no-op
@@ -146,6 +157,9 @@ CREATE TABLE IF NOT EXISTS timeline_events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_timeline_year ON timeline_events (year);
+
+CREATE INDEX IF NOT EXISTS idx_timeline_live_year
+  ON timeline_events (year) WHERE archived_at IS NULL;
 
 -- Same arrangement as archive_item_people: a wedding involves two people at
 -- the very least.

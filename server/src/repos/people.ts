@@ -109,6 +109,21 @@ export async function getPerson(id: string): Promise<Person | null> {
   return row ? toPerson(row) : null;
 }
 
+/**
+ * How many of these ids belong to living (non-archived) records. One query no
+ * matter how many ids — the route that validates a treasure's people links
+ * used to ask about each person separately.
+ */
+export async function countLivingPeople(ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const row = await one<{ count: number }>(
+    `SELECT COUNT(*)::int AS count FROM people
+      WHERE id = ANY(@ids::text[]) AND archived_at IS NULL`,
+    { ids },
+  );
+  return row?.count ?? 0;
+}
+
 export async function listMilestones(personId: string): Promise<Milestone[]> {
   const rows = await query<MilestoneRow>(
     `SELECT id, person_id, year_label, title, body, sort_order, created_by, created_at
@@ -152,11 +167,15 @@ const CANVAS_CENTRE_X = 910;
 export async function suggestPosition(
   birthYear: number | null,
 ): Promise<{ x: number; y: number }> {
-  const people = await listPeople();
+  // Only the coordinates matter here; hauling every row's story text across
+  // the wire to place one node was the expensive part of adding a person.
+  const people = await query<{ x: number; y: number; generation_id: string }>(
+    'SELECT x, y, generation_id FROM people WHERE archived_at IS NULL',
+  );
   if (people.length === 0) return { x: CANVAS_CENTRE_X, y: 140 };
 
   const generationId = generationIdForYear(birthYear);
-  const sameGen = people.filter((p) => p.generationId === generationId);
+  const sameGen = people.filter((p) => p.generation_id === generationId);
 
   const lowestY = Math.max(...people.map((p) => p.y));
   const row = sameGen.length > 0 ? Math.min(...sameGen.map((p) => p.y)) : lowestY + ROW_PITCH;

@@ -392,6 +392,11 @@
 }
 
 .piece {
+  /* A button now (it opens the viewer), so it must not inherit a button's
+     centred text or shrink-to-fit width. */
+  display: block;
+  width: 100%;
+  text-align: start;
   background: var(--paper);
   border-radius: var(--r-print);
   padding: 10px 10px 13px;
@@ -444,6 +449,9 @@
 /* --------------------------------------------------------------- linking */
 
 .linkBox {
+  /* The parent picker's dropdown must overhang the tilted cards below. */
+  position: relative;
+  z-index: 5;
   background: var(--violet-wash);
   border-start-start-radius: 3px;
   border-end-start-radius: 3px;
@@ -472,18 +480,12 @@
   gap: 8px;
   margin-top: 12px;
   flex-wrap: wrap;
+  align-items: flex-start;
 }
 
-.select {
+.linkPicker {
   flex: 1;
-  min-width: 180px;
-  padding: 11px 16px;
-  border-radius: var(--r-pill);
-  border: 3px solid var(--surface);
-  background: var(--surface);
-  font: 400 13.5px var(--font-body);
-  color: var(--ink);
-  outline: none;
+  min-width: 200px;
 }
 
 /* ----------------------------------------------------------- prev / next */

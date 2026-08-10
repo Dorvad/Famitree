@@ -1,0 +1,189 @@
+/*
+ * Searchable family-member picker. The closed states — search field, chosen
+ * person — match the app's pill inputs; the open list is a small paper panel
+ * floating over whatever is below, each row ringed in its cohort colour.
+ */
+
+.root {
+  position: relative;
+  min-width: 0;
+}
+
+.inputWrap {
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  padding: 11px 16px;
+  padding-inline-end: 40px;
+  border-radius: var(--r-pill);
+  border: 3px solid var(--border);
+  background: var(--bg);
+  font: 400 13.5px var(--font-body);
+  color: var(--ink);
+  outline: none;
+  transition:
+    border-color var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
+}
+
+.input:focus {
+  border-color: var(--gen, var(--accent));
+  box-shadow: 0 0 0 4px var(--gen-wash, var(--accent-wash));
+}
+
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input::placeholder {
+  color: var(--placeholder);
+}
+
+.searchIcon {
+  position: absolute;
+  inset-inline-end: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--faint);
+  font: 400 16px var(--font-body);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------ chosen state */
+
+.selected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  padding-inline-start: 6px;
+  border-radius: var(--r-pill);
+  border: 3px solid var(--gen, var(--accent));
+  background: var(--gen-wash, var(--accent-wash));
+  animation: global(slot) 360ms var(--spring-settle) both;
+}
+
+.selectedText {
+  flex: 1;
+  min-width: 0;
+}
+
+.selectedName {
+  display: block;
+  font: 600 13px var(--font-body);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selectedMeta {
+  display: block;
+  font: 400 11px var(--font-body);
+  color: var(--muted);
+}
+
+.clear {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--muted);
+  font: 400 16px var(--font-body);
+  line-height: 1;
+  transition:
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch),
+    transform var(--t-touch) var(--ease-touch);
+}
+
+.clear:hover {
+  background: var(--paper);
+  color: var(--accent-strong);
+  transform: rotate(-90deg);
+}
+
+/* -------------------------------------------------------------- open list */
+
+.list {
+  position: absolute;
+  z-index: 30;
+  inset-inline: 0;
+  top: calc(100% + 6px);
+  max-height: 280px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  background: var(--paper);
+  border-radius: var(--r-md);
+  box-shadow: var(--lift-3);
+  border: 1px solid var(--border);
+  animation: global(unfold) 300ms var(--spring-settle) both;
+  transform-origin: top center;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  border-inline-start: 3px solid transparent;
+}
+
+.optionActive {
+  background: var(--bg);
+  border-inline-start-color: var(--option-tone, var(--accent));
+}
+
+.optionText {
+  flex: 1;
+  min-width: 0;
+}
+
+.optionName {
+  display: block;
+  font: 600 13px var(--font-body);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.optionMeta {
+  display: block;
+  font: 400 11px var(--font-body);
+  color: var(--subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.optionDot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0.85;
+}
+
+.empty {
+  padding: 14px 12px;
+  font: 300 12.5px var(--font-body);
+  color: var(--subtle);
+  text-align: center;
+}
+
+.more {
+  padding: 8px 12px 6px;
+  font: 600 11px var(--font-body);
+  color: var(--faint);
+  text-align: center;
+  border-top: 1px dashed var(--border-dashed);
+  margin-top: 4px;
+}

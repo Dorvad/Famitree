@@ -35,15 +35,28 @@ export function SearchSheet(): React.JSX.Element {
   const user = session?.user ?? null;
   const trimmed = query.trim();
 
-  const matches = useMemo(() => {
-    if (!trimmed || !tree) return [];
+  /**
+   * Rendered results are capped: past a screenful nobody scrolls, they type
+   * another letter. The count under the list says how many more there are.
+   */
+  const MAX_RESULTS = 30;
+
+  const { matches, hiddenMatches } = useMemo(() => {
+    if (!trimmed || !tree) return { matches: [], hiddenMatches: 0 };
     const needle = trimmed.toLowerCase();
-    return tree.people.filter(
+    const all = tree.people.filter(
       (person) =>
         person.fullName.toLowerCase().includes(needle) ||
         person.place.toLowerCase().includes(needle) ||
         (person.branch ?? '').toLowerCase().includes(needle),
     );
+    // Names that start with the query first — that is usually the person meant.
+    all.sort((a, b) => {
+      const aStarts = a.fullName.toLowerCase().startsWith(needle) ? 0 : 1;
+      const bStarts = b.fullName.toLowerCase().startsWith(needle) ? 0 : 1;
+      return aStarts - bStarts || a.fullName.localeCompare(b.fullName, 'he');
+    });
+    return { matches: all.slice(0, MAX_RESULTS), hiddenMatches: all.length - Math.min(all.length, MAX_RESULTS) };
   }, [tree, trimmed]);
 
   const go = (to: string) => {
@@ -161,6 +174,9 @@ export function SearchSheet(): React.JSX.Element {
           })}
           {matches.length === 0 && (
             <p className={styles.noResults}>לא מצאנו — נסו שם אחר</p>
+          )}
+          {hiddenMatches > 0 && (
+            <p className={styles.noResults}>ועוד {hiddenMatches} — הקלידו כדי לצמצם</p>
           )}
         </div>
       ) : (

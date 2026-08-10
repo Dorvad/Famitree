@@ -29,28 +29,82 @@
   background: var(--axis, var(--connector));
 }
 
+/* Every second decade gets the faintest wash, giving the drag a page rhythm. */
+.decadeStripe {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgb(120 80 40 / 3.5%);
+}
+
 .decade {
   position: absolute;
-  top: calc(var(--axis-y, 300px) + 36px);
+  top: calc(var(--axis-y, 300px) + 26px);
   transform: translateX(-50%);
   background: var(--paper);
   border-radius: 3px;
   padding: 3px 12px;
   box-shadow: var(--lift-1);
-  font: 600 12px var(--font-body);
+  font: 400 13px var(--font-display);
   color: var(--muted);
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
+/* ---------------------------------------------------------------- strings */
+
+.stems {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/*
+ * The string tying each note to its year on the thread. pathLength=1 on the
+ * element lets one dasharray serve every curve, whatever its true length;
+ * each string draws itself downward on arrival, a beat before its card lands.
+ */
+.stem {
+  fill: none;
+  stroke-width: 2px;
+  opacity: var(--stem-opacity, 0.45);
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: drawStem 520ms var(--ease-touch) forwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+@keyframes drawStem {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stem {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/*
+ * The bead on the thread, marking the true year.
+ *
+ * Centred with a negative margin rather than `translateX(-50%)`: the `plant`
+ * keyframe writes `transform` outright, so a transform-based centring is lost
+ * while the animation runs and snaps back when it ends. The canvas is
+ * deliberately LTR, so `margin-left` here is unambiguous.
+ */
 .dot {
   position: absolute;
   top: calc(var(--axis-y, 300px) + 1px);
   width: 12px;
   height: 12px;
+  margin-left: -6px;
   border-radius: 50%;
   border: 3px solid var(--surface);
-  transform: translateX(-50%);
   box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
   animation: global(plant) 620ms var(--anticipate) backwards;
   animation-delay: calc(var(--i, 0) * 60ms);
@@ -61,14 +115,18 @@
  * the event's own colour, and a resting tilt so the run of them never reads as
  * a chart. They arrive along the axis, earliest first.
  */
+/*
+ * Width and horizontal centring come from the component, because the packer
+ * spaces cards by that width and because `transform` here belongs to the
+ * entrance animation alone — see the note on `cardStyle`.
+ */
 .event {
   position: absolute;
   direction: rtl;
-  transform: translateX(-50%) rotate(var(--rest-tilt, 0deg));
-  width: 164px;
+  transform: rotate(var(--rest-tilt, 0deg));
   background: var(--paper);
   border-radius: 3px 3px var(--r-md) var(--r-md);
-  padding: 12px 15px;
+  padding: 12px 14px 13px;
   box-shadow: var(--lift-2);
   border-top: 4px solid var(--tone, var(--accent));
   text-align: start;
@@ -80,14 +138,68 @@
 }
 
 .event:hover {
-  transform: translateX(-50%) rotate(0deg) translateY(-6px) scale(1.03);
+  transform: rotate(0deg) translateY(-6px) scale(1.03);
   box-shadow: var(--lift-3);
   color: inherit;
   z-index: 3;
 }
 
+/* Portraits at the start, the year at the end, one shared baseline. */
+.eventHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.portraits {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* The people in the moment, shoulder to shoulder: each following portrait
+   tucks behind the one before it. The cohort ring the Avatar already wears
+   is what keeps the overlapping faces legible. */
+.portrait:not(:first-child) {
+  margin-inline-start: -12px;
+}
+
+/*
+ * Stands in for the faces that did not fit, and sits in the row like one.
+ *
+ * `position: relative` is load-bearing, not decoration: the Avatar is
+ * positioned, and a positioned sibling paints above an unpositioned one
+ * whatever the DOM says — so without it this chip is drawn *under* the face it
+ * follows and reads as a smudge. `direction: ltr` is the other half: in an RTL
+ * card "+3" otherwise comes out as "3+".
+ */
+.portraitMore {
+  position: relative;
+  flex: none;
+  min-width: 25px;
+  height: 25px;
+  margin-inline-start: -9px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--paper);
+  box-shadow: var(--lift-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 10px var(--font-body);
+  color: var(--muted);
+  padding: 0 3px;
+  direction: ltr;
+}
+
+/*
+ * The year is the card's anchor and never gives up room: `flex: none` is what
+ * keeps a five-person group from squeezing it off the edge.
+ */
 .eventYear {
+  flex: none;
   display: inline-block;
+  margin-inline-start: auto;
   font: 400 15px var(--font-display);
   color: var(--on-accent);
   background: var(--tone, var(--accent));
@@ -95,19 +207,36 @@
   padding: 2px 12px;
 }
 
+/*
+ * Both text blocks are clamped, and that is a layout guarantee rather than a
+ * matter of taste: the lane spacing budgets a fixed card height, so a card free
+ * to grow a fifth line is a card that reaches into the lane below it. The full
+ * text is always a tap away on the person's own page.
+ */
 .eventTitle {
   font: 400 12.5px/1.55 var(--font-body);
   color: var(--body);
-  margin-top: 6px;
+  margin-top: 8px;
   text-wrap: pretty;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
-/* Everyone the event involves, when it involves more than one. */
+/* Who the moment belongs to — and their age in it, when one person carries it. */
 .eventPeople {
   display: block;
   font: 600 10.5px var(--font-body);
   color: var(--muted);
   margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event:hover .eventPeople {
+  color: var(--tone, var(--accent-strong));
 }
 
 .fadeStart,
@@ -188,14 +317,20 @@
 /* Narrower cards and quieter chrome, so two lanes of notes and the axis all
    read comfortably on one hand's worth of screen. */
 @media (max-width: 520px) {
+  /* The width itself comes from the component, which narrows the card in step
+     with the packer's spacing. */
   .event {
-    width: 148px;
-    padding: 10px 12px;
+    padding: 10px 12px 11px;
   }
 
   .eventYear {
     font-size: 13.5px;
     padding: 2px 10px;
+  }
+
+  /* Tighter shoulders, to match the smaller faces the screen gets. */
+  .portrait:not(:first-child) {
+    margin-inline-start: -10px;
   }
 
   .eventTitle {

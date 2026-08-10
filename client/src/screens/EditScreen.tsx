@@ -15,6 +15,7 @@ import { ScrollArea } from '../components/AppShell.tsx';
 import { Avatar } from '../components/Avatar.tsx';
 import { ErrorState, InlineError, LoadingScreen } from '../components/Feedback.tsx';
 import { PersonEditor } from '../components/PersonEditor.tsx';
+import { PersonPicker } from '../components/PersonPicker.tsx';
 import { PortraitPicker } from '../components/PortraitPicker.tsx';
 import { TimelineTab } from '../components/TimelineTab.tsx';
 import { TreasuresTab } from '../components/TreasuresTab.tsx';
@@ -371,48 +372,31 @@ export function EditScreen(): React.JSX.Element {
 
                 {anchorNeeded && (
                   <div className={styles.pair}>
-                    <label className={styles.field}>
+                    <div className={styles.field}>
                       <span className={styles.label}>{anchorLabel}</span>
-                      {/*
-                        A <label> wrapping a <select> derives its accessible name
-                        from the label's text content — which includes every
-                        option. Without an explicit aria-label a screen reader
-                        announces the whole family as the field's name.
-                      */}
-                      <select
-                        className={styles.select}
+                      <PersonPicker
+                        people={anchorOptions}
+                        generations={tree.generations}
                         value={anchorA}
-                        onChange={(event) => setAnchorA(event.target.value)}
-                        aria-label={anchorLabel}
-                      >
-                        <option value="">בחרו…</option>
-                        {anchorOptions.map((candidate) => (
-                          <option key={candidate.id} value={candidate.id}>
-                            {candidate.fullName}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                        onChange={(id) => {
+                          setAnchorA(id);
+                          if (id && id === anchorB) setAnchorB('');
+                        }}
+                        label={anchorLabel}
+                      />
+                    </div>
 
                     {relationKind === 'child' && (
-                      <label className={styles.field}>
+                      <div className={styles.field}>
                         <span className={styles.label}>הורה שני (לא חובה)</span>
-                        <select
-                          className={styles.select}
+                        <PersonPicker
+                          people={anchorOptions.filter((candidate) => candidate.id !== anchorA)}
+                          generations={tree.generations}
                           value={anchorB}
-                          onChange={(event) => setAnchorB(event.target.value)}
-                          aria-label="הורה שני"
-                        >
-                          <option value="">—</option>
-                          {anchorOptions
-                            .filter((candidate) => candidate.id !== anchorA)
-                            .map((candidate) => (
-                              <option key={candidate.id} value={candidate.id}>
-                                {candidate.fullName}
-                              </option>
-                            ))}
-                        </select>
-                      </label>
+                          onChange={setAnchorB}
+                          label="הורה שני"
+                        />
+                      </div>
                     )}
                   </div>
                 )}
