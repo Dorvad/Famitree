@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import type { ArchiveItem, Milestone } from '../../../shared/types.ts';
+
 import { mediaUrl } from '../api/client.ts';
 import {
   useAddMilestone,
@@ -18,6 +20,24 @@ import { Years } from '../components/Years.tsx';
 import { generationVars, givenName, kindColours, restTilt } from '../lib/format.ts';
 import { useUi } from '../state/ui.tsx';
 import styles from './PersonScreen.module.css';
+
+/**
+ * First four-digit year in a free-text label — "סביב 1900", "1948–2009".
+ *
+ * Both stations and treasures date themselves in prose, because a family
+ * archive rarely knows the day. A year is enough to put them in order.
+ */
+function firstYear(label: string): number | null {
+  const match = /\d{4}/.exec(label);
+  if (!match) return null;
+  const year = Number(match[0]);
+  return year >= 1000 && year <= 2999 ? year : null;
+}
+
+/** One entry in the life ribbon: a station the family wrote, or a thing it kept. */
+type RibbonEntry =
+  | { sort: 'station'; id: string; year: number | null; milestone: Milestone }
+  | { sort: 'treasure'; id: string; year: number | null; item: ArchiveItem };
 
 /** Bar heights and timings for the decorative equaliser beside a recording. */
 const EQ_BARS = [
@@ -59,6 +79,42 @@ export function PersonScreen(): React.JSX.Element {
       next: people[(index + 1) % people.length],
     };
   }, [id, tree]);
+
+  /**
+   * The life ribbon: the stations the family wrote, with the things it kept
+   * slotted in among them.
+   *
+   * A page of nothing but paragraphs is a page nobody finishes, and this
+   * person's photographs and letters were already sitting in a grid at the
+   * bottom where they illustrated nothing. Dating both from their own labels
+   * puts a picture between the paragraphs, where it belongs.
+   *
+   * The stations keep the order the archive gave them — a steward's sequence is
+   * a judgement, not an accident — and each treasure slots in before the first
+   * station it predates. A treasure whose label carries no year cannot be
+   * placed by year, so it joins the end rather than being guessed at or hidden.
+   */
+  const ribbon = useMemo<RibbonEntry[]>(() => {
+    const entries: RibbonEntry[] = (person?.milestones ?? []).map((milestone) => ({
+      sort: 'station',
+      id: milestone.id,
+      year: firstYear(milestone.yearLabel),
+      milestone,
+    }));
+
+    const undated: RibbonEntry[] = [];
+    for (const item of pieces ?? []) {
+      const year = firstYear(item.yearLabel);
+      const entry: RibbonEntry = { sort: 'treasure', id: item.id, year, item };
+      if (year == null) {
+        undated.push(entry);
+        continue;
+      }
+      const at = entries.findIndex((other) => other.year != null && other.year > year);
+      entries.splice(at === -1 ? entries.length : at, 0, entry);
+    }
+    return [...entries, ...undated];
+  }, [person, pieces]);
 
   // Someone whose node is not yet joined to the tree can attach it themselves.
   const canLinkToFamily = Boolean(
@@ -162,17 +218,61 @@ export function PersonScreen(): React.JSX.Element {
         <h2 className={styles.sectionTitle}>התחנות של {firstName}</h2>
 
         <div className={styles.milestones}>
-          {person.milestones.map((milestone, index) => (
-            <article
-              key={milestone.id}
-              className={styles.milestone}
-              style={{ '--i': index } as React.CSSProperties}
-            >
-              <Years className={styles.milestoneYear}>{milestone.yearLabel}</Years>
-              <h3 className={styles.milestoneTitle}>{milestone.title}</h3>
-              {milestone.body && <p className={styles.milestoneBody}>{milestone.body}</p>}
-            </article>
-          ))}
+          {ribbon.map((entry, index) => {
+            if (entry.sort === 'station') {
+              const { milestone } = entry;
+              return (
+                <article
+                  key={entry.id}
+                  className={styles.milestone}
+                  style={{ '--i': Math.min(index, 12) } as React.CSSProperties}
+                >
+                  <Years className={styles.milestoneYear}>{milestone.yearLabel}</Years>
+                  <h3 className={styles.milestoneTitle}>{milestone.title}</h3>
+                  {milestone.body && <p className={styles.milestoneBody}>{milestone.body}</p>}
+                </article>
+              );
+            }
+
+            // A kept thing, sitting where it happened. Opens the same viewer the
+            // archive uses, so the full image and story are one tap away.
+            const { item } = entry;
+            const tone = kindColours(item.kind);
+            const src = mediaUrl(item.mediaId);
+            const hasImage = Boolean(src) && item.kind !== 'קול';
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                className={styles.relic}
+                onClick={() => openViewTreasure(item)}
+                style={
+                  {
+                    '--tone-wash': tone.wash,
+                    '--tone-text': tone.text,
+                    '--rest-tilt': restTilt(item.id, 1.1),
+                    '--i': Math.min(index, 12),
+                  } as React.CSSProperties
+                }
+              >
+                <span className={styles.relicFrame}>
+                  {hasImage && src ? (
+                    <img src={src} alt={item.title} loading="lazy" decoding="async" />
+                  ) : (
+                    <span className={styles.relicGlyph} aria-hidden="true">
+                      {item.kind.charAt(0)}
+                    </span>
+                  )}
+                  <span className={styles.relicKind}>{item.kind}</span>
+                </span>
+                <span className={styles.relicText}>
+                  <Years className={styles.relicYear}>{item.yearLabel}</Years>
+                  <span className={styles.relicTitle}>{item.title}</span>
+                  {item.story && <span className={styles.relicStory}>{item.story}</span>}
+                </span>
+              </button>
+            );
+          })}
 
           {composing ? (
             <form className={styles.memoryForm} onSubmit={submitMemory}>
@@ -227,6 +327,21 @@ export function PersonScreen(): React.JSX.Element {
               <span className={styles.addLabel}>הוסיפו זיכרון על {firstName}</span>
             </button>
           )}
+
+          {/* The treasures themselves now sit among the stations above, so the
+              way to add one belongs here rather than under a heading of its own. */}
+          <button
+            type="button"
+            className={styles.addCard}
+            onClick={() => openAddTreasure({ subject: firstName, personId: person.id })}
+          >
+            <span className={styles.addPlus} aria-hidden="true">
+              +
+            </span>
+            <span className={styles.addLabel}>
+              תצלום, מכתב או הקלטה של {firstName}
+            </span>
+          </button>
         </div>
 
         {person.audioLabel && (
@@ -257,43 +372,6 @@ export function PersonScreen(): React.JSX.Element {
           </section>
         )}
 
-        {pieces && pieces.length > 0 && (
-          <>
-            <h2 className={styles.sectionTitle}>אוצרות של {firstName}</h2>
-            <div className={styles.pieces}>
-              {pieces.map((piece, index) => {
-                const tone = kindColours(piece.kind);
-                const src = mediaUrl(piece.mediaId);
-                return (
-                  <button
-                    key={piece.id}
-                    type="button"
-                    onClick={() => openViewTreasure(piece)}
-                    className={styles.piece}
-                    style={
-                      {
-                        '--tone-wash': tone.wash,
-                        '--tone-text': tone.text,
-                        '--rest-tilt': restTilt(piece.id),
-                        '--i': index,
-                      } as React.CSSProperties
-                    }
-                  >
-                    <span className={styles.pieceThumb}>
-                      {src && piece.kind !== 'קול' ? (
-                        <img src={src} alt={piece.title} loading="lazy" decoding="async" />
-                      ) : (
-                        piece.kind.charAt(0)
-                      )}
-                    </span>
-                    <span className={styles.pieceTitle}>{piece.title}</span>
-                    <Years className={styles.pieceMeta}>{piece.yearLabel}</Years>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
 
         {previous && next && (
           <nav className={styles.pager} aria-label="מעבר בין בני המשפחה">
