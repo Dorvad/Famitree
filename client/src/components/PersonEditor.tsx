@@ -157,6 +157,44 @@ export function PersonEditor({
     }
   }, [person]);
 
+  /**
+   * What the keyboard shortcuts need, kept in a ref.
+   *
+   * `save` and `dirty` are only computed once the record has loaded, which is
+   * past this component's early returns — and a hook cannot be declared there.
+   * The ref is refreshed on every render that gets that far, so the listener
+   * below always acts on the current draft rather than on a stale closure.
+   */
+  const shortcuts = useRef<{ save: () => void; canSave: boolean; dirty: boolean }>({
+    save: () => {},
+    canSave: false,
+    dirty: false,
+  });
+
+  /**
+   * Desktop keys for a screen people spend real time in.
+   *
+   * Ctrl/⌘+S saves, and takes the shortcut away from the browser's own "save
+   * page" dialog, which is never what someone means while filling in a card.
+   *
+   * Escape closes — but only when there is nothing to lose. Discarding a
+   * half-written story because a key was pressed to dismiss something else is
+   * the kind of loss an archive cannot undo, so with unsaved changes the key
+   * does nothing and the save bar keeps saying so.
+   */
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        if (shortcuts.current.canSave) shortcuts.current.save();
+        return;
+      }
+      if (event.key === 'Escape' && !shortcuts.current.dirty) onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
   const generation = generations.find((g) => g.id === person?.generationId);
   const canEdit = user.role === 'steward' || user.personId === personId;
   const isSteward = user.role === 'steward';
@@ -245,6 +283,10 @@ export function PersonEditor({
       onError: (cause) => setNotice(cause.message),
     });
   }
+
+  // Refreshed every render so the keyboard listener above never fires against
+  // a draft that has since moved on.
+  shortcuts.current = { save, canSave, dirty };
 
   /** Everyone this person could still be linked to, minus existing links. */
   const linkCandidates = people.filter((candidate) => {
@@ -421,24 +463,6 @@ export function PersonEditor({
       </label>
 
       {notice && <InlineError>{notice}</InlineError>}
-
-      <div className={styles.saveRow}>
-        <span className={styles.saveState}>
-          {update.isPending
-            ? 'שומרים…'
-            : saved && !dirty
-              ? 'נשמר ✓'
-              : dirty
-                ? 'יש שינויים שלא נשמרו'
-                : ''}
-        </span>
-        <button type="button" className={styles.ghost} onClick={onClose}>
-          סגירה
-        </button>
-        <button type="button" className={styles.primary} onClick={save} disabled={!canSave}>
-          שמרו שינויים
-        </button>
-      </div>
 
       {/* -------------------------------------------------------- milestones */}
 
@@ -818,6 +842,33 @@ export function PersonEditor({
           )}
         </div>
       )}
+
+      {/*
+        The save bar, pinned to the foot of the panel.
+
+        An opened card runs to about three thousand pixels, and the save button
+        used to sit a third of the way down it — so correcting a detail after
+        adding a station meant scrolling back up to a button you could no longer
+        see. As the last child with `position: sticky`, it rides the bottom of
+        the screen for the whole length of the panel and settles at the end.
+      */}
+      <div className={styles.saveRow}>
+        <span className={styles.saveState}>
+          {update.isPending
+            ? 'שומרים…'
+            : saved && !dirty
+              ? 'נשמר ✓'
+              : dirty
+                ? 'יש שינויים שלא נשמרו'
+                : ''}
+        </span>
+        <button type="button" className={styles.ghost} onClick={onClose}>
+          סגירה
+        </button>
+        <button type="button" className={styles.primary} onClick={save} disabled={!canSave}>
+          שמרו שינויים
+        </button>
+      </div>
     </div>
   );
 }
