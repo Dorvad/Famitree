@@ -18,10 +18,12 @@
   transform-origin: 0 0;
 }
 
+/* The axis height comes from the component (--axis-y on the canvas), so the
+   band can size itself to whatever screen it is on. */
 .axis {
   position: absolute;
   inset-inline: 40px;
-  top: 300px;
+  top: var(--axis-y, 300px);
   height: 14px;
   border-radius: var(--r-pill);
   background: var(--axis, var(--connector));
@@ -29,7 +31,7 @@
 
 .decade {
   position: absolute;
-  top: 336px;
+  top: calc(var(--axis-y, 300px) + 36px);
   transform: translateX(-50%);
   background: var(--paper);
   border-radius: 3px;
@@ -43,7 +45,7 @@
 
 .dot {
   position: absolute;
-  top: 301px;
+  top: calc(var(--axis-y, 300px) + 1px);
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -179,4 +181,43 @@
 
 .jumpButton:active {
   transform: translateY(0) scale(0.96);
+}
+
+/* -------------------------------------------------------------- phones */
+
+/* Narrower cards and quieter chrome, so two lanes of notes and the axis all
+   read comfortably on one hand's worth of screen. */
+@media (max-width: 520px) {
+  .event {
+    width: 148px;
+    padding: 10px 12px;
+  }
+
+  .eventYear {
+    font-size: 13.5px;
+    padding: 2px 10px;
+  }
+
+  .eventTitle {
+    font-size: 12px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .hint {
+    top: 50px;
+    inset-inline-start: 22px;
+    inset-inline-end: auto;
+  }
+
+  .jump {
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .jumpButton {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
 }
