@@ -87,6 +87,14 @@ const TYPES: readonly TreasureType[] = TYPE_SHAPES.map((shape) => ({
 const EVERYONE = 'כל המשפחה';
 
 /**
+ * Chip caps for the "whose moment is this?" row. Past a screenful of chips the
+ * row stops being scannable, so the rest hide behind the name filter; anyone
+ * already selected always stays visible regardless.
+ */
+const CHIP_SEARCH_FROM = 16;
+const CHIP_CAP = 24;
+
+/**
  * Every kind has an entry, so this always resolves. The fallback exists only so
  * a future kind added to the shared list cannot crash the sheet — it keeps the
  * item's own kind rather than quietly rewriting it.
@@ -125,6 +133,7 @@ export function TreasureSheet(): React.JSX.Element {
   const [yearLabel, setYearLabel] = useState('');
   /** Everyone this treasure belongs to; empty means "כל המשפחה". */
   const [subjectIds, setSubjectIds] = useState<string[]>([]);
+  const [subjectQuery, setSubjectQuery] = useState('');
   const [story, setStory] = useState('');
   const [file, setFile] = useState<File | null>(null);
   /** Media already attached to the item being edited, kept unless replaced. */
@@ -147,6 +156,7 @@ export function TreasureSheet(): React.JSX.Element {
     setFile(null);
     setCreated(null);
     setConfirmingRemove(false);
+    setSubjectQuery('');
 
     if (treasureItem) {
       setStep(2);
@@ -192,9 +202,32 @@ export function TreasureSheet(): React.JSX.Element {
   }, [file]);
 
   const subjectOptions = useMemo(
-    () => (tree?.people ?? []).map((p) => ({ id: p.id, name: givenName(p.fullName) })),
+    () =>
+      (tree?.people ?? []).map((p) => ({
+        id: p.id,
+        name: givenName(p.fullName),
+        fullName: p.fullName,
+      })),
     [tree],
   );
+
+  /**
+   * The chips actually rendered: everyone selected, always, plus the rest
+   * filtered by the name box and capped so a large family stays a short row.
+   */
+  const subjectChips = useMemo(() => {
+    const needle = subjectQuery.trim().toLowerCase();
+    const chosen = subjectOptions.filter((o) => subjectIds.includes(o.id));
+    const rest = subjectOptions.filter(
+      (o) =>
+        !subjectIds.includes(o.id) &&
+        (!needle || o.fullName.toLowerCase().includes(needle)),
+    );
+    return {
+      visible: [...chosen, ...rest.slice(0, CHIP_CAP)],
+      hidden: Math.max(0, rest.length - CHIP_CAP),
+    };
+  }, [subjectOptions, subjectIds, subjectQuery]);
 
   const toggleSubject = (id: string): void => {
     setSubjectIds((current) =>
@@ -386,6 +419,16 @@ export function TreasureSheet(): React.JSX.Element {
               <p className={styles.fieldLabel} id="subject-label">
                 של מי הרגע הזה? אפשר לבחור כמה
               </p>
+              {subjectOptions.length > CHIP_SEARCH_FROM && (
+                <input
+                  className={styles.chipSearch}
+                  type="search"
+                  value={subjectQuery}
+                  onChange={(event) => setSubjectQuery(event.target.value)}
+                  placeholder="חפשו שם כדי לצמצם את הרשימה…"
+                  aria-label="סינון בני משפחה לפי שם"
+                />
+              )}
               <div className={styles.chips} role="group" aria-labelledby="subject-label">
                 <button
                   type="button"
@@ -399,7 +442,7 @@ export function TreasureSheet(): React.JSX.Element {
                 >
                   {EVERYONE}
                 </button>
-                {subjectOptions.map((option) => {
+                {subjectChips.visible.map((option) => {
                   const active = subjectIds.includes(option.id);
                   return (
                     <button
@@ -414,6 +457,9 @@ export function TreasureSheet(): React.JSX.Element {
                     </button>
                   );
                 })}
+                {subjectChips.hidden > 0 && (
+                  <span className={styles.chipMore}>ועוד {subjectChips.hidden} — חפשו לפי שם</span>
+                )}
               </div>
             </div>
 

@@ -13,6 +13,7 @@ import {
 import { ScrollArea } from '../components/AppShell.tsx';
 import { Avatar } from '../components/Avatar.tsx';
 import { ErrorState, InlineError, LoadingScreen } from '../components/Feedback.tsx';
+import { PersonPicker } from '../components/PersonPicker.tsx';
 import { Years } from '../components/Years.tsx';
 import { generationVars, givenName, kindColours, restTilt } from '../lib/format.ts';
 import { useUi } from '../state/ui.tsx';
@@ -33,7 +34,7 @@ export function PersonScreen(): React.JSX.Element {
   const { data: tree } = useTree();
   const { data: session } = useSession();
   const { data: pieces } = useArchive(undefined, id);
-  const { openAddTreasure } = useUi();
+  const { openAddTreasure, openViewTreasure } = useUi();
 
   const addMilestone = useAddMilestone(id ?? '');
   const addRelationship = useAddRelationship();
@@ -129,21 +130,15 @@ export function PersonScreen(): React.JSX.Element {
               בחרו מי ההורה, והקו יצויר מיד. אפשר גם לדלג ולחזור לזה בהמשך.
             </p>
             <div className={styles.linkRow}>
-              <select
-                className={styles.select}
-                value={parentId}
-                onChange={(event) => setParentId(event.target.value)}
-                aria-label="בחירת הורה"
-              >
-                <option value="">בחרו הורה…</option>
-                {tree.people
-                  .filter((candidate) => candidate.id !== person.id)
-                  .map((candidate) => (
-                    <option key={candidate.id} value={candidate.id}>
-                      {candidate.fullName}
-                    </option>
-                  ))}
-              </select>
+              <div className={styles.linkPicker}>
+                <PersonPicker
+                  people={tree.people.filter((candidate) => candidate.id !== person.id)}
+                  generations={tree.generations}
+                  value={parentId}
+                  onChange={setParentId}
+                  label="בחירת הורה"
+                />
+              </div>
               <button
                 type="button"
                 className={styles.primary}
@@ -270,9 +265,10 @@ export function PersonScreen(): React.JSX.Element {
                 const tone = kindColours(piece.kind);
                 const src = mediaUrl(piece.mediaId);
                 return (
-                  <Link
+                  <button
                     key={piece.id}
-                    to={`/archive?kind=${encodeURIComponent(piece.kind)}`}
+                    type="button"
+                    onClick={() => openViewTreasure(piece)}
                     className={styles.piece}
                     style={
                       {
@@ -285,14 +281,14 @@ export function PersonScreen(): React.JSX.Element {
                   >
                     <span className={styles.pieceThumb}>
                       {src && piece.kind !== 'קול' ? (
-                        <img src={src} alt={piece.title} loading="lazy" />
+                        <img src={src} alt={piece.title} loading="lazy" decoding="async" />
                       ) : (
                         piece.kind.charAt(0)
                       )}
                     </span>
                     <span className={styles.pieceTitle}>{piece.title}</span>
                     <Years className={styles.pieceMeta}>{piece.yearLabel}</Years>
-                  </Link>
+                  </button>
                 );
               })}
             </div>

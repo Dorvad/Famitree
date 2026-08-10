@@ -25,6 +25,7 @@ import {
 import { generationVars, givenName, kindColours } from '../lib/format.ts';
 import { useUi } from '../state/ui.tsx';
 import { InlineError, LoadingDots } from './Feedback.tsx';
+import { PersonPicker } from './PersonPicker.tsx';
 import { PortraitPicker } from './PortraitPicker.tsx';
 import styles from './PersonEditor.module.css';
 
@@ -738,19 +739,15 @@ export function PersonEditor({
             ))}
           </div>
           <div className={styles.linkRow}>
-            <select
-              className={styles.select}
-              value={linkTargetId}
-              onChange={(event) => setLinkTargetId(event.target.value)}
-              aria-label="בחירת בן משפחה"
-            >
-              <option value="">בחרו בן משפחה…</option>
-              {linkCandidates.map((candidate) => (
-                <option key={candidate.id} value={candidate.id}>
-                  {candidate.fullName}
-                </option>
-              ))}
-            </select>
+            <div className={styles.linkPicker}>
+              <PersonPicker
+                people={linkCandidates}
+                generations={generations}
+                value={linkTargetId}
+                onChange={setLinkTargetId}
+                label="בחירת בן משפחה"
+              />
+            </div>
             <button
               type="button"
               className={styles.primary}

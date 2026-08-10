@@ -14,6 +14,10 @@ import styles from './TimelineTab.module.css';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
+/** Same caps as the treasure sheet: past a screenful, chips hide behind the filter. */
+const CHIP_SEARCH_FROM = 16;
+const CHIP_CAP = 24;
+
 interface Draft {
   year: string;
   title: string;
@@ -61,6 +65,7 @@ export function TimelineTab({
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [composing, setComposing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [personQuery, setPersonQuery] = useState('');
 
   const isSteward = user.role === 'steward';
 
@@ -68,6 +73,18 @@ export function TimelineTab({
   if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
 
   const invalid = yearError(draft.year) ?? (draft.title.trim() ? null : 'צריך תיאור');
+
+  // Selected people always stay visible; the rest answer to the name filter
+  // and the cap, so a large family does not become a wall of chips.
+  const needle = personQuery.trim().toLowerCase();
+  const chosen = people.filter((p) => draft.personIds.includes(p.id));
+  const rest = people.filter(
+    (p) =>
+      !draft.personIds.includes(p.id) &&
+      (!needle || p.fullName.toLowerCase().includes(needle)),
+  );
+  const chipPeople = [...chosen, ...rest.slice(0, CHIP_CAP)];
+  const chipHidden = Math.max(0, rest.length - CHIP_CAP);
 
   const fields = (
     <>
@@ -91,6 +108,16 @@ export function TimelineTab({
           maxLength={160}
         />
       </div>
+      {people.length > CHIP_SEARCH_FROM && (
+        <input
+          className={styles.chipSearch}
+          type="search"
+          value={personQuery}
+          onChange={(event) => setPersonQuery(event.target.value)}
+          placeholder="חפשו שם כדי לצמצם את הרשימה…"
+          aria-label="סינון בני משפחה לפי שם"
+        />
+      )}
       <div className={styles.chips} role="group" aria-label="קישור לבני משפחה">
         <button
           type="button"
@@ -102,7 +129,7 @@ export function TimelineTab({
         >
           כל המשפחה
         </button>
-        {people.map((person) => {
+        {chipPeople.map((person) => {
           const active = draft.personIds.includes(person.id);
           return (
             <button
@@ -124,6 +151,9 @@ export function TimelineTab({
             </button>
           );
         })}
+        {chipHidden > 0 && (
+          <span className={styles.chipMore}>ועוד {chipHidden} — חפשו לפי שם</span>
+        )}
       </div>
     </>
   );
@@ -183,6 +213,7 @@ export function TimelineTab({
           onClick={() => {
             setDraft(EMPTY);
             setEditingId(null);
+            setPersonQuery('');
             setComposing(true);
           }}
         >
@@ -262,6 +293,7 @@ export function TimelineTab({
                     onClick={() => {
                       setComposing(false);
                       setEditingId(event.id);
+                      setPersonQuery('');
                       setDraft(draftFrom(event));
                     }}
                   >

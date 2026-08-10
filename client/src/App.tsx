@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import { TreasureSheet } from './components/TreasureSheet.tsx';
+import { TreasureViewer } from './components/TreasureViewer.tsx';
 import { AppShell } from './components/AppShell.tsx';
 import { LoadingScreen } from './components/Feedback.tsx';
 import { SearchSheet } from './components/SearchSheet.tsx';
@@ -59,6 +60,7 @@ export function App(): React.JSX.Element {
       {/* Mounted once at the root so any screen can open them. */}
       <SearchSheet />
       <TreasureSheet />
+      <TreasureViewer />
     </UiProvider>
   );
 }

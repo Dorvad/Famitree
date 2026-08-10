@@ -256,6 +256,35 @@
   gap: 8px;
 }
 
+/* The name filter above a long chip row. Slimmer than a form field on purpose. */
+.chipSearch {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--border);
+  background: var(--bg);
+  font: 400 12.5px var(--font-body);
+  color: var(--ink);
+  outline: none;
+  transition: border-color var(--t-touch) var(--ease-touch);
+}
+
+.chipSearch:focus {
+  border-color: var(--accent);
+}
+
+.chipSearch::placeholder {
+  color: var(--placeholder);
+}
+
+.chipMore {
+  align-self: center;
+  font: 600 11px var(--font-body);
+  color: var(--faint);
+  padding: 0 6px;
+}
+
 .chip {
   padding: 7px 16px;
   border-radius: var(--r-pill);
