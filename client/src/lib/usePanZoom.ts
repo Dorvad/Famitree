@@ -315,30 +315,54 @@ export function usePanZoom(options: PanZoomOptions = {}): PanZoom {
     if (pointers.current.size === 0) setIsDragging(false);
   }, []);
 
+  /**
+   * The wheel, on a canvas that zooms and on one that does not.
+   *
+   * Where zooming is on, a wheel notch zooms about the cursor. Where it is off
+   * — the timeline — the wheel *pans*, which is the whole difference between a
+   * canvas a desktop visitor can move and one that appears frozen: a mouse
+   * wheel and a trackpad swipe were being dropped on the floor, leaving
+   * click-and-drag as the only way to travel.
+   *
+   * A trackpad sends a sideways swipe as deltaX and a mouse sends everything as
+   * deltaY, so on a single-axis canvas whichever is larger drives it.
+   */
   const onWheel = useCallback(
     (event: React.WheelEvent<HTMLElement>) => {
-      if (!zoomable) return;
       const rect = nodeRef.current?.getBoundingClientRect();
-      zoomAt(
-        event.deltaY < 0 ? 1.12 : 0.89,
-        event.clientX - (rect?.left ?? 0),
-        event.clientY - (rect?.top ?? 0),
-      );
+
+      if (zoomable) {
+        zoomAt(
+          event.deltaY < 0 ? 1.12 : 0.89,
+          event.clientX - (rect?.left ?? 0),
+          event.clientY - (rect?.top ?? 0),
+        );
+        return;
+      }
+
+      const delta =
+        Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      if (delta === 0) return;
+      // Scrolling down travels *forward* through the content. On the timeline
+      // that means later years, which lie to the left — so the canvas slides
+      // right and x grows.
+      setTransformState((current) => clampTransform({ ...current, x: current.x + delta }));
     },
-    [zoomAt, zoomable],
+    [axis, clampTransform, zoomAt, zoomable],
   );
 
   /**
    * The wheel listener has to be non-passive to call preventDefault, and React's
    * onWheel is registered passively — so the page-scroll suppression is bound
-   * directly to the node.
+   * directly to the node. It applies whether the wheel zooms or pans: either
+   * way the gesture belongs to the canvas, not to the page behind it.
    */
   useEffect(() => {
-    if (!element || !zoomable) return;
+    if (!element) return;
     const block = (event: WheelEvent) => event.preventDefault();
     element.addEventListener('wheel', block, { passive: false });
     return () => element.removeEventListener('wheel', block);
-  }, [element, zoomable]);
+  }, [element]);
 
   const consumedDrag = useCallback(
     () => (gesture.current?.moved ?? 0) > DRAG_THRESHOLD,
