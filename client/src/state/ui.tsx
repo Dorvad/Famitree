@@ -36,6 +36,11 @@ interface UiState {
   /** Opens the read-only viewer: the image large, the story in full. */
   openViewTreasure: (item: ArchiveItem) => void;
   closeViewer: () => void;
+
+  /** The "how are these two related?" tool. */
+  kinshipOpen: boolean;
+  openKinship: () => void;
+  closeKinship: () => void;
 }
 
 const UiContext = createContext<UiState | null>(null);
@@ -77,6 +82,13 @@ export function UiProvider({ children }: { children: ReactNode }): React.JSX.Ele
 
   const closeViewer = useCallback(() => setViewerItem(null), []);
 
+  const [kinshipOpen, setKinshipOpen] = useState(false);
+  const openKinship = useCallback(() => {
+    setSearchOpen(false);
+    setKinshipOpen(true);
+  }, []);
+  const closeKinship = useCallback(() => setKinshipOpen(false), []);
+
   const value = useMemo<UiState>(
     () => ({
       searchOpen,
@@ -91,13 +103,19 @@ export function UiProvider({ children }: { children: ReactNode }): React.JSX.Ele
       viewerItem,
       openViewTreasure,
       closeViewer,
+      kinshipOpen,
+      openKinship,
+      closeKinship,
     }),
     [
+      closeKinship,
       closeSearch,
       closeTreasure,
       closeViewer,
+      kinshipOpen,
       openAddTreasure,
       openEditTreasure,
+      openKinship,
       openSearch,
       openViewTreasure,
       searchOpen,

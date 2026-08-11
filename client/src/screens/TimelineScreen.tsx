@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import type { Person } from '../../../shared/types.ts';
+import type { Person, TimelineEvent } from '../../../shared/types.ts';
 
 import { useTimeline, useTree } from '../api/hooks.ts';
+import { ScrollArea } from '../components/AppShell.tsx';
 import { Avatar } from '../components/Avatar.tsx';
 import { EmptyState, ErrorState, LoadingScreen } from '../components/Feedback.tsx';
 import { givenName, restTilt } from '../lib/format.ts';
@@ -11,8 +12,15 @@ import { usePanZoom } from '../lib/usePanZoom.ts';
 import { useUi } from '../state/ui.tsx';
 import styles from './TimelineScreen.module.css';
 
-/** Horizontal pixels per year for a sparse timeline. */
-const PX_PER_YEAR = 26;
+/**
+ * Horizontal pixels a year is worth, at rest.
+ *
+ * A card is 176px, so at the old 26px a year it covered nearly seven years of
+ * axis — and since most moments in a family fall within a few years of each
+ * other, almost every card ended up shoulder to shoulder with its neighbour.
+ * At this rate a card covers under four years and the run of them breathes.
+ */
+const PX_PER_YEAR = 46;
 
 /**
  * Ceiling for the density-aware scale below.
@@ -128,6 +136,130 @@ function lanePreference(laneCount: number, eventIndex: number): number[] {
 const TONES = ['var(--accent)', 'var(--amber)', 'var(--teal)', 'var(--violet)'] as const;
 
 /**
+ * Below this width the timeline stops being a canvas you drag and becomes a
+ * column you scroll. A phone is tall and narrow; a horizontal ribbon shows one
+ * card at a time and asks for a sideways gesture nobody reaches for first.
+ */
+const NARROW_QUERY = '(max-width: 760px)';
+
+function useNarrowScreen(): boolean {
+  const [narrow, setNarrow] = useState(() => window.matchMedia(NARROW_QUERY).matches);
+  useEffect(() => {
+    const query = window.matchMedia(NARROW_QUERY);
+    const onChange = () => setNarrow(query.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+  return narrow;
+}
+
+/**
+ * The timeline as a phone should have it: a thread down the page, scrolled the
+ * way everything else is scrolled.
+ *
+ * The wide screen's canvas is a ribbon you drag sideways, which on a 390px
+ * viewport shows one card at a time and answers to a gesture nobody tries
+ * first. Here the years simply run downward under the thumb, with the native
+ * scroller doing the work — no panning, no clamping, nothing to get stuck in.
+ */
+function VerticalTimeline({
+  events,
+  peopleById,
+  generationById,
+}: {
+  events: TimelineEvent[];
+  peopleById: Map<string, Person>;
+  generationById: Map<string, { id: string; color: string }>;
+}): React.JSX.Element {
+  const ordered = useMemo(() => [...events].sort((a, b) => a.year - b.year), [events]);
+
+  return (
+    <ScrollArea>
+      <div className={styles.column}>
+        <header className={styles.columnHead}>
+          <h1 className={styles.columnTitle}>ציר הזמן של המשפחה</h1>
+          <p className={styles.columnNote}>
+            {ordered[0]?.year} עד {ordered[ordered.length - 1]?.year} · גללו למטה
+          </p>
+        </header>
+
+        <ol className={styles.stack}>
+          {ordered.map((event, index) => {
+            const linked = event.personIds
+              .map((id) => peopleById.get(id))
+              .filter((p): p is Person => Boolean(p));
+            const person = linked[0];
+            const age = linked.length === 1 && person ? ageAt(person, event.year) : null;
+            const { shown, folded } = splitPortraits(linked);
+            const tone = TONES[index % TONES.length] as string;
+
+            // A decade heading whenever the years cross into a new one, so a
+            // long scroll keeps telling you where you are.
+            const decade = Math.floor(event.year / 10) * 10;
+            const previousDecade =
+              index === 0 ? null : Math.floor((ordered[index - 1] as TimelineEvent).year / 10) * 10;
+
+            const body = (
+              <>
+                <span className={styles.stackYear}>{event.year}</span>
+                <span className={styles.stackBody}>
+                  <span className={styles.stackTitle}>{event.title}</span>
+                  {linked.length > 0 && (
+                    <span className={styles.stackPeople}>
+                      {linked.map((p) => givenName(p.fullName)).join(' · ')}
+                      {age !== null && ` · בגיל ${age}`}
+                    </span>
+                  )}
+                </span>
+                {shown.length > 0 && (
+                  <span className={styles.stackFaces}>
+                    {shown.map((p, place) => (
+                      <Avatar
+                        key={p.id}
+                        person={p}
+                        generation={
+                          generationById.get(p.generationId) as
+                            | Parameters<typeof Avatar>[0]['generation']
+                            | undefined
+                        }
+                        size={place === 0 ? 40 : 32}
+                        className={styles.portrait}
+                      />
+                    ))}
+                    {folded > 0 && <span className={styles.portraitMore}>+{folded}</span>}
+                  </span>
+                )}
+              </>
+            );
+
+            return (
+              <li key={event.id} style={{ '--tone': tone } as React.CSSProperties}>
+                {/* The full four digits, not "שנות ה־90": this archive spans
+                    both the 1890s and the 1990s, and the short form names
+                    either one. */}
+                {decade !== previousDecade && (
+                  <p className={styles.stackDecade}>שנות ה־{decade}</p>
+                )}
+                <div className={styles.stackRow}>
+                  <span className={styles.stackBead} aria-hidden="true" />
+                  {person ? (
+                    <Link to={`/person/${person.id}`} className={styles.stackCard}>
+                      {body}
+                    </Link>
+                  ) : (
+                    <div className={styles.stackCard}>{body}</div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </ScrollArea>
+  );
+}
+
+/**
  * Time runs right to left, matching the reading direction: the earliest year
  * sits at the right edge and the present is away to the left.
  */
@@ -135,6 +267,7 @@ export function TimelineScreen(): React.JSX.Element {
   const { data: events, isPending, error, refetch } = useTimeline();
   const { data: tree } = useTree();
   const { openSearch } = useUi();
+  const narrow = useNarrowScreen();
 
   // The horizontal scale depends only on the events, so it is computed before
   // the pan hook (which needs the width) — the vertical arrangement, which
@@ -148,18 +281,39 @@ export function TimelineScreen(): React.JSX.Element {
     const yearSpan = Math.max(1, maxYear - minYear);
 
     /*
-     * The scale answers to how much there is to show, not only to how many
-     * years it covers. At a fixed 26px a year, a family that records a lot of
-     * moments runs out of room and its cards slide away from the years they
-     * belong to; widening the canvas so every card has a place to stand keeps
-     * them where they mean something. Time stays strictly linear either way —
-     * only the number of pixels a year is worth changes.
+     * The scale is set by the busiest stretch, not by the average.
+     *
+     * An average asks "how many events over how many years" and answers 10px a
+     * year for a family whose whole story happens in two decades — which is how
+     * cards ended up shoulder to shoulder, sliding away from the years they
+     * belong to. What actually has to fit is the tightest cluster: with N lanes
+     * running, an event and the one N places later share a row, so the years
+     * between them must be worth a card's width. Taking the worst such pair
+     * across the whole span gives every card room to stand on its own year.
+     *
+     * Time stays strictly linear — only what a year is worth in pixels changes.
      */
-    const roomNeeded = (events.length / ASSUMED_LANES) * (CARD_WIDTH + CARD_GAP);
-    const pxPerYear = Math.min(
-      MAX_PX_PER_YEAR,
-      Math.max(PX_PER_YEAR, roomNeeded / yearSpan),
-    );
+    const sortedYears = [...years].sort((a, b) => a - b);
+    const needed: number[] = [];
+    for (let i = 0; i + ASSUMED_LANES < sortedYears.length; i += 1) {
+      const gap = Math.max(
+        1,
+        (sortedYears[i + ASSUMED_LANES] as number) - (sortedYears[i] as number),
+      );
+      needed.push((CARD_WIDTH + CARD_GAP) / gap);
+    }
+    /*
+     * A high percentile, not the maximum. Two events in the same year need
+     * infinite room by this measure, and letting that one pair set the scale
+     * stretched a whole century into a desert with a single card on screen.
+     * The upper quartile serves the crowded stretches while leaving the rare
+     * simultaneous pair to the lane packer, which is what it is for.
+     */
+    needed.sort((a, b) => a - b);
+    const upperQuartile = needed.length
+      ? (needed[Math.floor(needed.length * 0.75)] as number)
+      : 0;
+    const pxPerYear = Math.min(MAX_PX_PER_YEAR, Math.max(PX_PER_YEAR, upperQuartile));
 
     const width = yearSpan * pxPerYear + EDGE * 2;
     const xOf = (year: number) => Math.round(width - EDGE - (year - minYear) * pxPerYear);
@@ -309,7 +463,7 @@ export function TimelineScreen(): React.JSX.Element {
 
   if (isPending) return <LoadingScreen label="מסדרים את ציר הזמן…" />;
   if (error) return <ErrorState error={error} onRetry={() => void refetch()} />;
-  if (!span || !layout) {
+  if (!events || events.length === 0) {
     return (
       <EmptyState
         title="אין עדיין אירועים בציר"
@@ -319,6 +473,20 @@ export function TimelineScreen(): React.JSX.Element {
       />
     );
   }
+
+  // A phone gets the column; everything else gets the canvas. Both are fed by
+  // the same query — only the shape of the reading changes.
+  if (narrow) {
+    return (
+      <VerticalTimeline
+        events={events}
+        peopleById={peopleById}
+        generationById={generationById}
+      />
+    );
+  }
+
+  if (!span || !layout) return <LoadingScreen label="מסדרים את ציר הזמן…" />;
 
   // The axis gradient walks the accent palette across the whole span.
   const axisGradient = `linear-gradient(90deg, var(--violet) 0%, var(--teal) 34%, var(--amber) 64%, var(--accent) 100%)`;
@@ -482,11 +650,26 @@ export function TimelineScreen(): React.JSX.Element {
                 aria-hidden="true"
               />
               {person ? (
+                /*
+                 * No `data-no-pan` here, deliberately.
+                 *
+                 * Marking the cards as non-pannable made the screen feel
+                 * broken: cards cover most of it, and a drag that began on one
+                 * was dropped outright, so on a busy stretch the timeline
+                 * simply would not move. The card follows the tree's rule
+                 * instead — a press that travelled is a pan, and only a press
+                 * that stayed put opens the person.
+                 */
                 <Link
                   to={`/person/${person.id}`}
                   className={styles.event}
                   style={cardStyle}
-                  data-no-pan
+                  // A link is draggable by default, and that drag competes with
+                  // the pan for the same pointer.
+                  draggable={false}
+                  onClick={(clickEvent) => {
+                    if (panZoom.consumedDrag()) clickEvent.preventDefault();
+                  }}
                 >
                   {card}
                 </Link>

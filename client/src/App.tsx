@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
+import { KinshipSheet } from './components/KinshipSheet.tsx';
 import { TreasureSheet } from './components/TreasureSheet.tsx';
 import { TreasureViewer } from './components/TreasureViewer.tsx';
 import { AppShell } from './components/AppShell.tsx';
@@ -61,6 +62,7 @@ export function App(): React.JSX.Element {
       <SearchSheet />
       <TreasureSheet />
       <TreasureViewer />
+      <KinshipSheet />
     </UiProvider>
   );
 }

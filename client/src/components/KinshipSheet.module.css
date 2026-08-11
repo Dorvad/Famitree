@@ -1,0 +1,202 @@
+/*
+ * The kinship tool. Laid out as a column at every width — on a phone because
+ * there is no room for anything else, and on a desktop because the answer
+ * *is* a vertical chain: someone, a relation, someone.
+ */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.intro {
+  font: 300 13.5px/1.6 var(--font-body);
+  color: var(--body);
+  text-wrap: pretty;
+}
+
+.pickers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.label {
+  font: 600 11.5px var(--font-body);
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+
+/* Sits between the two fields, on the axis they share. */
+.swap {
+  align-self: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--muted);
+  font: 400 15px var(--font-body);
+  box-shadow: var(--lift-1);
+  transition:
+    transform var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
+}
+
+.swap:hover:not(:disabled) {
+  color: var(--ink);
+  transform: rotate(180deg);
+}
+
+.swap:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ask {
+  padding: 13px 24px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 600 14px var(--font-body);
+  box-shadow: 0 2px 2px rgb(0 0 0 / 8%), 0 10px 22px var(--accent-shadow);
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+.ask:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.ask:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.ask:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.noLink {
+  font: 300 13px/1.65 var(--font-body);
+  color: var(--body);
+  background: var(--amber-wash);
+  border-inline-start: 4px solid var(--amber-strong);
+  border-radius: 4px;
+  padding: 12px 14px;
+  text-wrap: pretty;
+}
+
+/* ------------------------------------------------------------------ answer */
+
+.answer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: var(--paper);
+  border-radius: var(--r-lg);
+  box-shadow: var(--lift-2);
+  padding: 18px 16px;
+  animation: global(unfold) 520ms var(--spring-settle) both;
+  transform-origin: top center;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 6px 6px;
+  padding-inline-start: 6px;
+  padding-inline-end: 14px;
+  border-radius: var(--r-pill);
+  background: var(--bg);
+  transition: transform var(--t-touch) var(--ease-touch);
+}
+
+.who:hover {
+  transform: translateY(-2px);
+  color: inherit;
+}
+
+.whoName {
+  font: 600 14px var(--font-body);
+  color: var(--ink);
+}
+
+/* The word the whole tool exists to produce. */
+.relation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font: 400 clamp(19px, 5.4vw, 25px) / 1.25 var(--font-display);
+  color: var(--accent-strong);
+  text-align: center;
+  text-wrap: balance;
+}
+
+.relationArrow {
+  font: 400 16px var(--font-body);
+  color: var(--faint);
+}
+
+.detail {
+  font: 300 12.5px/1.6 var(--font-body);
+  color: var(--muted);
+  text-align: center;
+  text-wrap: pretty;
+}
+
+/* -------------------------------------------------------------------- route */
+
+.route {
+  width: 100%;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-dashed);
+}
+
+.routeLabel {
+  font: 600 11px var(--font-body);
+  color: var(--muted);
+  letter-spacing: 0.03em;
+  margin-bottom: 8px;
+}
+
+.routeList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.routeStep {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.routeVia {
+  font: 600 10px var(--font-body);
+  color: var(--gen-text, var(--accent-strong));
+  background: var(--accent-wash);
+  border-radius: 3px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+.routeName {
+  font: 600 12px var(--font-body);
+  color: var(--ink);
+  white-space: nowrap;
+}

@@ -52,6 +52,13 @@ export function Avatar({
           alt={person.fullName}
           loading="lazy"
           decoding="async"
+          /*
+           * An image is draggable by default, and this one sits inside surfaces
+           * you pan with the pointer — the tree and the timeline. Starting a
+           * drag on a face handed the gesture to the browser's own image-drag
+           * and the canvas stopped dead a few pixels in.
+           */
+          draggable={false}
         />
       ) : (
         person.initial

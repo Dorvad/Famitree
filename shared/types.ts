@@ -149,6 +149,16 @@ export interface SessionResponse {
   inviteRequired: boolean;
   /** True when unauthenticated visitors may read the archive. */
   publicRead: boolean;
+  /**
+   * True on an open archive: everyone who has the link reads and edits, and
+   * there is no such thing as signing in.
+   *
+   * The client needs this told to it rather than inferred. On an open archive
+   * every visitor already arrives carrying full rights, so "is there a user?"
+   * cannot distinguish a family member from an open door — and the difference
+   * decides whether the interface talks about accounts at all.
+   */
+  open: boolean;
 }
 
 /* ---------------------------------------------------------------- requests */

@@ -142,12 +142,27 @@ API comes back as `problems`; one that only costs uploads comes back as a
 `warning`, because an archive should not refuse to show the family tree over a
 photograph store that has not been connected yet.
 
-**The archive is open by default.** Anyone with the link reads it and
-contributes to it — no account, no code, no roles. That is deliberate for an
-archive still being built: the alternative is that its author cannot look at
-their own work without logging in, and every relative needs onboarding before
-they can add a photograph. The URL is the only thing between a stranger and the
-family's records, so treat the link as the secret.
+**The archive is open, and that is the settled decision.** Anyone with the link
+reads it and edits it — no account, no code, no roles, and no such thing as a
+guest. The link is shared with the family, and a relative who spots a wrong year
+on their own card, or on a cousin's, fixes it there and then. The alternative
+was that its author could not look at their own work without logging in and
+every relative needed onboarding before they could add a photograph.
+
+Because everyone can edit, the interface keeps the editing quiet rather than
+absent: there is no `עריכה` tab over the tree, the way into the workshop is the
+menu behind the header's one button, and a person's page offers a muted
+`עריכת הכרטיס` rather than a filled button competing with their portrait. A
+visitor who came only to read is never handed a toolbar; a relative who came to
+correct something finds it in one tap.
+
+**The URL is the only thing between a stranger and the family's records, so
+treat the link as the secret.** Two things follow from that and are worth
+knowing. Nothing is hard-deleted — people, memories, treasures and timeline
+events all keep a tombstone and can be restored — *except* a family link, which
+is a real row deletion; removing one therefore asks for confirmation first.
+And every contribution is attributed to one shared hand rather than to a person,
+so the archive records that something changed but not who changed it.
 
 **When you want that to change, set `ACCESS=invite`.** Nothing was removed to
 make the archive open. That one variable restores the whole arrangement:

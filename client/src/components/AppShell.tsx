@@ -12,7 +12,14 @@ const TABS = [
   { to: '/archive', label: 'הארכיון', end: false },
 ] as const;
 
-/** Shown only to signed-in members — there is nothing to edit as a guest. */
+/**
+ * The workshop's tab, kept for invite-mode deployments where signing in is
+ * what earns it.
+ *
+ * On an open archive it is deliberately absent: everyone can edit, so a tab
+ * saying so would sit over the tree for every visitor who only came to look.
+ * The way in is the menu, one button away — present, not advertised.
+ */
 const EDIT_TAB = { to: '/edit', label: 'עריכה' } as const;
 
 export function AppShell({ children }: { children: React.ReactNode }): React.JSX.Element {
@@ -22,6 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.JSX
   const location = useLocation();
 
   const user = session?.user ?? null;
+  const openArchive = session?.open ?? false;
   const person = user?.personId
     ? tree?.people.find((p) => p.id === user.personId)
     : undefined;
@@ -64,7 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }): React.JSX
                 {tab.label}
               </NavLink>
             ))}
-            {user && (
+            {user && !openArchive && (
               <NavLink
                 to={EDIT_TAB.to}
                 className={({ isActive }) =>
@@ -77,7 +85,8 @@ export function AppShell({ children }: { children: React.ReactNode }): React.JSX
           </nav>
 
           <div className={styles.actions}>
-            {user ? (
+            {/* An open archive has no accounts, so the header names nobody. */}
+            {openArchive ? null : user ? (
               person ? (
                 <Link to={`/person/${person.id}`} className={styles.identity}>
                   <Avatar person={person} generation={generation} size={30} />
