@@ -292,6 +292,108 @@
 
 /* --------------------------------------------------------------- card file */
 
+/* ------------------------------------------------------------- card filter */
+
+/*
+ * Sticky, because it is the way back out of a long card file: scroll deep into
+ * the drawer, and the search field is still there to jump somewhere else.
+ */
+.filterRow {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 26px;
+  padding: 8px 0;
+  background: var(--bg);
+}
+
+/* Holds the icon against the field itself rather than the whole row, so the
+   match count beside it cannot end up underneath the glyph. */
+.filterField {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.filterInput {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 18px;
+  padding-inline-end: 42px;
+  border-radius: var(--r-pill);
+  border: 3px solid var(--border);
+  background: var(--surface);
+  font: 400 13.5px var(--font-body);
+  color: var(--ink);
+  outline: none;
+  transition:
+    border-color var(--t-touch) var(--ease-touch),
+    box-shadow var(--t-touch) var(--ease-touch);
+}
+
+.filterInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-wash);
+}
+
+.filterInput::placeholder {
+  color: var(--placeholder);
+}
+
+/* The field keeps type="search" for the semantics and the on-screen keyboard,
+   but draws its own clear control — see .filterClear. */
+.filterInput::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.filterIcon {
+  position: absolute;
+  inset-inline-end: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--faint);
+  font: 400 17px var(--font-body);
+  pointer-events: none;
+}
+
+.filterClear {
+  position: absolute;
+  inset-inline-end: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--muted);
+  font: 400 17px var(--font-body);
+  line-height: 1;
+  transition:
+    background var(--t-touch) var(--ease-touch),
+    color var(--t-touch) var(--ease-touch);
+}
+
+.filterClear:hover {
+  background: var(--accent-wash);
+  color: var(--accent-strong);
+}
+
+.filterCount {
+  flex: none;
+  font: 600 11.5px var(--font-body);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.filterEmpty {
+  font: 300 13px/1.6 var(--font-body);
+  color: var(--subtle);
+  padding: 18px 4px;
+}
+
 .group {
   margin-top: 30px;
 }

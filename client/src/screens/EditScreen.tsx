@@ -88,6 +88,7 @@ export function EditScreen(): React.JSX.Element {
   const [anchorB, setAnchorB] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [filter, setFilter] = useState('');
 
   /**
    * Landing on /edit/people/:id — from the lens's עריכה link, or any deep
@@ -118,11 +119,31 @@ export function EditScreen(): React.JSX.Element {
     return () => window.clearTimeout(timer);
   }, [openId, tree]);
 
-  /** People grouped by cohort, oldest cohort first, oldest person first. */
+  /**
+   * People grouped by cohort, oldest cohort first, oldest person first —
+   * narrowed to the filter, if one is typed.
+   *
+   * The card file is the only way into an editor, so on a family of any size
+   * "open Miriam's card" meant scrolling past everyone born before her. The
+   * filter searches the same three fields as the rest of the app, and always
+   * keeps the card that is currently open: typing must not pull the record you
+   * are editing out from under you.
+   */
   const groups = useMemo(() => {
     if (!tree) return [];
+    const needle = filter.trim().toLowerCase().replace(/[׳״'"]/g, '');
+    const matches = (person: Person) => {
+      if (!needle) return true;
+      if (person.id === openId) return true;
+      const haystack = `${person.fullName} ${person.place} ${person.branch ?? ''}`
+        .toLowerCase()
+        .replace(/[׳״'"]/g, '');
+      return haystack.includes(needle);
+    };
+
     const byGeneration = new Map<string, Person[]>();
     for (const person of tree.people) {
+      if (!matches(person)) continue;
       byGeneration.set(person.generationId, [
         ...(byGeneration.get(person.generationId) ?? []),
         person,
@@ -139,7 +160,10 @@ export function EditScreen(): React.JSX.Element {
             a.fullName.localeCompare(b.fullName, 'he'),
         ),
       }));
-  }, [tree]);
+  }, [filter, openId, tree]);
+
+  /** How many people the filter is currently showing, for the empty state. */
+  const shownCount = groups.reduce((total, group) => total + group.people.length, 0);
 
   const archived = useMemo(
     () => (allPeople ?? []).filter((person) => person.archivedAt !== null),
@@ -440,6 +464,49 @@ export function EditScreen(): React.JSX.Element {
         )}
 
         {/* ------------------------------------------------------- card file */}
+
+        {tree.people.length > 8 && (
+          <div className={styles.filterRow}>
+            <span className={styles.filterField}>
+              <input
+                className={styles.filterInput}
+                type="search"
+                value={filter}
+                onChange={(event) => setFilter(event.target.value)}
+                placeholder="חפשו בכרטיסייה — שם, מקום או ענף…"
+                aria-label="חיפוש בכרטיסייה"
+              />
+              {/* One control, two states: the glass while the field is empty,
+                  a way out of the filter once something is typed. The browser's
+                  own clear button is hidden in CSS so the two do not collide. */}
+              {filter ? (
+                <button
+                  type="button"
+                  className={styles.filterClear}
+                  onClick={() => setFilter('')}
+                  aria-label="ניקוי החיפוש"
+                >
+                  ×
+                </button>
+              ) : (
+                <span className={styles.filterIcon} aria-hidden="true">
+                  ⌕
+                </span>
+              )}
+            </span>
+            {filter.trim() && (
+              <span className={styles.filterCount}>
+                {shownCount} מתוך {tree.people.length}
+              </span>
+            )}
+          </div>
+        )}
+
+        {filter.trim() && shownCount === 0 && (
+          <p className={styles.filterEmpty}>
+            לא מצאנו אף אחד בשם הזה. נסו שם אחר, מקום או ענף.
+          </p>
+        )}
 
         {groups.map(({ generation, people }) => (
           <section key={generation.id} className={styles.group} style={generationVars(generation)}>
