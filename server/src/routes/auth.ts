@@ -50,6 +50,7 @@ authRouter.get('/session', async (req, res) => {
     user: req.user ?? null,
     inviteRequired,
     publicRead: env.publicRead,
+    open: env.isOpen,
   };
   res.json(body);
 });
@@ -89,7 +90,7 @@ authRouter.post('/join', joinLimiter, async (req, res) => {
   });
 
   issueSession(res, user.id);
-  res.status(201).json({ user, inviteRequired, publicRead: env.publicRead } satisfies SessionResponse);
+  res.status(201).json({ user, inviteRequired, publicRead: env.publicRead, open: env.isOpen } satisfies SessionResponse);
 });
 
 authRouter.post('/logout', async (_req, res) => {
@@ -107,5 +108,5 @@ authRouter.post('/bind', requireAuth, async (req, res) => {
     if (!person || person.archivedAt) throw ApiError.notFound('לא מצאנו את בן המשפחה הזה.');
   }
   const user = await bindUserToPerson(req.user!.id, personId);
-  res.json({ user, inviteRequired, publicRead: env.publicRead } satisfies SessionResponse);
+  res.json({ user, inviteRequired, publicRead: env.publicRead, open: env.isOpen } satisfies SessionResponse);
 });

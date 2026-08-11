@@ -25,7 +25,7 @@ interface Tile {
  * only navigation, so every destination has to be reachable from here.
  */
 export function SearchSheet(): React.JSX.Element {
-  const { searchOpen, closeSearch, openAddTreasure } = useUi();
+  const { searchOpen, closeSearch, openAddTreasure, openKinship } = useUi();
   const { data: tree } = useTree();
   const { data: session } = useSession();
   const logout = useLogout();
@@ -33,6 +33,11 @@ export function SearchSheet(): React.JSX.Element {
   const [query, setQuery] = useState('');
 
   const user = session?.user ?? null;
+  /**
+   * On an open archive there are no accounts, so the menu says nothing about
+   * them: no name to show, nothing to sign out of, and no door to knock on.
+   */
+  const openArchive = session?.open ?? false;
   const trimmed = query.trim();
 
   /**
@@ -91,44 +96,53 @@ export function SearchSheet(): React.JSX.Element {
       fg: 'var(--amber-strong)',
       onSelect: () => go('/archive'),
     },
-    user
+    {
+      key: 'kinship',
+      title: 'מה הקשר?',
+      note: 'בין שני בני משפחה',
+      icon: '⁂',
+      bg: 'var(--teal-wash)',
+      fg: 'var(--teal-strong)',
+      onSelect: openKinship,
+    },
+    /*
+     * The way into editing.
+     *
+     * It lives here rather than in the header, which is the whole of "somewhat
+     * hidden": a visitor reading the tree is never shown a workshop, and a
+     * relative who came to correct something finds it behind the one button
+     * that is always on screen. Muted colours on purpose — it is a door, not an
+     * invitation.
+     */
+    openArchive
       ? {
           key: 'edit',
           title: 'סדנת האילן',
-          note: 'אנשים ומידע',
+          note: 'לתקן ולהוסיף',
           icon: '✎',
-          bg: 'var(--teal-wash)',
-          fg: 'var(--teal-strong)',
+          bg: 'var(--surface)',
+          fg: 'var(--muted)',
           onSelect: () => go('/edit'),
         }
-      : {
-          key: 'timeline',
-          title: 'ציר הזמן',
-          note: 'לפי שנים',
-          icon: '⇢',
-          bg: 'var(--teal-wash)',
-          fg: 'var(--teal-strong)',
-          onSelect: () => go('/timeline'),
-        },
-    user && myPerson
-      ? {
-          key: 'me',
-          title: givenName(user.displayName),
-          note: 'הענף שלי',
-          icon: myPerson.initial,
-          bg: 'var(--violet-wash)',
-          fg: 'var(--violet-strong)',
-          onSelect: () => go(`/person/${myPerson.id}`),
-        }
-      : {
-          key: 'login',
-          title: user ? givenName(user.displayName) : 'מי אני?',
-          note: user ? 'חברו את עצמכם לאילן' : 'כניסה בשם',
-          icon: '✧',
-          bg: 'var(--violet-wash)',
-          fg: 'var(--violet-strong)',
-          onSelect: () => go('/login'),
-        },
+      : user && myPerson
+        ? {
+            key: 'me',
+            title: givenName(user.displayName),
+            note: 'הענף שלי',
+            icon: myPerson.initial,
+            bg: 'var(--violet-wash)',
+            fg: 'var(--violet-strong)',
+            onSelect: () => go(`/person/${myPerson.id}`),
+          }
+        : {
+            key: 'login',
+            title: user ? givenName(user.displayName) : 'מי אני?',
+            note: user ? 'חברו את עצמכם לאילן' : 'כניסה בשם',
+            icon: '✧',
+            bg: 'var(--violet-wash)',
+            fg: 'var(--violet-strong)',
+            onSelect: () => go('/login'),
+          },
   ];
 
   return (
@@ -226,7 +240,8 @@ export function SearchSheet(): React.JSX.Element {
             </div>
           </div>
 
-          {user && (
+          {/* Nothing to sign out of on an open archive. */}
+          {user && !openArchive && (
             <button
               type="button"
               className={styles.signOut}

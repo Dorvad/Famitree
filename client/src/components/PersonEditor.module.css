@@ -482,6 +482,46 @@
   transform: rotate(-90deg);
 }
 
+/* The two-step confirmation on removing a link. Wraps on a phone rather than
+   squeezing the name it belongs to. */
+.linkConfirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.linkConfirmNote {
+  font: 600 11px var(--font-body);
+  color: var(--body);
+}
+
+.linkConfirmNo {
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font: 600 11px var(--font-body);
+  color: var(--muted);
+}
+
+.linkConfirmNo:hover {
+  color: var(--ink);
+}
+
+.linkConfirmYes {
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  background: var(--accent-strong);
+  color: var(--on-accent);
+  font: 600 11px var(--font-body);
+  white-space: nowrap;
+}
+
+.linkConfirmYes:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .linkEmpty {
   font: 300 12.5px var(--font-body);
   color: var(--subtle);

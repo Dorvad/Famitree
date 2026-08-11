@@ -11,21 +11,31 @@
   flex-wrap: wrap;
 }
 
+/*
+ * Quiet on purpose.
+ *
+ * Everyone can edit now, so this appears on every card for every visitor — and
+ * as a filled accent button it was the loudest thing on a page whose subject is
+ * a person. It reads as a tool a relative can find, not as the page's headline
+ * action.
+ */
 .editLink {
   margin-inline-start: auto;
-  padding: 7px 18px;
+  padding: 7px 16px;
   border-radius: var(--r-pill);
-  background: var(--gen, var(--accent));
-  color: var(--on-accent);
+  background: var(--surface);
+  color: var(--muted);
   font: 600 12.5px var(--font-body);
-  box-shadow: 0 2px 2px rgb(0 0 0 / 8%), 0 8px 18px var(--gen-shadow, var(--accent-shadow));
+  box-shadow: var(--lift-1);
   white-space: nowrap;
-  transition: transform var(--t-touch) var(--ease-touch);
+  transition:
+    color var(--t-touch) var(--ease-touch),
+    transform var(--t-touch) var(--ease-touch);
 }
 
 .editLink:hover {
-  color: var(--on-accent);
-  transform: translateY(-3px) rotate(-1deg);
+  color: var(--ink);
+  transform: translateY(-2px);
 }
 
 .back {

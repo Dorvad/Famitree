@@ -61,8 +61,10 @@ export function TreeOverture({
       {/* data-no-pan: without it the canvas's pan gesture captures the
           pointer on the way down and the button never receives its click. */}
       <div className={styles.plate} data-no-pan>
+        {/* No greeting by name on an open archive: there is no account behind
+            the visitor, and "שלום, אורח" greets nobody. */}
         <p className={styles.badge}>
-          {user
+          {user && !(session?.open ?? false)
             ? `שלום, ${givenName(user.displayName)} — טוב שחזרתם`
             : 'ארכיון משפחתי חי'}
         </p>

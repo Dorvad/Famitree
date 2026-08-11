@@ -114,6 +114,8 @@ export function PersonEditor({
   const [linkType, setLinkType] = useState<RelationshipType | 'child'>('spouse');
   const [linkTargetId, setLinkTargetId] = useState('');
   const [confirmingArchive, setConfirmingArchive] = useState(false);
+  /** Relationship id awaiting a "yes, remove it" — see linkRow. */
+  const [confirmingUnlink, setConfirmingUnlink] = useState<string | null>(null);
 
   /**
    * The record this draft was seeded from, so a refetch can tell "the same
@@ -152,6 +154,7 @@ export function PersonEditor({
       setNotice(null);
       setSaved(false);
       setConfirmingArchive(false);
+      setConfirmingUnlink(null);
       setComposingMilestone(false);
       setEditingMilestoneId(null);
     }
@@ -313,25 +316,63 @@ export function PersonEditor({
     });
   }
 
+  /**
+   * One family link, with removal behind a confirmation.
+   *
+   * Severing a link is the one edit in the archive that cannot be undone —
+   * people, memories and treasures all keep a tombstone, a relationship row is
+   * deleted outright. That was survivable while removing one took a steward;
+   * now that anyone with the link can edit, and does it with a thumb, a single
+   * stray tap would quietly cut a branch off the tree with no way back. So it
+   * asks first.
+   */
   const linkRow = (
     entry: { rel: Relationship; person: Person },
     kind: string,
-  ): React.JSX.Element => (
-    <li key={entry.rel.id} className={styles.linkItem}>
-      <span className={styles.linkKind}>{kind}</span>
-      <span className={styles.linkName}>{entry.person.fullName}</span>
-      {isSteward && (
-        <button
-          type="button"
-          className={styles.linkRemove}
-          onClick={() => removeRelationship.mutate(entry.rel.id)}
-          aria-label={`הסרת הקשר עם ${givenName(entry.person.fullName)}`}
-        >
-          ×
-        </button>
-      )}
-    </li>
-  );
+  ): React.JSX.Element => {
+    const confirming = confirmingUnlink === entry.rel.id;
+    return (
+      <li key={entry.rel.id} className={styles.linkItem}>
+        <span className={styles.linkKind}>{kind}</span>
+        <span className={styles.linkName}>{entry.person.fullName}</span>
+        {canEdit &&
+          (confirming ? (
+            <span className={styles.linkConfirm}>
+              <span className={styles.linkConfirmNote}>להסיר את הקשר?</span>
+              <button
+                type="button"
+                className={styles.linkConfirmNo}
+                onClick={() => setConfirmingUnlink(null)}
+              >
+                לא
+              </button>
+              <button
+                type="button"
+                className={styles.linkConfirmYes}
+                disabled={removeRelationship.isPending}
+                onClick={() =>
+                  removeRelationship.mutate(entry.rel.id, {
+                    onSuccess: () => setConfirmingUnlink(null),
+                    onError: (cause) => setNotice(cause.message),
+                  })
+                }
+              >
+                כן, הסירו
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              className={styles.linkRemove}
+              onClick={() => setConfirmingUnlink(entry.rel.id)}
+              aria-label={`הסרת הקשר עם ${givenName(entry.person.fullName)}`}
+            >
+              ×
+            </button>
+          ))}
+      </li>
+    );
+  };
 
   return (
     <div className={styles.panel} style={generationVars(generation)}>
