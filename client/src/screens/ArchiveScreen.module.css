@@ -95,6 +95,16 @@
  * the feed reads as loose photographs rather than a grid of tiles.
  */
 .card {
+  /*
+   * `contain: layout paint` — but not `content-visibility`.
+   *
+   * The feed is a two-column flow, and a column has to measure everything it
+   * holds in order to balance, so skipping off-screen tiles there breaks the
+   * layout rather than speeding it up. Containment is the part that still
+   * applies: a tile's own contents cannot affect anything outside its box, so a
+   * change inside one tile is re-laid-out alone instead of re-flowing the feed.
+   */
+  contain: layout paint;
   position: relative;
   break-inside: avoid;
   margin-bottom: 20px;
@@ -309,5 +319,58 @@
 
   .wrap {
     padding-inline: 28px;
+  }
+}
+
+/* ------------------------------------------------------------------ phones */
+
+@media (max-width: 560px) {
+  .wrap {
+    padding: 12px 14px 32px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  /*
+   * Seven filters wrapped onto two rows and pushed the add button onto a third,
+   * so a third of a phone's first screen was toolbar. They travel in one
+   * scrollable row instead — the tabs of a card file, which is what they are
+   * drawn as anyway.
+   */
+  .filters {
+    order: 3;
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    /* Bleed to the edges so the row reads as continuing off-screen. */
+    margin-inline: -14px;
+    padding-inline: 14px;
+  }
+
+  .filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter {
+    flex: none;
+  }
+
+  .add {
+    order: 2;
+    padding: 8px 16px;
+    font-size: 12.5px;
+  }
+
+  .feed {
+    column-gap: 12px;
+    margin-top: 14px;
+  }
+
+  .card {
+    margin-bottom: 14px;
   }
 }

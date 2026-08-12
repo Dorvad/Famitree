@@ -388,6 +388,14 @@
   white-space: nowrap;
 }
 
+/* Marks where the drawer continues, and is what triggers the next page. */
+.moreCards {
+  font: 600 12px var(--font-body);
+  color: var(--faint);
+  text-align: center;
+  padding: 22px 4px;
+}
+
 .filterEmpty {
   font: 300 13px/1.6 var(--font-body);
   color: var(--subtle);
@@ -607,12 +615,67 @@
     grid-template-columns: 1fr;
   }
 
+  /*
+   * On a phone the workshop spent most of the first screen introducing itself:
+   * a title, a subtitle, a link back to the tree, three tabs and a tall dashed
+   * panel, before a single record. The chrome is trimmed to what a small screen
+   * can spare so the card file starts near the top, where the work is.
+   */
+  .wrap {
+    padding: 12px 14px 48px;
+  }
+
   .header {
-    align-items: flex-start;
-    flex-direction: column;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  /* The tabs below say what this screen is; the sentence is desktop comfort. */
+  .subtitle {
+    display: none;
   }
 
   .headerLink {
-    margin-inline-start: 0;
+    margin-inline-start: auto;
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+
+  .tabs {
+    margin-top: 12px;
+  }
+
+  .tab {
+    padding: 9px 16px 8px;
+    font-size: 13px;
+  }
+
+  /* One line instead of a panel: the same target, a third of the height. */
+  .addSlot {
+    margin-top: 12px;
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .addPlus {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+  }
+
+  .addSlotTitle {
+    font-size: 14px;
+  }
+
+  .addSlotNote {
+    display: none;
+  }
+
+  .filterRow {
+    margin-top: 14px;
   }
 }

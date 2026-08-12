@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import { KinshipSheet } from './components/KinshipSheet.tsx';
+import { RootsIntro } from './components/RootsIntro.tsx';
 import { TreasureSheet } from './components/TreasureSheet.tsx';
 import { TreasureViewer } from './components/TreasureViewer.tsx';
 import { AppShell } from './components/AppShell.tsx';
@@ -39,30 +40,34 @@ function ToTree(): React.JSX.Element {
 export function App(): React.JSX.Element {
   return (
     <UiProvider>
-      <AppShell>
-        <Suspense fallback={<LoadingScreen />}>
-          <Routes>
-            <Route path="/" element={<TreeScreen />} />
-            <Route path="/login" element={<LoginScreen />} />
-            <Route path="/timeline" element={<TimelineScreen />} />
-            <Route path="/archive" element={<ArchiveScreen />} />
-            <Route path="/person/:id" element={<PersonScreen />} />
-            <Route path="/edit" element={<EditScreen />} />
-            <Route path="/edit/:tab" element={<EditScreen />} />
-            <Route path="/edit/:tab/:id" element={<EditScreen />} />
-            <Route path="/tree" element={<ToTree />} />
-            {/* The design called this screen "the map"; keep the old path working. */}
-            <Route path="/map" element={<ToTree />} />
-            <Route path="*" element={<NotFoundScreen />} />
-          </Routes>
-        </Suspense>
-      </AppShell>
+      {/* The mark holds the door while the tree and the session load behind
+          it — see RootsIntro for what decides when it opens. */}
+      <RootsIntro>
+        <AppShell>
+          <Suspense fallback={<LoadingScreen />}>
+            <Routes>
+              <Route path="/" element={<TreeScreen />} />
+              <Route path="/login" element={<LoginScreen />} />
+              <Route path="/timeline" element={<TimelineScreen />} />
+              <Route path="/archive" element={<ArchiveScreen />} />
+              <Route path="/person/:id" element={<PersonScreen />} />
+              <Route path="/edit" element={<EditScreen />} />
+              <Route path="/edit/:tab" element={<EditScreen />} />
+              <Route path="/edit/:tab/:id" element={<EditScreen />} />
+              <Route path="/tree" element={<ToTree />} />
+              {/* The design called this screen "the map"; keep the old path working. */}
+              <Route path="/map" element={<ToTree />} />
+              <Route path="*" element={<NotFoundScreen />} />
+            </Routes>
+          </Suspense>
+        </AppShell>
 
-      {/* Mounted once at the root so any screen can open them. */}
-      <SearchSheet />
-      <TreasureSheet />
-      <TreasureViewer />
-      <KinshipSheet />
+        {/* Mounted once at the root so any screen can open them. */}
+        <SearchSheet />
+        <TreasureSheet />
+        <TreasureViewer />
+        <KinshipSheet />
+      </RootsIntro>
     </UiProvider>
   );
 }

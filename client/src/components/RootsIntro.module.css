@@ -1,0 +1,135 @@
+/*
+ * The loading curtain. It paints the same ground the app does, so when it
+ * dissolves the page underneath is already the right colour and only the mark
+ * itself goes.
+ */
+
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The curtain owns the pointer while it is up; nothing behind it is ready. */
+  touch-action: none;
+  user-select: none;
+}
+
+.leaving {
+  animation: dissolve 380ms var(--ease-touch) forwards;
+}
+
+/*
+ * The hand-off. The mark drifts up and opens a little as it goes, so the app
+ * arrives from behind it rather than replacing it — the difference between a
+ * transition and a cut.
+ */
+@keyframes dissolve {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.045);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaving {
+    animation: fadeOnly 380ms linear forwards;
+  }
+
+  @keyframes fadeOnly {
+    to {
+      opacity: 0;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------- stage */
+
+/*
+ * The mark is a square, and every part of it is positioned as a percentage of
+ * that square — which is what lets one set of numbers, taken straight from the
+ * original composition, serve a phone and a desktop alike.
+ */
+.stage {
+  position: relative;
+  width: min(74vmin, 460px);
+  height: min(74vmin, 460px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.halo {
+  position: absolute;
+  inset: -38%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(238 68 51 / 10%) 0%, rgba(0, 0, 0, 0) 62%);
+  pointer-events: none;
+}
+
+.square {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 62%;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+.tree {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* The ground the mark stands on, arriving with the canopy. */
+.groundShadow {
+  position: absolute;
+  left: 18%;
+  top: 80%;
+  width: 64%;
+  height: 9%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(70 52 38 / 10%) 0%, rgba(0, 0, 0, 0) 70%);
+  filter: blur(6px);
+}
+
+/* The first thing on screen: a seed of warm light at the base. */
+.seed {
+  position: absolute;
+  left: 50%;
+  top: 76%;
+  width: 13.4%;
+  height: 13.4%;
+  margin-left: -6.7%;
+  margin-top: -6.7%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(238 68 51 / 10%) 0%, rgba(0, 0, 0, 0) 68%);
+}
+
+.node {
+  position: absolute;
+}
+
+.nodeGlow {
+  position: absolute;
+  inset: -62%;
+  border-radius: 50%;
+}
+
+.nodeImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}

@@ -14,6 +14,14 @@
     <meta name="robots" content="noindex, nofollow" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/fonts/fonts.css" />
+    <!--
+      The opening mark. It is the first thing drawn and the only thing on
+      screen while the archive loads, so the browser is told to fetch it
+      alongside the bundle rather than after it. Only the trunk is preloaded:
+      the seven nodes are not needed until a second into the animation, by
+      which time they have arrived on their own.
+    -->
+    <link rel="preload" as="image" href="/logo/tree.webp" type="image/webp" />
   </head>
   <body>
     <div id="root"></div>
