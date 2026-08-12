@@ -43,7 +43,15 @@ export interface FamilyCellMap {
 }
 
 /** Minimum centre-to-centre distance before two cards get pushed apart. */
-const CELL_CLEARANCE = 240;
+/**
+ * Least distance allowed between two family cards, in canvas units.
+ *
+ * It has to be wider than a card, which is the bug this replaces: at 240 the
+ * separation pass was pushing cards to 240 apart while the card itself measured
+ * 269 across, so on a board with many families the cards overlapped and buried
+ * each other's labels no matter how the board was zoomed.
+ */
+const CELL_CLEARANCE = 310;
 
 /** The family name: last word once nicknames and maiden names are removed. */
 export function familyName(fullName: string): string {

@@ -412,13 +412,27 @@ export function fitView(
   { maxScale = 1, minScale = 0.2 }: { maxScale?: number; minScale?: number } = {},
 ): ViewTransform {
   if (viewport.width === 0 || viewport.height === 0) return { x: 0, y: 0, k: maxScale };
-  const k = Math.max(
-    minScale,
-    Math.min(viewport.width / layout.width, viewport.height / layout.height, maxScale),
+  const wanted = Math.min(
+    viewport.width / layout.width,
+    viewport.height / layout.height,
+    maxScale,
   );
+  const k = Math.max(minScale, wanted);
+
+  /*
+   * A board too large to fit is not centred on its middle.
+   *
+   * Centring assumes the whole thing is on screen. Once the scale has been
+   * held up by `minScale` it is not, and centring then lands the viewer in the
+   * geometric middle of the board — which on a wide family tree is a gap
+   * between branches, so the archive opened on empty canvas. When the fit is
+   * clamped, the view goes to the top of the board instead: the founding
+   * generation, which is where a family tree is read from.
+   */
+  const clamped = k > wanted;
   return {
     x: (viewport.width - layout.width * k) / 2,
-    y: (viewport.height - layout.height * k) / 2,
+    y: clamped ? Math.min(0, viewport.height * 0.12) : (viewport.height - layout.height * k) / 2,
     k,
   };
 }

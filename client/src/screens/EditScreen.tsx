@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
-import type { Person } from '../../../shared/types.ts';
+import type { Generation, Person } from '../../../shared/types.ts';
 
 import {
   useArchivedPeople,
@@ -33,6 +33,56 @@ const TABS: ReadonlyArray<[WorkshopTab, string]> = [
   ['treasures', 'אוצרות'],
   ['timeline', 'ציר הזמן'],
 ];
+
+/**
+ * One row in the card file.
+ *
+ * Split out and memoised because the drawer holds every person in the archive:
+ * without this, one keystroke in the filter re-rendered all of them — a
+ * hundred and fifty avatars and their names — and a phone spent about a
+ * quarter of a second per character before the letter appeared.
+ */
+const PersonCard = memo(function PersonCard({
+  person,
+  generation,
+  index,
+  open,
+  onToggle,
+}: {
+  person: Person;
+  generation: Generation;
+  index: number;
+  open: boolean;
+  onToggle: (personId: string, open: boolean) => void;
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      className={open ? `${styles.card} ${styles.cardOpen}` : styles.card}
+      style={
+        {
+          '--rest-tilt': open ? '0deg' : restTilt(person.id, 0.9),
+          '--i': Math.min(index, 10),
+        } as React.CSSProperties
+      }
+      aria-expanded={open}
+      onClick={() => onToggle(person.id, open)}
+    >
+      <Avatar person={person} generation={generation} size={48} />
+      <span className={styles.cardText}>
+        <span className={styles.cardName}>{person.fullName}</span>
+        <span className={styles.cardMeta}>
+          <Years>{person.lifeSpan || 'שנים לא ידועות'}</Years>
+          {person.place && ` · ${person.place}`}
+        </span>
+      </span>
+      {person.isProvisional && <span className={styles.cardFlag}>ענף חדש</span>}
+      <span className={styles.cardChevron} aria-hidden="true">
+        {open ? '×' : '⌄'}
+      </span>
+    </button>
+  );
+});
 
 type RelationKind = 'spouse' | 'child' | 'parent' | 'none';
 
@@ -90,6 +140,22 @@ export function EditScreen(): React.JSX.Element {
   const [showArchived, setShowArchived] = useState(false);
   const [filter, setFilter] = useState('');
 
+  /** Stable, so a memoised card is not invalidated by a new closure each render. */
+  const openCard = useCallback(
+    (personId: string, open: boolean) =>
+      navigate(open ? '/edit/people' : `/edit/people/${personId}`),
+    [navigate],
+  );
+  /**
+   * The field is driven by `filter`, the list by this.
+   *
+   * Re-filtering a large card file is the expensive half of a keystroke, and
+   * doing it in the same commit as the character means the character waits for
+   * it. Deferred, the letter lands immediately and the list catches up a beat
+   * later — which is the right order of priority when someone is typing a name.
+   */
+  const deferredFilter = useDeferredValue(filter);
+
   /**
    * Landing on /edit/people/:id — from the lens's עריכה link, or any deep
    * link — must put the opened card on screen, not the top of the drawer.
@@ -129,9 +195,9 @@ export function EditScreen(): React.JSX.Element {
    * keeps the card that is currently open: typing must not pull the record you
    * are editing out from under you.
    */
-  const groups = useMemo(() => {
+  const matchedPeople = useMemo(() => {
     if (!tree) return [];
-    const needle = filter.trim().toLowerCase().replace(/[׳״'"]/g, '');
+    const needle = deferredFilter.trim().toLowerCase().replace(/[׳״'"]/g, '');
     const matches = (person: Person) => {
       if (!needle) return true;
       if (person.id === openId) return true;
@@ -149,21 +215,35 @@ export function EditScreen(): React.JSX.Element {
         person,
       ]);
     }
+    // Flat and in reading order first, so the drawer can be cut to a page
+    // without a cohort losing its place in the sequence.
     return tree.generations
       .filter((generation) => byGeneration.has(generation.id))
-      .map((generation) => ({
-        generation,
-        people: (byGeneration.get(generation.id) ?? []).sort(
-          (a, b) =>
-            (a.birthYear ?? Number.MAX_SAFE_INTEGER) -
-              (b.birthYear ?? Number.MAX_SAFE_INTEGER) ||
-            a.fullName.localeCompare(b.fullName, 'he'),
-        ),
-      }));
-  }, [filter, openId, tree]);
+      .flatMap((generation) =>
+        (byGeneration.get(generation.id) ?? [])
+          .sort(
+            (a, b) =>
+              (a.birthYear ?? Number.MAX_SAFE_INTEGER) -
+                (b.birthYear ?? Number.MAX_SAFE_INTEGER) ||
+              a.fullName.localeCompare(b.fullName, 'he'),
+          )
+          .map((person) => ({ person, generation })),
+      );
+  }, [deferredFilter, openId, tree]);
 
   /** How many people the filter is currently showing, for the empty state. */
-  const shownCount = groups.reduce((total, group) => total + group.people.length, 0);
+  const shownCount = matchedPeople.length;
+
+  /** The page currently on screen, back in cohort sections for the headings. */
+  const groups = useMemo(() => {
+    const sections: Array<{ generation: Generation; people: Person[] }> = [];
+    for (const { person, generation } of matchedPeople) {
+      const last = sections[sections.length - 1];
+      if (last && last.generation.id === generation.id) last.people.push(person);
+      else sections.push({ generation, people: [person] });
+    }
+    return sections;
+  }, [matchedPeople]);
 
   const archived = useMemo(
     () => (allPeople ?? []).filter((person) => person.archivedAt !== null),
@@ -521,33 +601,13 @@ export function EditScreen(): React.JSX.Element {
                 const open = openId === person.id;
                 return (
                   <li key={person.id} ref={open ? openCardRef : null}>
-                    <button
-                      type="button"
-                      className={open ? `${styles.card} ${styles.cardOpen}` : styles.card}
-                      style={
-                        {
-                          '--rest-tilt': open ? '0deg' : restTilt(person.id, 0.9),
-                          '--i': Math.min(index, 10),
-                        } as React.CSSProperties
-                      }
-                      aria-expanded={open}
-                      onClick={() => navigate(open ? '/edit/people' : `/edit/people/${person.id}`)}
-                    >
-                      <Avatar person={person} generation={generation} size={48} />
-                      <span className={styles.cardText}>
-                        <span className={styles.cardName}>{person.fullName}</span>
-                        <span className={styles.cardMeta}>
-                          <Years>{person.lifeSpan || 'שנים לא ידועות'}</Years>
-                          {person.place && ` · ${person.place}`}
-                        </span>
-                      </span>
-                      {person.isProvisional && (
-                        <span className={styles.cardFlag}>ענף חדש</span>
-                      )}
-                      <span className={styles.cardChevron} aria-hidden="true">
-                        {open ? '×' : '⌄'}
-                      </span>
-                    </button>
+                    <PersonCard
+                      person={person}
+                      generation={generation}
+                      index={index}
+                      open={open}
+                      onToggle={openCard}
+                    />
 
                     {open && (
                       <PersonEditor

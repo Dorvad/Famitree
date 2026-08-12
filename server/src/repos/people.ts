@@ -159,10 +159,17 @@ const CANVAS_CENTRE_X = 910;
 /**
  * Places a new node on the canvas without overlapping anyone.
  *
- * People of the same generation belong on the same row, so the row is chosen by
- * birth year where the generation already exists on the board; otherwise the
- * node lands on a fresh row below everything. Within a row we walk outwards
- * from the centre until a slot is clear.
+ * A generation is a row: everyone born into the same cohort stands on the row
+ * that cohort already occupies, and a cohort with nobody on the board yet opens
+ * one below the lowest.
+ *
+ * The row then simply grows sideways. That is the whole correction here — the
+ * previous version tried twelve slots either side of the row's centre and, when
+ * all of them were taken, started a *new row* for that one person. Which meant
+ * a growing archive stopped being a tree: a hundred and fifty relatives came
+ * out as thirty-nine rows, most holding a single person, on a board fourteen
+ * thousand pixels tall that no screen could open at a readable scale. A row is
+ * allowed to be as wide as the family is; it is not allowed to spawn rows.
  */
 export async function suggestPosition(
   birthYear: number | null,
@@ -183,16 +190,28 @@ export async function suggestPosition(
   const occupied = people.filter((p) => Math.abs(p.y - row) < NODE_SIZE).map((p) => p.x);
   if (occupied.length === 0) return { x: CANVAS_CENTRE_X, y: row };
 
-  const clear = (x: number) => occupied.every((o) => Math.abs(o - x) >= NODE_SIZE + 40);
+  const CLEARANCE = NODE_SIZE + 40;
+  const clear = (x: number) => occupied.every((o) => Math.abs(o - x) >= CLEARANCE);
 
+  // Outwards from the row's centre of mass, looking for a gap between people
+  // who are already there — a returning relative slotted between cousins reads
+  // better than one tacked onto the end.
   const anchor = Math.round(occupied.reduce((a, b) => a + b, 0) / occupied.length);
   for (let step = 1; step <= 12; step += 1) {
     for (const x of [anchor + step * COL_PITCH, anchor - step * COL_PITCH]) {
       if (clear(x)) return { x, y: row };
     }
   }
-  // Board is unusually full at this row — start a new one rather than overlap.
-  return { x: CANVAS_CENTRE_X, y: lowestY + ROW_PITCH };
+
+  // No gap near the middle: extend the row past whichever end is nearer, so the
+  // cohort widens instead of the board growing another storey.
+  const leftEnd = Math.min(...occupied);
+  const rightEnd = Math.max(...occupied);
+  const beyondRight = rightEnd + COL_PITCH;
+  const beyondLeft = leftEnd - COL_PITCH;
+  const x =
+    Math.abs(beyondRight - anchor) <= Math.abs(beyondLeft - anchor) ? beyondRight : beyondLeft;
+  return { x, y: row };
 }
 
 export interface CreatePersonInput {
